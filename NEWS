@@ -1,0 +1,4 @@
+Changes in Version 0.1.0
+
+  o First official release of the package on CRAN. See citation("NetSimR")
+    for the accompanying manuscripts.

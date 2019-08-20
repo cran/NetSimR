@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Yiannis Parizas" />
+
+
+<title>PureIBNR</title>
+
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+code.sourceCode > span { display: inline-block; line-height: 1.25; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#header {
+text-align: center;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">PureIBNR</h1>
+<h4 class="author">Yiannis Parizas</h4>
+<h4 class="date">19-08-2019</h4>
+
+
+
+<div id="introduction" class="section level2">
+<h2>1.Introduction</h2>
+<p>This vignette will cover pure IBNR functions of the NetSimR package. It will overview the theory behind these functions, propose possible uses and illustrate examples. The reporting delay distributions supported are LogNormal and Gamma. An application of the pure IBNR functions is suggested in the article “Escaping the triangle” accessible <a href="https://www.theactuary.com/features/2019/06/escaping-the-triangle/">here</a>.</p>
+
+</div>
+<div id="backround-theory" class="section level2">
+<h2>2.Backround theory</h2>
+<div id="reporting-delay-distribution" class="section level3">
+<h3>2.1 Reporting delay distribution</h3>
+<p>Reporting delay is the time difference between when the accident occured and when the insurer was notified. Reporting delay is a positive and positively skewed variable. It can me modelled with a LogNormal or Gamma regression. As suggested by the article cited in the introduction, estimating reserves can be more accurate if the reserves are split to pure IBNR and IBNER. Also note tha reporting delay is a right truncated variable. The closer the exposure period to the valuation date, the more the truncation. As such reporting delay would be better modelled by a right truncated regression.</p>
+</div>
+<div id="from-reporting-delay-to-pure-ibnr" class="section level3">
+<h3>2.2 From reporting delay to pure IBNR</h3>
+<p>Pure IBNR refers to claims not reported yet to the insurer, while IBNER refers to the over/under estimation in the outstanding part of reported claims. Together the two form the insurer’s reserves for claims occured. Unearned premium will also be calculated by the functions provided, and this relates to future claims from business already written. If we split the period to days, one can think of the reporting delay cumulative distribution function as the proportion of the day earned net of pure IBNR, based on the maximum reporting delay (Maximum reporting delay would be the difference between the reference day and the valuation day). As integration is equivalent to summing the function values, when the partition size is one, one can derive that integrating from the maximum to the minimum reporting delay calculates the pure IBNR earned exposure for the period. This can be proportioned with the full duration and the earned duration, to provide different metrics.</p>
+
+</div>
+</div>
+<div id="functions-usage" class="section level2">
+<h2>3. Functions usage</h2>
+<p>In this section we will suggest possible uses of the specified functions.</p>
+<div id="pure-ibnr" class="section level3">
+<h3>3.1 Pure IBNR</h3>
+<p>The function will input the inception, expiry, valuation dates and estimate the proportions unearned and allocated to pure IBNR. The pure IBNR proportion multiplied by the frequency-severity from exposure rating, can provide an accurate estimate of the reserve. Alternatively mutliplying this with the premium and a loss ratio proxy will provide an acceptable approximation of the reserve. The proportion of the unearned exposure multiplied by the premium will provide the unearned premium reserve. One can use the exposure net of unearned period and pure IBNR as the offset (exposure) for modelling frequency in exposure or experience rating. This will be the modellers choice rather than removing the last periods in situations where data is less. The pure IBNR and unearned exposures can be used for simulating stochastic claim reserves. Following the above, the analyst can incorporate the unearned and pure IBNR exposure models to dashboards, hence automate estimating the reserves. For all the above this method is able to drill down individual segments and be insensitive to portfolio mix changes, when the reporting delay is modelled with generalised linear models. When this method is combined with a truncated regression, the method can adjust for reporting delay development for the latest periods. The method can also reveal patterns otherwise invisible to the analyst. Reinsurance structures are easier to be implemneted on top of this method compared to triangles.</p>
+
+</div>
+</div>
+<div id="examples" class="section level2">
+<h2>4. Examples</h2>
+<div id="pure-ibnr-1" class="section level3">
+<h3>4.1 Pure IBNR</h3>
+<p>In the below example we will following these steps:</p>
+<ul>
+<li>Construct a policy dataset with policy inception/expiry dates</li>
+<li>Generate claims</li>
+<li>Generate accident and reporing dates, through a reporting delay disribution</li>
+<li>Derive reported claims up to the valuation date</li>
+<li>Model reporting delay</li>
+<li>Use the function of the NetSimR package to estimate PureIBNR duration</li>
+<li>Model claim frequency with adjusted claim duration and compare modelling without adjusting</li>
+<li>Predict claim frequency for pure IBNR and unearned duration and compare with our data</li>
+<li>Generate a chain ladder estimate for pure IBNR claims count and compare with the data and the GLM approach</li>
+<li>Simulate the pure IBNR reserve distribution</li>
+</ul>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">library</span>(<span class="st">&quot;NetSimR&quot;</span>)</span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="co">#set the seed</span></span>
+<span id="cb1-3"><a href="#cb1-3"></a><span class="kw">set.seed</span>(<span class="dv">0</span>)</span>
+<span id="cb1-4"><a href="#cb1-4"></a></span>
+<span id="cb1-5"><a href="#cb1-5"></a><span class="co">#Set the reporting delay distribution parameters</span></span>
+<span id="cb1-6"><a href="#cb1-6"></a>mu &lt;-<span class="st"> </span><span class="dv">3</span></span>
+<span id="cb1-7"><a href="#cb1-7"></a>sigma &lt;-<span class="st"> </span><span class="dv">1</span></span>
+<span id="cb1-8"><a href="#cb1-8"></a></span>
+<span id="cb1-9"><a href="#cb1-9"></a><span class="co">#Generate reporting delays and preview the distribution</span></span>
+<span id="cb1-10"><a href="#cb1-10"></a>x&lt;-<span class="kw">rlnorm</span>(<span class="dv">1000</span>,mu,sigma)</span>
+<span id="cb1-11"><a href="#cb1-11"></a><span class="kw">summary</span>(x)</span></code></pre></div>
+<pre><code>##     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+##   0.7895   9.8902  18.9372  32.7484  39.9504 526.5859</code></pre>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">hist</span>(x, <span class="dt">breaks =</span> <span class="dv">100</span>)</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="co">#Generate dates data</span></span>
+<span id="cb4-2"><a href="#cb4-2"></a>PoliciesPerDay&lt;-<span class="dv">100</span></span>
+<span id="cb4-3"><a href="#cb4-3"></a>PeriodLength&lt;-<span class="dv">365</span><span class="op">*</span><span class="dv">2</span></span>
+<span id="cb4-4"><a href="#cb4-4"></a>InceptionDateStart&lt;-<span class="kw">as.Date</span>(<span class="st">&quot;2011/1/1&quot;</span>)</span>
+<span id="cb4-5"><a href="#cb4-5"></a>InceptionDate&lt;-<span class="kw">seq</span>(InceptionDateStart, <span class="dt">by =</span> <span class="st">&quot;day&quot;</span>, <span class="dt">length.out =</span> PeriodLength)</span>
+<span id="cb4-6"><a href="#cb4-6"></a>InceptionDate&lt;-<span class="kw">rep</span>(InceptionDate,PoliciesPerDay)</span>
+<span id="cb4-7"><a href="#cb4-7"></a><span class="co">#assume all policies are yearly</span></span>
+<span id="cb4-8"><a href="#cb4-8"></a>DayPolicyDuration&lt;-<span class="dv">365</span></span>
+<span id="cb4-9"><a href="#cb4-9"></a>ExpiryDate&lt;-InceptionDate<span class="op">+</span>DayPolicyDuration</span>
+<span id="cb4-10"><a href="#cb4-10"></a>ValuationDate&lt;-<span class="kw">max</span>(InceptionDate)</span>
+<span id="cb4-11"><a href="#cb4-11"></a>Data&lt;-<span class="kw">data.frame</span>(InceptionDate,ExpiryDate)</span>
+<span id="cb4-12"><a href="#cb4-12"></a><span class="kw">summary</span>(Data)</span></code></pre></div>
+<pre><code>##  InceptionDate          ExpiryDate        
+##  Min.   :2011-01-01   Min.   :2012-01-01  
+##  1st Qu.:2011-07-02   1st Qu.:2012-07-01  
+##  Median :2011-12-31   Median :2012-12-30  
+##  Mean   :2011-12-31   Mean   :2012-12-30  
+##  3rd Qu.:2012-07-01   3rd Qu.:2013-07-01  
+##  Max.   :2012-12-30   Max.   :2013-12-30</code></pre>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a>ValuationDate</span></code></pre></div>
+<pre><code>## [1] &quot;2012-12-30&quot;</code></pre>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="co">#Generate Claims Counts Data and reporting delays</span></span>
+<span id="cb8-2"><a href="#cb8-2"></a><span class="co">#Assume only 1 claim per policy possible with probability of claiming 10%</span></span>
+<span id="cb8-3"><a href="#cb8-3"></a>ClaimFreq&lt;-<span class="fl">0.1</span></span>
+<span id="cb8-4"><a href="#cb8-4"></a>Data<span class="op">$</span>ClaimCount&lt;-<span class="kw">ifelse</span>(<span class="kw">runif</span>(<span class="kw">nrow</span>(Data))<span class="op">&lt;</span>ClaimFreq,<span class="dv">1</span>,<span class="dv">0</span>)</span>
+<span id="cb8-5"><a href="#cb8-5"></a><span class="co">#generate accident date assuming uniformly happening throughout the year</span></span>
+<span id="cb8-6"><a href="#cb8-6"></a>Data<span class="op">$</span>AccidentDate&lt;-Data<span class="op">$</span>InceptionDate<span class="op">+</span><span class="kw">runif</span>(<span class="kw">nrow</span>(Data))<span class="op">*</span>(Data<span class="op">$</span>ExpiryDate<span class="op">-</span>Data<span class="op">$</span>InceptionDate)</span>
+<span id="cb8-7"><a href="#cb8-7"></a><span class="co">#generate reporting delays</span></span>
+<span id="cb8-8"><a href="#cb8-8"></a>Data<span class="op">$</span>ReportingDelay&lt;-<span class="kw">round</span>(Data<span class="op">$</span>ClaimCount<span class="op">*</span><span class="kw">rlnorm</span>(<span class="kw">nrow</span>(Data),mu,sigma),<span class="dv">1</span>)</span>
+<span id="cb8-9"><a href="#cb8-9"></a><span class="co">#generate reporting days</span></span>
+<span id="cb8-10"><a href="#cb8-10"></a>Data<span class="op">$</span>NotificationDate&lt;-Data<span class="op">$</span>AccidentDate<span class="op">+</span>Data<span class="op">$</span>ReportingDelay</span>
+<span id="cb8-11"><a href="#cb8-11"></a><span class="co">#remove claims reported beyond valuation day</span></span>
+<span id="cb8-12"><a href="#cb8-12"></a>Data<span class="op">$</span>ClaimReportedBeforeValuation&lt;-<span class="kw">ifelse</span>(Data<span class="op">$</span>NotificationDate<span class="op">&gt;</span>ValuationDate,<span class="dv">0</span>,Data<span class="op">$</span>ClaimCount)</span>
+<span id="cb8-13"><a href="#cb8-13"></a><span class="co">#Maximum reporting delays</span></span>
+<span id="cb8-14"><a href="#cb8-14"></a>Data<span class="op">$</span>MaxReportingDelay&lt;-<span class="kw">as.numeric</span>(ValuationDate<span class="op">-</span>Data<span class="op">$</span>AccidentDate)<span class="op">+</span><span class="dv">1</span></span>
+<span id="cb8-15"><a href="#cb8-15"></a></span>
+<span id="cb8-16"><a href="#cb8-16"></a><span class="co">#Earned Duration</span></span>
+<span id="cb8-17"><a href="#cb8-17"></a>Data<span class="op">$</span>EarnedDuration&lt;-<span class="kw">ifelse</span>(Data<span class="op">$</span>ExpiryDate<span class="op">&gt;</span>ValuationDate,<span class="kw">as.numeric</span>(ValuationDate<span class="op">-</span>Data<span class="op">$</span>InceptionDate),<span class="kw">as.numeric</span>(Data<span class="op">$</span>ExpiryDate<span class="op">-</span>Data<span class="op">$</span>InceptionDate))<span class="op">/</span><span class="dv">365</span></span>
+<span id="cb8-18"><a href="#cb8-18"></a></span>
+<span id="cb8-19"><a href="#cb8-19"></a><span class="co">#Filter claims only data</span></span>
+<span id="cb8-20"><a href="#cb8-20"></a>ModelData&lt;-Data[Data<span class="op">$</span>ClaimReportedBeforeValuation<span class="op">==</span><span class="dv">1</span>,]</span>
+<span id="cb8-21"><a href="#cb8-21"></a></span>
+<span id="cb8-22"><a href="#cb8-22"></a><span class="co">#model reporting delays with a linear model</span></span>
+<span id="cb8-23"><a href="#cb8-23"></a>lm&lt;-<span class="kw">lm</span>(<span class="kw">log</span>(ModelData<span class="op">$</span>ReportingDelay)<span class="op">~</span><span class="dv">1</span>)</span>
+<span id="cb8-24"><a href="#cb8-24"></a><span class="co">#summary(lm)</span></span>
+<span id="cb8-25"><a href="#cb8-25"></a><span class="kw">cbind</span>(<span class="kw">coefficients</span>(lm),<span class="kw">summary</span>(lm)<span class="op">$</span>sigma)</span></code></pre></div>
+<pre><code>##                 [,1]     [,2]
+## (Intercept) 2.916398 0.958557</code></pre>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a><span class="co">#model reporting delays with a truncated model (splitting to monthly periods would be more accurate in terms of maximum reporting delay)</span></span>
+<span id="cb10-2"><a href="#cb10-2"></a><span class="kw">library</span>(<span class="st">&quot;crch&quot;</span>)</span>
+<span id="cb10-3"><a href="#cb10-3"></a>rTLm&lt;-<span class="kw">crch</span>(<span class="kw">log</span>(ModelData<span class="op">$</span>ReportingDelay)<span class="op">~</span><span class="dv">1</span>, <span class="dt">truncated =</span> <span class="ot">TRUE</span>, <span class="dt">right =</span> <span class="kw">log</span>(ModelData<span class="op">$</span>MaxReportingDelay), <span class="dt">dist =</span> <span class="st">&quot;gaussian&quot;</span>, <span class="dt">link.scale =</span> <span class="st">&quot;identity&quot;</span>)</span>
+<span id="cb10-4"><a href="#cb10-4"></a><span class="co">#summary(rTLm)</span></span>
+<span id="cb10-5"><a href="#cb10-5"></a><span class="kw">coefficients</span>(rTLm)</span></code></pre></div>
+<pre><code>##         (Intercept) (scale)_(Intercept) 
+##           2.9752603           0.9919743</code></pre>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="co">#Generate and predict pure IBNR and UPR Claims</span></span>
+<span id="cb12-2"><a href="#cb12-2"></a>Data<span class="op">$</span>PureIBNRClaims&lt;-<span class="kw">ifelse</span>(Data<span class="op">$</span>AccidentDate<span class="op">&gt;</span>ValuationDate,<span class="dv">0</span>,Data<span class="op">$</span>ClaimCount<span class="op">-</span>Data<span class="op">$</span>ClaimReportedBeforeValuation)</span>
+<span id="cb12-3"><a href="#cb12-3"></a>Data<span class="op">$</span>UPRClaims&lt;-Data<span class="op">$</span>ClaimCount<span class="op">-</span>Data<span class="op">$</span>ClaimReportedBeforeValuation<span class="op">-</span>Data<span class="op">$</span>PureIBNR</span>
+<span id="cb12-4"><a href="#cb12-4"></a>PureIBNRPrediction&lt;-<span class="kw">PureIBNRLNorm</span>(Data<span class="op">$</span>InceptionDate,Data<span class="op">$</span>ExpiryDate,ValuationDate,<span class="kw">coefficients</span>(rTLm)[<span class="dv">1</span>],<span class="kw">coefficients</span>(rTLm)[<span class="dv">2</span>])</span>
+<span id="cb12-5"><a href="#cb12-5"></a>Data<span class="op">$</span>PredictedPureIBNRYears&lt;-PureIBNRPrediction<span class="op">$</span>PureIBNRDuration<span class="op">/</span>DayPolicyDuration</span>
+<span id="cb12-6"><a href="#cb12-6"></a>Data<span class="op">$</span>PredictedUPRYears&lt;-PureIBNRPrediction<span class="op">$</span>UnearnedDuration<span class="op">/</span>DayPolicyDuration</span>
+<span id="cb12-7"><a href="#cb12-7"></a>Data<span class="op">$</span>NetEarnedDuration&lt;-<span class="dv">1</span><span class="op">-</span>Data<span class="op">$</span>PredictedUPRYears<span class="op">-</span>Data<span class="op">$</span>PredictedPureIBNRYears<span class="fl">+0.00001</span></span>
+<span id="cb12-8"><a href="#cb12-8"></a></span>
+<span id="cb12-9"><a href="#cb12-9"></a><span class="co">#Predict Claim Frequency with reduced exposure to adjust for pure IBNR</span></span>
+<span id="cb12-10"><a href="#cb12-10"></a>AdjFreqGLM&lt;-<span class="kw">glm</span>(Data<span class="op">$</span>ClaimReportedBeforeValuation<span class="op">~</span><span class="dv">1</span>, <span class="dt">offset =</span> <span class="kw">log</span>(Data<span class="op">$</span>NetEarnedDuration), <span class="dt">family =</span> <span class="st">&quot;poisson&quot;</span>)</span>
+<span id="cb12-11"><a href="#cb12-11"></a><span class="co">#summary(AdjFreqGLM)</span></span>
+<span id="cb12-12"><a href="#cb12-12"></a>PredictedFrequency&lt;-<span class="kw">exp</span>(AdjFreqGLM<span class="op">$</span>coefficients)</span>
+<span id="cb12-13"><a href="#cb12-13"></a></span>
+<span id="cb12-14"><a href="#cb12-14"></a><span class="co">#Compare as if not adjusting for pure IBNR</span></span>
+<span id="cb12-15"><a href="#cb12-15"></a>UnAdjFreqGLM&lt;-<span class="kw">glm</span>(Data<span class="op">$</span>ClaimReportedBeforeValuation<span class="op">~</span><span class="dv">1</span>, <span class="dt">offset =</span> <span class="kw">log</span>(Data<span class="op">$</span>EarnedDuration<span class="fl">+0.00001</span>), <span class="dt">family =</span> <span class="st">&quot;poisson&quot;</span>)</span>
+<span id="cb12-16"><a href="#cb12-16"></a><span class="co">#summary(UnAdjFreqGLM)</span></span>
+<span id="cb12-17"><a href="#cb12-17"></a></span>
+<span id="cb12-18"><a href="#cb12-18"></a><span class="kw">cbind</span>(<span class="dt">AdjustedModel=</span><span class="kw">round</span>(<span class="kw">exp</span>(AdjFreqGLM<span class="op">$</span>coefficients),<span class="dv">3</span>),<span class="dt">UnAdjustedModel=</span><span class="kw">round</span>(<span class="kw">exp</span>(UnAdjFreqGLM<span class="op">$</span>coefficients),<span class="dv">3</span>),<span class="dt">Actual=</span>ClaimFreq)</span></code></pre></div>
+<pre><code>##             AdjustedModel UnAdjustedModel Actual
+## (Intercept)           0.1           0.094    0.1</code></pre>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a><span class="co">#Compare UPR Claim predictions</span></span>
+<span id="cb14-2"><a href="#cb14-2"></a><span class="kw">cbind</span>(<span class="dt">Actual=</span><span class="kw">sum</span>(Data<span class="op">$</span>UPRClaims),<span class="dt">Predicted=</span><span class="kw">round</span>(<span class="kw">sum</span>(Data<span class="op">$</span>PredictedUPRYears)<span class="op">*</span>PredictedFrequency,<span class="dv">0</span>))</span></code></pre></div>
+<pre><code>##             Actual Predicted
+## (Intercept)   1888      1822</code></pre>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="co">#Compare Pure IBNR Claim predictions</span></span>
+<span id="cb16-2"><a href="#cb16-2"></a><span class="kw">cbind</span>(<span class="dt">Actual=</span><span class="kw">sum</span>(Data<span class="op">$</span>PureIBNRClaims),<span class="dt">Predicted=</span><span class="kw">round</span>(<span class="kw">sum</span>(Data<span class="op">$</span>PredictedPureIBNRYears)<span class="op">*</span>PredictedFrequency,<span class="dv">0</span>), <span class="dt">Theoretical=</span><span class="dv">327</span>)</span></code></pre></div>
+<pre><code>##             Actual Predicted Theoretical
+## (Intercept)    344       318         327</code></pre>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="co">#Theoretical comes from re-running with the theoretical parameter values</span></span>
+<span id="cb18-2"><a href="#cb18-2"></a></span>
+<span id="cb18-3"><a href="#cb18-3"></a><span class="co">#Compare Pure IBNR predictions with Chain Ladder</span></span>
+<span id="cb18-4"><a href="#cb18-4"></a>ClaimsAY1RY1&lt;-<span class="kw">sum</span>(Data[Data<span class="op">$</span>AccidentDate<span class="op">&lt;</span><span class="kw">as.Date</span>(<span class="st">&quot;2012/1/1&quot;</span>) <span class="op">&amp;</span><span class="st"> </span>Data<span class="op">$</span>NotificationDate<span class="op">&lt;</span><span class="kw">as.Date</span>(<span class="st">&quot;2012/1/1&quot;</span>), ]<span class="op">$</span>ClaimReportedBeforeValuation)</span>
+<span id="cb18-5"><a href="#cb18-5"></a></span>
+<span id="cb18-6"><a href="#cb18-6"></a>ClaimsAY1RY2&lt;-<span class="kw">sum</span>(Data[Data<span class="op">$</span>AccidentDate<span class="op">&lt;</span><span class="kw">as.Date</span>(<span class="st">&quot;2012/1/1&quot;</span>) <span class="op">&amp;</span><span class="st"> </span>Data<span class="op">$</span>NotificationDate<span class="op">&lt;</span><span class="kw">as.Date</span>(<span class="st">&quot;2013/1/1&quot;</span>), ]<span class="op">$</span>ClaimReportedBeforeValuation)</span>
+<span id="cb18-7"><a href="#cb18-7"></a></span>
+<span id="cb18-8"><a href="#cb18-8"></a>ClaimsAY2RY1&lt;-<span class="kw">sum</span>(Data<span class="op">$</span>ClaimReportedBeforeValuation)<span class="op">-</span>ClaimsAY1RY1<span class="op">-</span>ClaimsAY1RY2</span>
+<span id="cb18-9"><a href="#cb18-9"></a></span>
+<span id="cb18-10"><a href="#cb18-10"></a>PredictedPureIBNRClaimsChainLadder&lt;-(ClaimsAY1RY2<span class="op">/</span>ClaimsAY1RY1<span class="dv">-1</span>)<span class="op">*</span>ClaimsAY2RY1</span>
+<span id="cb18-11"><a href="#cb18-11"></a></span>
+<span id="cb18-12"><a href="#cb18-12"></a><span class="kw">cbind</span>(<span class="dt">Actual=</span><span class="kw">sum</span>(Data<span class="op">$</span>PureIBNRClaims),<span class="dt">PredictedGLM=</span><span class="kw">round</span>(<span class="kw">sum</span>(Data<span class="op">$</span>PredictedPureIBNRYears)<span class="op">*</span>PredictedFrequency,<span class="dv">0</span>),<span class="dt">PredictedCL=</span><span class="kw">round</span>(PredictedPureIBNRClaimsChainLadder,<span class="dv">0</span>))</span></code></pre></div>
+<pre><code>##             Actual PredictedGLM PredictedCL
+## (Intercept)    344          318         321</code></pre>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="co">#Note: Chain ladder can predict better if periods brake down to months or quarters</span></span>
+<span id="cb20-2"><a href="#cb20-2"></a></span>
+<span id="cb20-3"><a href="#cb20-3"></a><span class="co">#Sliced LogNormal-Pareto claim Severity assumption</span></span>
+<span id="cb20-4"><a href="#cb20-4"></a>mu=<span class="fl">5.6</span></span>
+<span id="cb20-5"><a href="#cb20-5"></a>sigma=<span class="fl">1.65</span></span>
+<span id="cb20-6"><a href="#cb20-6"></a>s=<span class="dv">10000</span></span>
+<span id="cb20-7"><a href="#cb20-7"></a>alpha=<span class="fl">1.5</span></span>
+<span id="cb20-8"><a href="#cb20-8"></a></span>
+<span id="cb20-9"><a href="#cb20-9"></a><span class="co">#Simulate the reserve distribution</span></span>
+<span id="cb20-10"><a href="#cb20-10"></a>numberOfSimulations=<span class="dv">10000</span></span>
+<span id="cb20-11"><a href="#cb20-11"></a>SimulatedYears &lt;-<span class="st"> </span><span class="kw">numeric</span>(<span class="dt">length =</span> numberOfSimulations)</span>
+<span id="cb20-12"><a href="#cb20-12"></a>ExpectedFrequency &lt;-<span class="st"> </span><span class="kw">sum</span>(Data<span class="op">$</span>PredictedPureIBNRYears)<span class="op">*</span>PredictedFrequency</span>
+<span id="cb20-13"><a href="#cb20-13"></a></span>
+<span id="cb20-14"><a href="#cb20-14"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span> <span class="op">:</span>numberOfSimulations){</span>
+<span id="cb20-15"><a href="#cb20-15"></a>  SimulatedYears[i]=<span class="kw">round</span>(<span class="kw">sum</span>(<span class="kw">qSlicedLNormPareto</span>(<span class="kw">runif</span>(<span class="kw">rpois</span>(<span class="dv">1</span>,ExpectedFrequency)),mu,sigma,s,alpha)),<span class="dv">0</span>)</span>
+<span id="cb20-16"><a href="#cb20-16"></a>}</span>
+<span id="cb20-17"><a href="#cb20-17"></a></span>
+<span id="cb20-18"><a href="#cb20-18"></a><span class="co">#Visualising pure IBNR reserve distribution</span></span>
+<span id="cb20-19"><a href="#cb20-19"></a><span class="kw">head</span>(SimulatedYears)</span></code></pre></div>
+<pre><code>## [1]  389186  507867 1628801  236865  471060  437146</code></pre>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a><span class="kw">hist</span>(SimulatedYears, <span class="dt">breaks =</span> <span class="dv">1000</span>, <span class="dt">xlim =</span> <span class="kw">c</span>(<span class="dv">0</span>,<span class="fl">1.5e6</span>))</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1"></a><span class="kw">summary</span>(SimulatedYears)</span></code></pre></div>
+<pre><code>##     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+##   157777   293934   335702   373093   394701 25837662</code></pre>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1"></a><span class="co">#Note: the strength of the method illustrated is that it can have GLM factors for reporting delay, frequency and severity, and run the simulations per risk</span></span></code></pre></div>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

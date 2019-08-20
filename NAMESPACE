@@ -1,0 +1,4 @@
+exportPattern("^[[:alpha:]]+")
+
+importFrom("stats", "dgamma", "dlnorm", "pgamma", "plnorm", "pnorm", "qgamma", "qlnorm")
+

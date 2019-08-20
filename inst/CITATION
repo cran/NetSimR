@@ -1,0 +1,32 @@
+citHeader("To cite NetSimR in publications use:")
+
+citEntry(entry = "Article",
+  title        = "Taken to excess",
+  author       = personList(as.person("Yiannis Parizas")),
+  journal      = "The Actuary Magazine",
+  year         = "2019",
+  volume       = "March",
+  url          = "https://www.theactuary.com/features/2019/03/taken-to-excess/",
+
+  textVersion  =
+  paste("Yiannis Parizas (2019).",
+        "Taken to excess",
+        "The Actuary Magazine March 2019",
+        "URL https://www.theactuary.com/features/2019/03/taken-to-excess/"),
+)
+
+
+citEntry(entry = "Article",
+  title        = "Escaping the triangle",
+  author       = personList(as.person("Yiannis Parizas")),
+  journal      = "The Actuary Magazine",
+  year         = "2019",
+  volume       = "June",
+  url          = "https://www.theactuary.com/features/2019/06/escaping-the-triangle/",
+
+  textVersion  =
+  paste("Yiannis Parizas (2019).",
+        "Escaping the triangle",
+        "The Actuary Magazine June 2019",
+        "URL https://www.theactuary.com/features/2019/06/escaping-the-triangle/"),
+)

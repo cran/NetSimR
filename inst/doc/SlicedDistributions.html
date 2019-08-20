@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Yiannis Parizas" />
+
+
+<title>SlicedDistributions</title>
+
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+code.sourceCode > span { display: inline-block; line-height: 1.25; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#header {
+text-align: center;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">SlicedDistributions</h1>
+<h4 class="author">Yiannis Parizas</h4>
+<h4 class="date">19-08-2019</h4>
+
+
+
+<div id="introduction" class="section level2">
+<h2>1.Introduction</h2>
+<p>This vignette will cover the sliced distributions available in the NetSimR package. It will overview the theory behind these functions, propose posible uses and illustrate examples. Currently, Sliced distributions available are LogNormal and Gamma with a Pareto distribution for the tail.</p>
+
+</div>
+<div id="backround-theory" class="section level2">
+<h2>2.Backround theory</h2>
+<div id="sliced-distribution-backround" class="section level3">
+<h3>2.1 Sliced distribution backround</h3>
+<p>At various insurance modelling exercises, it may be the case that a sliced distribution provides a significantly better fit than a non-sliced distribution. Tail losses may be very influential on the premium, as such modelling the tail more accurately would significantly improve the accuacy of the premium. This becomes more important when modelling upper layers that will be mainly based on the severity tail. The analyst may opt to model attritional losses using a regression and have a single dimensional Pareto covering all cases. Theory suggests that Pareto distributions provide an appropriate fit for the tail of distributions and the mean excess function can be used to set the slice point. The analyst may consider using a truncated or censored distribution fit for the attritional data, in order to improve the fit.</p>
+</div>
+<div id="sliced-distribution-definition" class="section level3">
+<h3>2.2 Sliced distribution definition</h3>
+<p>Let claim severity <span class="math inline">\(x\)</span> have a probability density function <span class="math inline">\(f(x)\)</span> and a cumulative density funtion <span class="math inline">\(F(x)\)</span>. Let <span class="math inline">\(s\)</span> be the slice point. We define <span class="math inline">\(f(x)\)</span> as: <span class="math display">\[f(x)= \left[\begin{array}
+{rrr}
+g(x) &amp; x \le s \\
+(1-G(s))*h(x) &amp; x &gt; s 
+\end{array}\right]
+\]</span> <span class="math inline">\(g(x)\)</span> is the attritional attritional probability density function, fitted to the full claims. As suggested this could be fitted to full claims as a censored distribution or to the claims below <span class="math inline">\(s\)</span> as a truncated distribution for a better fit. <span class="math inline">\(g(x)\)</span> in NetSimR package will either be Gamma or LogNormal. <span class="math inline">\(h(x)\)</span> is the large probability density function. <span class="math inline">\(h(x)\)</span> in NetSimR package will be a single parameter Pareto distribution. The scale paramter <span class="math inline">\(x_{m}\)</span> will be the slice point <span class="math inline">\(s\)</span>. The shape parameter will be estimated from the claims larger than the slice point. <span class="math inline">\(H(x)\)</span> and <span class="math inline">\(G(x)\)</span> are the cumulative density functions of <span class="math inline">\(h(x)\)</span> and <span class="math inline">\(g(x)\)</span> respectively.</p>
+<p>We define <span class="math inline">\(F(x)\)</span> as: <span class="math display">\[F(x)= \left[\begin{array}
+{rrr}
+G(x) &amp; x \le s \\
+G(s)+(1-G(s))*H(x) &amp; x &gt; s 
+\end{array}\right]
+\]</span> The mean <span class="math inline">\(E(x)\)</span> is defined to be: <span class="math display">\[E(x)=Capped Mean (g(x) @ s) + (1-G(s))*(Mean(h(x))-s)\]</span> Let claims be capped at amount <span class="math inline">\(c\)</span>. The capped claim severity is defined as <span class="math inline">\(y=Min(x,c)\)</span>.The capped mean <span class="math inline">\(E(y)\)</span> is defined to be: <span class="math display">\[E(y)= \left[\begin{array}
+{rrr}
+Capped Mean (g(y)@c) &amp; c \le s \\
+Capped Mean (g(x) @ s)+(1-G(s))*(Capped Mean (h(y)@c)-s) &amp; c &gt; s 
+\end{array}\right]
+\]</span></p>
+
+</div>
+</div>
+<div id="functions-usage" class="section level2">
+<h2>3. Functions usage</h2>
+<p>NetSimR package provides functions for the mean, capped mean, exposure curve and increased limit factor curves. These were discussed in the “Capped mean, Exposure and Increased Limit Factor curves” vignette and will not be repeated here. The package also provides the probability density function (pdf), the cumulative probability density function (cdf) and the inverse cumulative probability function for the sliced distributions.</p>
+<p>The probability density function can be used for optimising parameters with the maximum likelihood method, when fitting such a distribution, in cases where fitting the distributions separately is not appropriate.</p>
+<p>The cumulative density function provides probability of claims being less or more than a particular level. The distribution can be used alongst methods such as the Panjer recursion, in order to combine it with the frequency distribution and provide the aggrecate claims distribution.</p>
+<p>The inverse cumulative probability distribution can be used to run simulations over the defined distribution. Reinsurance strucutures can then be applied to use the simulation exercise for reinsurance pricing.</p>
+
+</div>
+<div id="examples" class="section level2">
+<h2>4. Examples</h2>
+<div id="mean-of-a-sliced-distribution" class="section level3">
+<h3>4.1 Mean of a sliced distribution</h3>
+<p>Here we calculate the expected severity from a sliced lognormal pareto distributions, sliced at 10,000 currency units, with a Pareto shape parameter <span class="math inline">\(shape = 1.2\)</span> and lognormal parameters <span class="math inline">\(mu = 6\)</span> and <span class="math inline">\(sigma = 1.6\)</span>.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">library</span>(<span class="st">&quot;NetSimR&quot;</span>)</span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">round</span>(<span class="kw">SlicedLNormParetoMean</span>(<span class="dv">6</span>,<span class="fl">1.6</span>,<span class="dv">10000</span>,<span class="fl">1.2</span>),<span class="dv">0</span>)</span></code></pre></div>
+<pre><code>## [1] 2299</code></pre>
+<p>Multiplying the above with claim frequency would provide the expected claims cost. A capped mean of a sliced distribution follows the capped mean vignette examples.</p>
+</div>
+<div id="sliced-distribution-simulations" class="section level3">
+<h3>4.2 Sliced distribution simulations</h3>
+<p>We will only demonstrate simulating from the inverse distribution, the probability density and cumulative probability functions’ use is simpler. Below we simulate from a sliced distribution, applying an each and every loss excess of loss reinsurance structure.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="co">#set seed</span></span>
+<span id="cb3-2"><a href="#cb3-2"></a><span class="kw">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb3-3"><a href="#cb3-3"></a></span>
+<span id="cb3-4"><a href="#cb3-4"></a><span class="co">#set parameters</span></span>
+<span id="cb3-5"><a href="#cb3-5"></a>numberOfSimulations=<span class="dv">20000</span></span>
+<span id="cb3-6"><a href="#cb3-6"></a>freq=<span class="dv">15</span></span>
+<span id="cb3-7"><a href="#cb3-7"></a>mu=<span class="dv">6</span></span>
+<span id="cb3-8"><a href="#cb3-8"></a>sigma=<span class="fl">1.6</span></span>
+<span id="cb3-9"><a href="#cb3-9"></a>s=<span class="dv">1000</span></span>
+<span id="cb3-10"><a href="#cb3-10"></a>alpha=<span class="fl">1.2</span></span>
+<span id="cb3-11"><a href="#cb3-11"></a>Deductible=<span class="dv">10000</span></span>
+<span id="cb3-12"><a href="#cb3-12"></a>limit=<span class="dv">100000</span></span>
+<span id="cb3-13"><a href="#cb3-13"></a>XoLCededClaims &lt;-<span class="st"> </span><span class="kw">numeric</span>(<span class="dt">length =</span> numberOfSimulations)</span>
+<span id="cb3-14"><a href="#cb3-14"></a></span>
+<span id="cb3-15"><a href="#cb3-15"></a><span class="co">#loop simulates frequency then severity and applies layer deductible and limit</span></span>
+<span id="cb3-16"><a href="#cb3-16"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span> <span class="op">:</span>numberOfSimulations){</span>
+<span id="cb3-17"><a href="#cb3-17"></a>  x=<span class="kw">qSlicedLNormPareto</span>(<span class="kw">runif</span>(<span class="kw">rpois</span>(<span class="dv">1</span>,freq)),mu,sigma,s,alpha)</span>
+<span id="cb3-18"><a href="#cb3-18"></a>  x=<span class="kw">ifelse</span>(x<span class="op">&lt;</span>Deductible,<span class="dv">0</span>,<span class="kw">ifelse</span>(x<span class="op">-</span>Deductible<span class="op">&gt;</span>limit,limit,x<span class="op">-</span>Deductible))</span>
+<span id="cb3-19"><a href="#cb3-19"></a>  XoLCededClaims[i]=<span class="kw">round</span>(<span class="kw">sum</span>(x),<span class="dv">0</span>)</span>
+<span id="cb3-20"><a href="#cb3-20"></a>}</span>
+<span id="cb3-21"><a href="#cb3-21"></a></span>
+<span id="cb3-22"><a href="#cb3-22"></a><span class="co">#Visualising Simulation results</span></span>
+<span id="cb3-23"><a href="#cb3-23"></a><span class="kw">head</span>(XoLCededClaims)</span></code></pre></div>
+<pre><code>## [1]     0  9463     0     0     0 11173</code></pre>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">hist</span>(XoLCededClaims, <span class="dt">breaks =</span> <span class="dv">100</span>, <span class="dt">xlim =</span> <span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">100000</span>))</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">summary</span>(XoLCededClaims)</span></code></pre></div>
+<pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##       0       0       0    5300       0  201873</code></pre>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
