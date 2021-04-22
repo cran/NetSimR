@@ -1,24 +1,55 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
 
 <head>
 
 <meta charset="utf-8" />
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="pandoc" />
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <meta name="author" content="Yiannis Parizas" />
 
 
 <title>SlicedDistributions</title>
 
+<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
+// v0.0.1
+// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
+
+document.addEventListener('DOMContentLoaded', function() {
+  const codeList = document.getElementsByClassName("sourceCode");
+  for (var i = 0; i < codeList.length; i++) {
+    var linkList = codeList[i].getElementsByTagName('a');
+    for (var j = 0; j < linkList.length; j++) {
+      if (linkList[j].innerHTML === "") {
+        linkList[j].setAttribute('aria-hidden', 'true');
+      }
+    }
+  }
+});
+</script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
 
 
-<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  code {
+    white-space: pre;
+  }
+  .sourceCode {
+    overflow: visible;
+  }
+</style>
 <style type="text/css" data-origin="pandoc">
 code.sourceCode > span { display: inline-block; line-height: 1.25; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -109,6 +140,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
 
 
+
 <style type="text/css">body {
 background-color: #fff;
 margin: 1em auto;
@@ -119,9 +151,6 @@ padding-right: 2em;
 font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
 font-size: 14px;
 line-height: 1.35;
-}
-#header {
-text-align: center;
 }
 #TOC {
 clear: both;
@@ -290,7 +319,8 @@ code > span.st { color: #d14; }
 code > span.co { color: #888888; font-style: italic; } 
 code > span.ot { color: #007020; } 
 code > span.al { color: #ff0000; font-weight: bold; } 
-code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61717; background-color: #e3d2d2; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
 </style>
 
 
@@ -305,14 +335,14 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 
 <h1 class="title toc-ignore">SlicedDistributions</h1>
 <h4 class="author">Yiannis Parizas</h4>
-<h4 class="date">19-08-2019</h4>
+<h4 class="date">21-04-2021</h4>
 
 
 
 <div id="introduction" class="section level2">
 <h2>1.Introduction</h2>
 <p>This vignette will cover the sliced distributions available in the NetSimR package. It will overview the theory behind these functions, propose posible uses and illustrate examples. Currently, Sliced distributions available are LogNormal and Gamma with a Pareto distribution for the tail.</p>
-
+<div style="page-break-after: always;"></div>
 </div>
 <div id="backround-theory" class="section level2">
 <h2>2.Backround theory</h2>
@@ -339,7 +369,7 @@ Capped Mean (g(y)@c) &amp; c \le s \\
 Capped Mean (g(x) @ s)+(1-G(s))*(Capped Mean (h(y)@c)-s) &amp; c &gt; s 
 \end{array}\right]
 \]</span></p>
-
+<div style="page-break-after: always;"></div>
 </div>
 </div>
 <div id="functions-usage" class="section level2">
@@ -348,7 +378,7 @@ Capped Mean (g(x) @ s)+(1-G(s))*(Capped Mean (h(y)@c)-s) &amp; c &gt; s
 <p>The probability density function can be used for optimising parameters with the maximum likelihood method, when fitting such a distribution, in cases where fitting the distributions separately is not appropriate.</p>
 <p>The cumulative density function provides probability of claims being less or more than a particular level. The distribution can be used alongst methods such as the Panjer recursion, in order to combine it with the frequency distribution and provide the aggrecate claims distribution.</p>
 <p>The inverse cumulative probability distribution can be used to run simulations over the defined distribution. Reinsurance strucutures can then be applied to use the simulation exercise for reinsurance pricing.</p>
-
+<div style="page-break-after: always;"></div>
 </div>
 <div id="examples" class="section level2">
 <h2>4. Examples</h2>
@@ -388,7 +418,7 @@ Capped Mean (g(x) @ s)+(1-G(s))*(Capped Mean (h(y)@c)-s) &amp; c &gt; s
 <span id="cb3-23"><a href="#cb3-23"></a><span class="kw">head</span>(XoLCededClaims)</span></code></pre></div>
 <pre><code>## [1]     0  9463     0     0     0 11173</code></pre>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">hist</span>(XoLCededClaims, <span class="dt">breaks =</span> <span class="dv">100</span>, <span class="dt">xlim =</span> <span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">100000</span>))</span></code></pre></div>
-<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">summary</span>(XoLCededClaims)</span></code></pre></div>
 <pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 ##       0       0       0    5300       0  201873</code></pre>

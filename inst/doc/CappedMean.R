@@ -1,7 +1,7 @@
-## ----setup, include=FALSE------------------------------------------------
+## ----setup, include=FALSE-----------------------------------------------------
 knitr::opts_chunk$set(echo = TRUE)
 
-## ----capped mean example-------------------------------------------------
+## ----capped mean example------------------------------------------------------
 #required packages
 library("NetSimR")
 library("crch")
@@ -53,9 +53,9 @@ round(cbind(
   ,CensoredModel=LNormCappedMean(Cap,coefficients(lmCensored)[1],coefficients(lmCensored)[2])
 ),0)
 
-## ----Exposure curve LogNormal--------------------------------------------
+## ----Exposure curve LogNormal-------------------------------------------------
 ExposureCurveLNorm(1000,5,1.6)
 
-## ----ILF curve LogNormal-------------------------------------------------
+## ----ILF curve LogNormal------------------------------------------------------
 ILFLNorm(1000,1500,5,1.6)
 

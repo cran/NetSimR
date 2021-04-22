@@ -3,7 +3,6 @@
 \docType{package}
 \name{NetSimR}
 \alias{NetSimR}
-\alias{NetSimR-package}
 \title{NetSimR: A non-life insurance package for computating various statistics.}
 \description{
 The NetSimR package provides three categories of functions:

@@ -1,11 +1,11 @@
-## ----setup, include=FALSE------------------------------------------------
+## ----setup, include=FALSE-----------------------------------------------------
 knitr::opts_chunk$set(echo = TRUE)
 
-## ----sliced mean---------------------------------------------------------
+## ----sliced mean--------------------------------------------------------------
 library("NetSimR")
 round(SlicedLNormParetoMean(6,1.6,10000,1.2),0)
 
-## ----sliced distribution simulation--------------------------------------
+## ----sliced distribution simulation-------------------------------------------
 #set seed
 set.seed(1)
 

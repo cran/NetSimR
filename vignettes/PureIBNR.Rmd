@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ## 1.Introduction
 
 
-This vignette will cover pure IBNR functions of the NetSimR package. It will overview the theory behind these functions, propose possible uses and illustrate examples. The reporting delay distributions supported are LogNormal and Gamma. An application of the pure IBNR functions is suggested in the article "Escaping the triangle" accessible [here](https://www.theactuary.com/features/2019/06/escaping-the-triangle/).
+This vignette will cover pure IBNR functions of the NetSimR package. It will overview the theory behind these functions, propose possible uses and illustrate examples. The reporting delay distributions supported are LogNormal and Gamma. An application of the pure IBNR functions is suggested in the article "Escaping the triangle" accessible [here](https://www.theactuary.com/features/2019/06/2019/06/05/escaping-triangle).
 
 
 

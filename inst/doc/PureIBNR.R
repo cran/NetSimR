@@ -1,7 +1,7 @@
-## ----setup, include=FALSE------------------------------------------------
+## ----setup, include=FALSE-----------------------------------------------------
 knitr::opts_chunk$set(echo = TRUE)
 
-## ----pure IBNR example---------------------------------------------------
+## ----pure IBNR example--------------------------------------------------------
 library("NetSimR")
 #set the seed
 set.seed(0)
@@ -15,7 +15,7 @@ x<-rlnorm(1000,mu,sigma)
 summary(x)
 hist(x, breaks = 100)
 
-## ----pure IBNR example continued-----------------------------------------
+## ----pure IBNR example continued----------------------------------------------
 #Generate dates data
 PoliciesPerDay<-100
 PeriodLength<-365*2

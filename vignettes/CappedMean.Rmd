@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ## 1.Introduction
 
 
-This vignette will cover capped mean functions, exposure and increased limit factor curves of the NetSimR package. It will overview the theory behind these functions, propose posible uses and illustrate examples. The distributions covered for claim severities are LogNormal, Gamma, Pareto, Sliced LogNormal-Pareto, Sliced Gamma-Pareto. An application of the capped mean is suggested in the article "Taken to Excess" accessible [here](https://www.theactuary.com/features/2019/03/taken-to-excess/).
+This vignette will cover capped mean functions, exposure and increased limit factor curves of the NetSimR package. It will overview the theory behind these functions, propose posible uses and illustrate examples. The distributions covered for claim severities are LogNormal, Gamma, Pareto, Sliced LogNormal-Pareto, Sliced Gamma-Pareto. An application of the capped mean is suggested in the article "Taken to Excess" accessible [here](https://www.theactuary.com/features/2019/03/2019/03/06/taken-excess).
 
 
 

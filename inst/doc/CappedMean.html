@@ -1,24 +1,55 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
 
 <head>
 
 <meta charset="utf-8" />
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="pandoc" />
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <meta name="author" content="Yiannis Parizas" />
 
 
 <title>Capped mean, Exposure and Increased Limit Factor curves</title>
 
+<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
+// v0.0.1
+// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
+
+document.addEventListener('DOMContentLoaded', function() {
+  const codeList = document.getElementsByClassName("sourceCode");
+  for (var i = 0; i < codeList.length; i++) {
+    var linkList = codeList[i].getElementsByTagName('a');
+    for (var j = 0; j < linkList.length; j++) {
+      if (linkList[j].innerHTML === "") {
+        linkList[j].setAttribute('aria-hidden', 'true');
+      }
+    }
+  }
+});
+</script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
 
 
-<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  code {
+    white-space: pre;
+  }
+  .sourceCode {
+    overflow: visible;
+  }
+</style>
 <style type="text/css" data-origin="pandoc">
 code.sourceCode > span { display: inline-block; line-height: 1.25; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -109,6 +140,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
 
 
+
 <style type="text/css">body {
 background-color: #fff;
 margin: 1em auto;
@@ -119,9 +151,6 @@ padding-right: 2em;
 font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
 font-size: 14px;
 line-height: 1.35;
-}
-#header {
-text-align: center;
 }
 #TOC {
 clear: both;
@@ -290,7 +319,8 @@ code > span.st { color: #d14; }
 code > span.co { color: #888888; font-style: italic; } 
 code > span.ot { color: #007020; } 
 code > span.al { color: #ff0000; font-weight: bold; } 
-code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61717; background-color: #e3d2d2; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
 </style>
 
 
@@ -305,14 +335,14 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 
 <h1 class="title toc-ignore">Capped mean, Exposure and Increased Limit Factor curves</h1>
 <h4 class="author">Yiannis Parizas</h4>
-<h4 class="date">19-08-2019</h4>
+<h4 class="date">21-04-2021</h4>
 
 
 
 <div id="introduction" class="section level2">
 <h2>1.Introduction</h2>
-<p>This vignette will cover capped mean functions, exposure and increased limit factor curves of the NetSimR package. It will overview the theory behind these functions, propose posible uses and illustrate examples. The distributions covered for claim severities are LogNormal, Gamma, Pareto, Sliced LogNormal-Pareto, Sliced Gamma-Pareto. An application of the capped mean is suggested in the article “Taken to Excess” accessible <a href="https://www.theactuary.com/features/2019/03/taken-to-excess/">here</a>.</p>
-
+<p>This vignette will cover capped mean functions, exposure and increased limit factor curves of the NetSimR package. It will overview the theory behind these functions, propose posible uses and illustrate examples. The distributions covered for claim severities are LogNormal, Gamma, Pareto, Sliced LogNormal-Pareto, Sliced Gamma-Pareto. An application of the capped mean is suggested in the article “Taken to Excess” accessible <a href="https://www.theactuary.com/features/2019/03/2019/03/06/taken-excess">here</a>.</p>
+<div style="page-break-after: always;"></div>
 </div>
 <div id="backround-theory" class="section level2">
 <h2>2.Backround theory</h2>
@@ -328,7 +358,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <div id="increased-limit-factor-curve" class="section level3">
 <h3>2.3 Increased limit factor curve</h3>
 <p>This function provides the ratio of expected capped claims to a higher cap <span class="math inline">\(c_{h}\)</span> to the expected claims of a lower cap <span class="math inline">\(c_{l}\)</span>. Let the claim capped at <span class="math inline">\(c_{h}\)</span> be <span class="math inline">\(y_{h}\)</span> and the claim capped at <span class="math inline">\(c_{h}\)</span> be <span class="math inline">\(y_{h}\)</span>. Increased limit factor curve at a claims caps <span class="math inline">\(c_{h}\)</span> and <span class="math inline">\(c_{l}\)</span> is calculated by: <span class="math display">\[ILF(c_{h},c_{l})=\frac{E(y_{h})}{E(y_{l})}\]</span></p>
-
+<div style="page-break-after: always;"></div>
 </div>
 </div>
 <div id="functions-usage" class="section level2">
@@ -359,7 +389,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <li>Pricing/allocating premium of exess of loss layers.</li>
 <li>Loading for large losses.</li>
 </ul>
-
+<div style="page-break-after: always;"></div>
 </div>
 </div>
 <div id="examples" class="section level2">
@@ -403,7 +433,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">plot</span>(x)</span></code></pre></div>
 <p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASAAAAEgCAMAAAAjXV6yAAAAYFBMVEUAAAAAADoAAGYAOpAAZrY6AAA6ADo6kNtmAABmADpmOpBmZmZmtrZmtttmtv+QOgCQOmaQZgCQkGaQ2/+2ZgC2/7a2///bkDrb2//b/9vb////tmb/25D//7b//9v///+CpixdAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAIkUlEQVR4nO2di3bjJhRF6Uymk77iPty6rSf2///lWA+eAh0BkriKz15dU8UWSGxdLkjBjrqTWVTrE5AOBQEoCEBBAAoCUBCAggAUBKAgAAUBKAhAQQAKAlAQgIIAFASgIAAFASgIQEEACgJQEICCABQEoCAABQEoCEBBAAoCUBCAggAUBKAgAAUBKAhAQQAKAlAQgIIAFASgIAAFASgIQEEACgJQEICCABQEoCAABQEoCEBBAAoCUBCAggAUBKAgAAUBKAhAQQAKAlAQgIIAFASgIAAFASgIQEEACgJQEICCABQEoCAABQEoCEBBAAoCrCxIHYZWgubeW35W2yNQkFr/aBXIE6S2OFw5FASgIIA8QcxBsDqOYutXtx0UBNhZUP4EtTWMIAAFASgIQEEACgJQEICCABQEeDZB2VPUYwmqnoHnPyk4lKDqByEFz5qOJKj+UZocQbfTcEv66Z9VqnPLfAhBF/V12LjqjaLqgpSzwsNYITnodjJaLp//L65u0poVHsbKGMXeX9/05jXRyRZUFwmYBs+RBEeQjF9vbJWDxhCqyUEfWdCjkw2jWBg/WY9cRfz+R/Q8SMKja9GCJHCkiWITRE8UJSB4mJeB4ImiDBhBAMETRRnsPFEsrK4hMuZBEmaECUQIEnFPkUDCRFHGXWkCCRPF5xOUOcw/n6DcieLT5aDsieLTjWKcKCI4UdztuK3ZWRCXAY/wieI8T/1E8fYv3Pe5nwe9v770/7/9nuo+z/5E8ap++KvrRcn88uQRpDNwIrn0bDNRbDL2FSXpztBbcs+OLSaKbe7YSgSdlfrtlG77uscNShxg+csjOLpuc53JQWseNyhxBEE/D6EzO4oNCledKB5G0AJ6Qf345Qz45dU5RY6RgyCdoFHNmsP8cUYxRCfo25de0DNOFDEbRVATNhLUzYFe7jpdV1bXlK2eBz0cPW5IkhNpCtq5utWYDAQU5DGdSvCRq0tkMnrYCNrE8V6C9L38zFPp2tZtM63eLYJuJ3QnW9M400O3MbRLDrqdXtasblJ0szvX3UaxK3iiVt62vuTQjD0yvfAkHUnFNngqT2n5J2qWVVdxKsXVxTSMgjb4hHi0StGCnEzjnHxG8MxYnGYxdY95P4ggT8ri4ImrHIpPBJnc1nQmnaxuJrxV7HKnK9YVpeYCKlHl8PrEqRBBiW7jB08qGNwts7dKDHVK96PwkKIFJSNEuY2MDmixbqiSzXVfDIM2rlS4IHcHFbYpHPBVuDHNKMZBbBRUbnaKn+gMbQXdY70CCopmtmRsxUvIEISG7vjAExHk5aB4jX2cLJ+JCxHkXbnoVUwPPMFWOIpN6pvL+vhE63esri4xkKhIq+yzNzAl9OvLeRogT1BEg/7XaepkWE/XF8m8s+ViI8ECdhfkdBHzr9t/4vNh/a6zbd26LU/+EB0JFrCOoAXPpHUqcY5pM69y33UHq/Ci26JGjc5k8QcE06txD7ZQ05buWFCdr0w33tnLmS86w4+Xt4MmOV1wCEZPbexcwmKxE13conqCMctcYTVe41jfmQxYk5+cl5Uz2o9WBk+R+1E/wILTy2/RKjjNUTZPOM1Vk+0xzkyA2TlxWKP9z22zLRhkJOU6CqffrQW5rfEGJhMDzvnr6ArSmKvxbgqHr/tSvdBzYzhMUsIEDaduOpreQ7lexj3cq2wb7Bb1YspUYETbGDO12lOz42Vui1bCEaTbq/RF9jOFMg2yLbnb1nhGfZFOTJlpgSfJdaF0p/RirL0gtzl3V41tqSPRNtvNwU41Xn3WkO5eoz+7l67Z2NGveUfIa9E6BIJMFCmdfZTOSqOxIDTcLjKV48TduIe/o+Pe5GvvWgy7Z7V7sy7mXcr7/W5M6csajQwtwUxylFXs9zcnadsYcZzezTGDLC1BkNsk5wd7fb0XvSHMxsHUXSzalFUzV2A0Y7bbCoqfa9DE5C54j1SpSaJyNu9eVLcVtKRpWY2vqsr2M7N/e0HLukdxm0uq9Iq1FyScxoLEG9Kzow0ELfvUc9vmL2ErQcs+9dy69QvYSNCyz6y2bvwSNhKU/tSzd+gDwAgCbJeDlnzquXXrMTntzhvFln3quW3rMVnt3upxh3SaCToMjQQtqxS8X/d2bfG63deplILq3qcgCqp7n4IoqO59CqKguvc/vqCPBAUBKAhAQQAKAlAQgIIAFASgIAAFASgIQEEACgKsL+iq+m/uzuPc/yrSFJ1uzHBR47c8lxUHrC7o2n2NYO5ZXfvf1Zqi040ZLv33Fr6VFkesLWhY4HAG38MU8P7aCTJFpxuzB3xJlSo6l5C1BQ3f9XrJ+1Lqy+c/HoJM0enGTFkjqKw4ZHVBP3YRnfou3GSZLgeZotONudK6ixUWR6wtaOjyWR2/6wmdIFN0ujF/yCETlxYHCBDULcaqEHR+RMi3L1+PIig/rPsS5V3MZpxjdLH8xHgZ16O8lWVZEyYHSdKFQ+u5eJgfLDzC5CDDfOHk7Fw+UdQ56CATxb7LlN5qmKLTjbmyavyDO2XFAbxZBVAQgIIAFASgIAAFASgIQEEACgJQEICCABQEoCAABQEoCEBBAAoCUBCAggAUBKAgAAUBKAhAQQAKAlAQgIIA8gRNVhvULj+og4IAFAQQKej99dfXYfV8t37lz07QZVjj0i0Xe39N/bX7LRAq6OGkW97bLY66qvGHbpVUt2gs9Q182yBU0Nd+bd2wvO48vtAvx7x++vunXXucUEFv/ddaDgtUzYLe3tdZ1a05zEW0oIsRpFfC4r82vTaiBQUR1HE7/VK3rDcX0YLGhc7jCz2Xz/+d9hzEZAsaP6gyjmJDtn6rXTqfiWxB/jzoIWZYcL5nmpYnSBgUBKAgAAUBKAhAQQAKAlAQgIIAFASgIAAFASgIQEEACgJQEICCABQEoCAABQEoCEBBAAoCUBDgOwpyF6NmPw1NAAAAAElFTkSuQmCC" /><!-- --></p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">hist</span>(x, <span class="dt">breaks =</span> <span class="dv">400</span>, <span class="dt">xlim =</span> <span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">10000</span>))</span></code></pre></div>
-<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a><span class="co">#cap data</span></span>
 <span id="cb7-2"><a href="#cb7-2"></a>z&lt;-<span class="kw">ifelse</span>(x<span class="op">&gt;</span>Cap,Cap,x)</span>
 <span id="cb7-3"><a href="#cb7-3"></a><span class="kw">head</span>(z)</span></code></pre></div>

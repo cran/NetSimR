@@ -1,24 +1,55 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
 
 <head>
 
 <meta charset="utf-8" />
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="pandoc" />
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <meta name="author" content="Yiannis Parizas" />
 
 
 <title>PureIBNR</title>
 
+<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
+// v0.0.1
+// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
+
+document.addEventListener('DOMContentLoaded', function() {
+  const codeList = document.getElementsByClassName("sourceCode");
+  for (var i = 0; i < codeList.length; i++) {
+    var linkList = codeList[i].getElementsByTagName('a');
+    for (var j = 0; j < linkList.length; j++) {
+      if (linkList[j].innerHTML === "") {
+        linkList[j].setAttribute('aria-hidden', 'true');
+      }
+    }
+  }
+});
+</script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
 
 
-<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  code {
+    white-space: pre;
+  }
+  .sourceCode {
+    overflow: visible;
+  }
+</style>
 <style type="text/css" data-origin="pandoc">
 code.sourceCode > span { display: inline-block; line-height: 1.25; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -109,6 +140,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
 
 
+
 <style type="text/css">body {
 background-color: #fff;
 margin: 1em auto;
@@ -119,9 +151,6 @@ padding-right: 2em;
 font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
 font-size: 14px;
 line-height: 1.35;
-}
-#header {
-text-align: center;
 }
 #TOC {
 clear: both;
@@ -290,7 +319,8 @@ code > span.st { color: #d14; }
 code > span.co { color: #888888; font-style: italic; } 
 code > span.ot { color: #007020; } 
 code > span.al { color: #ff0000; font-weight: bold; } 
-code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61717; background-color: #e3d2d2; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
 </style>
 
 
@@ -305,14 +335,14 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 
 <h1 class="title toc-ignore">PureIBNR</h1>
 <h4 class="author">Yiannis Parizas</h4>
-<h4 class="date">19-08-2019</h4>
+<h4 class="date">21-04-2021</h4>
 
 
 
 <div id="introduction" class="section level2">
 <h2>1.Introduction</h2>
-<p>This vignette will cover pure IBNR functions of the NetSimR package. It will overview the theory behind these functions, propose possible uses and illustrate examples. The reporting delay distributions supported are LogNormal and Gamma. An application of the pure IBNR functions is suggested in the article “Escaping the triangle” accessible <a href="https://www.theactuary.com/features/2019/06/escaping-the-triangle/">here</a>.</p>
-
+<p>This vignette will cover pure IBNR functions of the NetSimR package. It will overview the theory behind these functions, propose possible uses and illustrate examples. The reporting delay distributions supported are LogNormal and Gamma. An application of the pure IBNR functions is suggested in the article “Escaping the triangle” accessible <a href="https://www.theactuary.com/features/2019/06/2019/06/05/escaping-triangle">here</a>.</p>
+<div style="page-break-after: always;"></div>
 </div>
 <div id="backround-theory" class="section level2">
 <h2>2.Backround theory</h2>
@@ -323,7 +353,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <div id="from-reporting-delay-to-pure-ibnr" class="section level3">
 <h3>2.2 From reporting delay to pure IBNR</h3>
 <p>Pure IBNR refers to claims not reported yet to the insurer, while IBNER refers to the over/under estimation in the outstanding part of reported claims. Together the two form the insurer’s reserves for claims occured. Unearned premium will also be calculated by the functions provided, and this relates to future claims from business already written. If we split the period to days, one can think of the reporting delay cumulative distribution function as the proportion of the day earned net of pure IBNR, based on the maximum reporting delay (Maximum reporting delay would be the difference between the reference day and the valuation day). As integration is equivalent to summing the function values, when the partition size is one, one can derive that integrating from the maximum to the minimum reporting delay calculates the pure IBNR earned exposure for the period. This can be proportioned with the full duration and the earned duration, to provide different metrics.</p>
-
+<div style="page-break-after: always;"></div>
 </div>
 </div>
 <div id="functions-usage" class="section level2">
@@ -332,7 +362,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <div id="pure-ibnr" class="section level3">
 <h3>3.1 Pure IBNR</h3>
 <p>The function will input the inception, expiry, valuation dates and estimate the proportions unearned and allocated to pure IBNR. The pure IBNR proportion multiplied by the frequency-severity from exposure rating, can provide an accurate estimate of the reserve. Alternatively mutliplying this with the premium and a loss ratio proxy will provide an acceptable approximation of the reserve. The proportion of the unearned exposure multiplied by the premium will provide the unearned premium reserve. One can use the exposure net of unearned period and pure IBNR as the offset (exposure) for modelling frequency in exposure or experience rating. This will be the modellers choice rather than removing the last periods in situations where data is less. The pure IBNR and unearned exposures can be used for simulating stochastic claim reserves. Following the above, the analyst can incorporate the unearned and pure IBNR exposure models to dashboards, hence automate estimating the reserves. For all the above this method is able to drill down individual segments and be insensitive to portfolio mix changes, when the reporting delay is modelled with generalised linear models. When this method is combined with a truncated regression, the method can adjust for reporting delay development for the latest periods. The method can also reveal patterns otherwise invisible to the analyst. Reinsurance structures are easier to be implemneted on top of this method compared to triangles.</p>
-
+<div style="page-break-after: always;"></div>
 </div>
 </div>
 <div id="examples" class="section level2">
@@ -366,7 +396,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <pre><code>##     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
 ##   0.7895   9.8902  18.9372  32.7484  39.9504 526.5859</code></pre>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">hist</span>(x, <span class="dt">breaks =</span> <span class="dv">100</span>)</span></code></pre></div>
-<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="co">#Generate dates data</span></span>
 <span id="cb4-2"><a href="#cb4-2"></a>PoliciesPerDay&lt;-<span class="dv">100</span></span>
 <span id="cb4-3"><a href="#cb4-3"></a>PeriodLength&lt;-<span class="dv">365</span><span class="op">*</span><span class="dv">2</span></span>
@@ -485,7 +515,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <span id="cb20-19"><a href="#cb20-19"></a><span class="kw">head</span>(SimulatedYears)</span></code></pre></div>
 <pre><code>## [1]  389186  507867 1628801  236865  471060  437146</code></pre>
 <div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a><span class="kw">hist</span>(SimulatedYears, <span class="dt">breaks =</span> <span class="dv">1000</span>, <span class="dt">xlim =</span> <span class="kw">c</span>(<span class="dv">0</span>,<span class="fl">1.5e6</span>))</span></code></pre></div>
-<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
 <div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1"></a><span class="kw">summary</span>(SimulatedYears)</span></code></pre></div>
 <pre><code>##     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
 ##   157777   293934   335702   373093   394701 25837662</code></pre>

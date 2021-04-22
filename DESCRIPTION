@@ -1,7 +1,7 @@
 Package: NetSimR
 Type: Package
 Title: Actuarial Functions for Non-Life Insurance Modelling
-Version: 0.1.0
+Version: 0.1.1
 Author: Yiannis Parizas [aut, cre]
 Authors@R: person("Yiannis", "Parizas", email = "yiannis.parizas@gmail.com", role = c("aut", "cre"))
 Maintainer: Yiannis Parizas <yiannis.parizas@gmail.com>
@@ -21,11 +21,10 @@ Description: Assists actuaries and other insurance modellers in pricing,
     Gamma distribution for reporting delay.
 License: GPL-3
 Encoding: UTF-8
-LazyData: true
-Suggests: knitr, crch, testthat
+Suggests: knitr, crch, testthat, rmarkdown
 VignetteBuilder: knitr
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.1
 NeedsCompilation: no
-Packaged: 2019-08-19 16:31:54 UTC; yiann
+Packaged: 2021-04-21 17:36:30 UTC; yiann
 Repository: CRAN
-Date/Publication: 2019-08-20 11:30:12 UTC
+Date/Publication: 2021-04-22 01:50:02 UTC

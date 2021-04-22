@@ -6,13 +6,13 @@ citEntry(entry = "Article",
   journal      = "The Actuary Magazine",
   year         = "2019",
   volume       = "March",
-  url          = "https://www.theactuary.com/features/2019/03/taken-to-excess/",
+  url          = "https://www.theactuary.com/features/2019/03/2019/03/06/taken-excess",
 
   textVersion  =
   paste("Yiannis Parizas (2019).",
         "Taken to excess",
         "The Actuary Magazine March 2019",
-        "URL https://www.theactuary.com/features/2019/03/taken-to-excess/"),
+        "URL https://www.theactuary.com/features/2019/03/2019/03/06/taken-excess"),
 )
 
 
@@ -22,11 +22,11 @@ citEntry(entry = "Article",
   journal      = "The Actuary Magazine",
   year         = "2019",
   volume       = "June",
-  url          = "https://www.theactuary.com/features/2019/06/escaping-the-triangle/",
+  url          = "https://www.theactuary.com/features/2019/06/2019/06/05/escaping-triangle",
 
   textVersion  =
   paste("Yiannis Parizas (2019).",
         "Escaping the triangle",
         "The Actuary Magazine June 2019",
-        "URL https://www.theactuary.com/features/2019/06/escaping-the-triangle/"),
+        "URL https://www.theactuary.com/features/2019/06/2019/06/05/escaping-triangle"),
 )
