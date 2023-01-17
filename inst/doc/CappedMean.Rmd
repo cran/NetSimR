@@ -26,7 +26,7 @@ This vignette will cover capped mean functions, exposure and increased limit fac
 ## 2.Backround theory
 
 
-Let claim severity $x$ originate from a probability density function $f(x)$ and a cumulative density funtion $F(x)$.
+Let claim severity $x$ originate from a probability density function $f(x)$ and a cumulative density function $F(x)$.
 Let claims be capped at amount $c$.
 The capped claim severity is defined as $y=Min(x,c)$.
 
@@ -56,7 +56,7 @@ In this section we will suggest possible uses of the specified functions.
 
 ### 3.1 Capped mean
 - Restricting expected claims from being modelled beyond the property's value, in property lines.
-- Modelling attitional losses with a censored or truncated distribution, in order to improve our estimate. Large claims will be modelled separately. This is can be extended to Generalised Linear Models.
+- Modelling attritional losses with a censored or truncated distribution, in order to improve our estimate. Large claims will be modelled separately. This can be extended to Generalised Linear Models.
 - Estimating the cost of deductibles.
 - Pricing reinsurance excess of loss layers.
 

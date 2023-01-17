@@ -8,6 +8,7 @@
 #' @param scale A positive real number - the scale parameter of the Claim Severity's Pareto distribution.
 #' @param shape A positive real number - the shape parameter of the Claim Severity's Pareto distribution.
 #' @return An interim calculation for the mean of the claim severity capped at \code{cap} with a Pareto distribution with parameters \code{scale} and \code{shape}.
+#' @export
 #' @examples
 #' ParetoCappedMeanCalc(800,100,1.1)
 #' ParetoCappedMeanCalc(1000,500,0.9)
@@ -23,6 +24,7 @@ ParetoCappedMeanCalc<-function(cap,scale,shape){
 #' @param scale A positive real number - the scale parameter of the Claim Severity's Pareto distribution.
 #' @param shape A positive real number - the shape parameter of the Claim Severity's Pareto distribution.
 #' @return The mean of the claim severity capped at \code{cap} with a Pareto distribution with parameters \code{scale} and \code{shape}.
+#' @export
 #' @examples
 #' ParetoCappedMean(600,200,1.2)
 #' ParetoCappedMean(800,100,1)
@@ -43,6 +45,7 @@ ParetoCappedMean<-function(cap,scale,shape){
 #' @param scale A positive real number - the scale parameter of the Claim Severity's Pareto distribution.
 #' @param shape A positive real number - the shape parameter of the Claim Severity's Pareto distribution.
 #' @return The value of the Exposure curve at \code{x} with Claim Severity from a Pareto distribution with parameters \code{scale} and \code{shape}.
+#' @export
 #' @examples
 #' ExposureCurvePareto(700,500,1.2)
 #' ExposureCurvePareto(20000,200,1.1)
@@ -63,6 +66,7 @@ ExposureCurvePareto<-function(x,scale,shape){
 #' @param scale A positive real number - the scale parameter of the Claim Severity's Pareto distribution.
 #' @param shape A positive real number - the shape parameter of the Claim Severity's Pareto distribution.
 #' @return The value of the Increased Limit Factor curve from \code{xLow} to \code{xHigh} with Claim Severity from a Pareto distribution with parameters \code{scale} and \code{shape}.
+#' @export
 #' @examples
 #' ILFPareto(700,1200,500,1.2)
 #' ILFPareto(1200,20000,200,1.1)

@@ -9,6 +9,7 @@
 #' @param SlicePoint A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution.
 #' @param shape A positive real number - the shape parameter of the tail Claim Severity's Pareto distribution.
 #' @return The mean of the claim severity with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}.
+#' @export
 #' @examples
 #' SlicedLNormParetoMean(6,1.5,1000,1.2)
 #' SlicedLNormParetoMean(6.5,1.4,2000,1.6)
@@ -31,6 +32,7 @@ SlicedLNormParetoMean<-function(mu, sigma, SlicePoint, shape){
 #' @param SlicePoint A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution.
 #' @param shape A positive real number - the shape parameter of the tail Claim Severity's Pareto distribution.
 #' @return The mean of the claim severity capped at \code{cap} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}.
+#' @export
 #' @examples
 #' SlicedLNormParetoCappedMean(1200,6,1.5,1000,1.2)
 #' SlicedLNormParetoCappedMean(2500,6.5,1.4,2000,1.6)
@@ -53,6 +55,7 @@ SlicedLNormParetoCappedMean<-function(cap,mu, sigma, SlicePoint, shape){
 #' @param SlicePoint A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution.
 #' @param shape A positive real number - the shape parameter of the tail Claim Severity's Pareto distribution.
 #' @return The value of the Exposure curve at \code{x} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}.
+#' @export
 #' @examples
 #' ExposureCurveSlicedLNormPareto(1200,6,1.5,1000,1.2)
 #' ExposureCurveSlicedLNormPareto(4000,7,1.6,3000,1.4)
@@ -75,6 +78,7 @@ ExposureCurveSlicedLNormPareto<-function(x, mu, sigma, SlicePoint, shape){
 #' @param SlicePoint A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution.
 #' @param shape A positive real number - the shape parameter of the tail Claim Severity's Pareto distribution.
 #' @return The value of the Increased Limit Factor curve from \code{xLow} to \code{xHigh} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}.
+#' @export
 #' @examples
 #' ILFSlicedLNormPareto(800,1200,6,1.5,1000,1.2)
 #' ILFSlicedLNormPareto(2000,4000,7,1.6,3000,1.4)
@@ -92,6 +96,7 @@ ILFSlicedLNormPareto<-function(xLow,xHigh, mu, sigma, SlicePoint, shape){
 #' @param SlicePoint A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution.
 #' @param shape A positive real number - the shape parameter of the tail Claim Severity's Pareto distribution.
 #' @return The value of the cumulative density function (cdf) at \code{x} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}.
+#' @export
 #' @examples
 #' pSlicedLNormPareto(1200,6,1.5,1000,1.2)
 #' pSlicedLNormPareto(4000,7,1.6,3000,1.4)
@@ -112,6 +117,7 @@ pSlicedLNormPareto<-function(x, mu, sigma, SlicePoint, shape){
 #' @param SlicePoint A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution.
 #' @param shape A positive real number - the shape parameter of the tail Claim Severity's Pareto distribution.
 #' @return The value of the inverse cumulative density function at \code{q} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}.
+#' @export
 #' @examples
 #' qSlicedLNormPareto(0.5,6,1.5,1000,1.2)
 #' qSlicedLNormPareto(0.7,7,1.6,3000,1.4)
@@ -134,6 +140,7 @@ qSlicedLNormPareto<-function(q, mu, sigma, SlicePoint, shape){
 #' @param SlicePoint A positive real number - the slice point and the scale parameter of the Claim Severity's Pareto distribution.
 #' @param shape A positive real number - the shape parameter of the Claim Severity's Pareto distribution.
 #' @return The value of the probability density function (pdf) at \code{x} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}.
+#' @export
 #' @examples
 #' dSlicedLNormPareto(1200,6,1.5,1000,1.2)
 #' dSlicedLNormPareto(4000,7,1.6,3000,1.4)

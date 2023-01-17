@@ -15,106 +15,103 @@
 
 <title>Capped mean, Exposure and Increased Limit Factor curves</title>
 
-<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
-// v0.0.1
-// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
-
-document.addEventListener('DOMContentLoaded', function() {
-  const codeList = document.getElementsByClassName("sourceCode");
-  for (var i = 0; i < codeList.length; i++) {
-    var linkList = codeList[i].getElementsByTagName('a');
-    for (var j = 0; j < linkList.length; j++) {
-      if (linkList[j].innerHTML === "") {
-        linkList[j].setAttribute('aria-hidden', 'true');
-      }
-    }
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
   }
 });
 </script>
 
 <style type="text/css">
-  code{white-space: pre-wrap;}
-  span.smallcaps{font-variant: small-caps;}
-  span.underline{text-decoration: underline;}
-  div.column{display: inline-block; vertical-align: top; width: 50%;}
-  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
-  ul.task-list{list-style: none;}
-    </style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
 
 
 <style type="text/css">
-  code {
-    white-space: pre;
-  }
-  .sourceCode {
-    overflow: visible;
-  }
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
 </style>
 <style type="text/css" data-origin="pandoc">
-code.sourceCode > span { display: inline-block; line-height: 1.25; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-code.sourceCode > span:empty { height: 1.2em; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
-code.sourceCode { white-space: pre; position: relative; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
 div.sourceCode { margin: 1em 0; }
 pre.sourceCode { margin: 0; }
 @media screen {
 div.sourceCode { overflow: auto; }
 }
 @media print {
-code.sourceCode { white-space: pre-wrap; }
-code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
-  { counter-reset: source-line 0; }
+{ counter-reset: source-line 0; }
 pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
+{ position: relative; left: -4em; counter-increment: source-line; }
 pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-    color: #aaaaaa;
-  }
-pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
 }
-code span.al { color: #ff0000; font-weight: bold; } /* Alert */
-code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-code span.at { color: #7d9029; } /* Attribute */
-code span.bn { color: #40a070; } /* BaseN */
-code span.bu { } /* BuiltIn */
-code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-code span.ch { color: #4070a0; } /* Char */
-code span.cn { color: #880000; } /* Constant */
-code span.co { color: #60a0b0; font-style: italic; } /* Comment */
-code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-code span.do { color: #ba2121; font-style: italic; } /* Documentation */
-code span.dt { color: #902000; } /* DataType */
-code span.dv { color: #40a070; } /* DecVal */
-code span.er { color: #ff0000; font-weight: bold; } /* Error */
-code span.ex { } /* Extension */
-code span.fl { color: #40a070; } /* Float */
-code span.fu { color: #06287e; } /* Function */
-code span.im { } /* Import */
-code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
-code span.kw { color: #007020; font-weight: bold; } /* Keyword */
-code span.op { color: #666666; } /* Operator */
-code span.ot { color: #007020; } /* Other */
-code span.pp { color: #bc7a00; } /* Preprocessor */
-code span.sc { color: #4070a0; } /* SpecialChar */
-code span.ss { color: #bb6688; } /* SpecialString */
-code span.st { color: #4070a0; } /* String */
-code span.va { color: #19177c; } /* Variable */
-code span.vs { color: #4070a0; } /* VerbatimString */
-code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
-
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
 </style>
 <script>
 // apply pandoc div.sourceCode style to pre.sourceCode instead
@@ -123,13 +120,20 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   for (var i = 0; i < sheets.length; i++) {
     if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
     try { var rules = sheets[i].cssRules; } catch (e) { continue; }
-    for (var j = 0; j < rules.length; j++) {
+    var j = 0;
+    while (j < rules.length) {
       var rule = rules[j];
       // check if there is a div.sourceCode rule
-      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
       var style = rule.style.cssText;
       // check if color or background-color is set
-      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
       // replace div.sourceCode by a pre.sourceCode rule
       sheets[i].deleteRule(j);
       sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
@@ -333,42 +337,67 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 
 
-<h1 class="title toc-ignore">Capped mean, Exposure and Increased Limit Factor curves</h1>
+<h1 class="title toc-ignore">Capped mean, Exposure and Increased Limit
+Factor curves</h1>
 <h4 class="author">Yiannis Parizas</h4>
-<h4 class="date">21-04-2021</h4>
+<h4 class="date">18-01-2023</h4>
 
 
 
 <div id="introduction" class="section level2">
 <h2>1.Introduction</h2>
-<p>This vignette will cover capped mean functions, exposure and increased limit factor curves of the NetSimR package. It will overview the theory behind these functions, propose posible uses and illustrate examples. The distributions covered for claim severities are LogNormal, Gamma, Pareto, Sliced LogNormal-Pareto, Sliced Gamma-Pareto. An application of the capped mean is suggested in the article “Taken to Excess” accessible <a href="https://www.theactuary.com/features/2019/03/2019/03/06/taken-excess">here</a>.</p>
+<p>This vignette will cover capped mean functions, exposure and
+increased limit factor curves of the NetSimR package. It will overview
+the theory behind these functions, propose posible uses and illustrate
+examples. The distributions covered for claim severities are LogNormal,
+Gamma, Pareto, Sliced LogNormal-Pareto, Sliced Gamma-Pareto. An
+application of the capped mean is suggested in the article “Taken to
+Excess” accessible <a href="https://www.theactuary.com/features/2019/03/2019/03/06/taken-excess">here</a>.</p>
 <div style="page-break-after: always;"></div>
 </div>
 <div id="backround-theory" class="section level2">
 <h2>2.Backround theory</h2>
-<p>Let claim severity <span class="math inline">\(x\)</span> originate from a probability density function <span class="math inline">\(f(x)\)</span> and a cumulative density funtion <span class="math inline">\(F(x)\)</span>. Let claims be capped at amount <span class="math inline">\(c\)</span>. The capped claim severity is defined as <span class="math inline">\(y=Min(x,c)\)</span>.</p>
+<p>Let claim severity <span class="math inline">\(x\)</span> originate
+from a probability density function <span class="math inline">\(f(x)\)</span> and a cumulative density function
+<span class="math inline">\(F(x)\)</span>. Let claims be capped at
+amount <span class="math inline">\(c\)</span>. The capped claim severity
+is defined as <span class="math inline">\(y=Min(x,c)\)</span>.</p>
 <div id="capped-mean" class="section level3">
 <h3>2.1 Capped mean</h3>
-<p>The expected mean can be estimated by: <span class="math display">\[E(x)=\int_0^{\infty}x*f(x)~dx\]</span> The expected capped claim can be obtained by: <span class="math display">\[E(y)=\int_0^{\infty}y*f(x)~dx\]</span> The above simplifies to: <span class="math display">\[E(y)=c-\int_0^{c}F(x)~dx\]</span> This equation will need to be solved for every distribution.</p>
+<p>The expected mean can be estimated by: <span class="math display">\[E(x)=\int_0^{\infty}x*f(x)~dx\]</span> The
+expected capped claim can be obtained by: <span class="math display">\[E(y)=\int_0^{\infty}y*f(x)~dx\]</span> The above
+simplifies to: <span class="math display">\[E(y)=c-\int_0^{c}F(x)~dx\]</span> This equation
+will need to be solved for every distribution.</p>
 </div>
 <div id="exposure-curve" class="section level3">
 <h3>2.2 Exposure curve</h3>
-<p>This function provides the percentage of total claims cost that lies below a certain claims level. Exposure curve at a claims cap is calculated by: <span class="math display">\[EC(c)=\frac{E(y)}{E(x)}\]</span></p>
+<p>This function provides the percentage of total claims cost that lies
+below a certain claims level. Exposure curve at a claims cap is
+calculated by: <span class="math display">\[EC(c)=\frac{E(y)}{E(x)}\]</span></p>
 </div>
 <div id="increased-limit-factor-curve" class="section level3">
 <h3>2.3 Increased limit factor curve</h3>
-<p>This function provides the ratio of expected capped claims to a higher cap <span class="math inline">\(c_{h}\)</span> to the expected claims of a lower cap <span class="math inline">\(c_{l}\)</span>. Let the claim capped at <span class="math inline">\(c_{h}\)</span> be <span class="math inline">\(y_{h}\)</span> and the claim capped at <span class="math inline">\(c_{h}\)</span> be <span class="math inline">\(y_{h}\)</span>. Increased limit factor curve at a claims caps <span class="math inline">\(c_{h}\)</span> and <span class="math inline">\(c_{l}\)</span> is calculated by: <span class="math display">\[ILF(c_{h},c_{l})=\frac{E(y_{h})}{E(y_{l})}\]</span></p>
+<p>This function provides the ratio of expected capped claims to a
+higher cap <span class="math inline">\(c_{h}\)</span> to the expected
+claims of a lower cap <span class="math inline">\(c_{l}\)</span>. Let
+the claim capped at <span class="math inline">\(c_{h}\)</span> be <span class="math inline">\(y_{h}\)</span> and the claim capped at <span class="math inline">\(c_{h}\)</span> be <span class="math inline">\(y_{h}\)</span>. Increased limit factor curve at a
+claims caps <span class="math inline">\(c_{h}\)</span> and <span class="math inline">\(c_{l}\)</span> is calculated by: <span class="math display">\[ILF(c_{h},c_{l})=\frac{E(y_{h})}{E(y_{l})}\]</span></p>
 <div style="page-break-after: always;"></div>
 </div>
 </div>
 <div id="functions-usage" class="section level2">
 <h2>3. Functions usage</h2>
-<p>In this section we will suggest possible uses of the specified functions.</p>
+<p>In this section we will suggest possible uses of the specified
+functions.</p>
 <div id="capped-mean-1" class="section level3">
 <h3>3.1 Capped mean</h3>
 <ul>
-<li>Restricting expected claims from being modelled beyond the property’s value, in property lines.</li>
-<li>Modelling attitional losses with a censored or truncated distribution, in order to improve our estimate. Large claims will be modelled separately. This is can be extended to Generalised Linear Models.</li>
+<li>Restricting expected claims from being modelled beyond the
+property’s value, in property lines.</li>
+<li>Modelling attritional losses with a censored or truncated
+distribution, in order to improve our estimate. Large claims will be
+modelled separately. This can be extended to Generalised Linear
+Models.</li>
 <li>Estimating the cost of deductibles.</li>
 <li>Pricing reinsurance excess of loss layers.</li>
 </ul>
@@ -380,7 +409,10 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <li>Pricing/allocating premium of exess of loss layers.</li>
 <li>Loading for large losses.</li>
 </ul>
-<p>Note: for property lines, instead of severity, we may opt to model severity as a percentage of sum insured. In GLMs this is equivalent to having the sum insured as the exposure for the severity distribution.</p>
+<p>Note: for property lines, instead of severity, we may opt to model
+severity as a percentage of sum insured. In GLMs this is equivalent to
+having the sum insured as the exposure for the severity
+distribution.</p>
 </div>
 <div id="increased-limit-factor-curve-1" class="section level3">
 <h3>3.3 Increased limit factor curve</h3>
@@ -396,7 +428,9 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <h2>4. Examples</h2>
 <div id="capped-mean-2" class="section level3">
 <h3>4.1 Capped mean</h3>
-<p>The below code ilustrates an alternative and more accurate approach to applying capping in regressions, for modelling attritional claims part. The code steps are:</p>
+<p>The below code ilustrates an alternative and more accurate approach
+to applying capping in regressions, for modelling attritional claims
+part. The code steps are:</p>
 <ul>
 <li>Simulate 10,000 claims</li>
 <li>Cap the claims</li>
@@ -409,45 +443,49 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <li>the mean of the capped claims data</li>
 </ul></li>
 </ul>
-<p>The example suggests that the proposed method outperforms the market approach on LogNormal distribution. The one-way benefit will not be significant on a Gamma distribution, but when we move to a GLM and the model relativities are larger, the capped mean benefit may also be significant.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="co">#required packages</span></span>
-<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">library</span>(<span class="st">&quot;NetSimR&quot;</span>)</span>
-<span id="cb1-3"><a href="#cb1-3"></a><span class="kw">library</span>(<span class="st">&quot;crch&quot;</span>)</span>
-<span id="cb1-4"><a href="#cb1-4"></a></span>
-<span id="cb1-5"><a href="#cb1-5"></a><span class="co">#Set parameters</span></span>
-<span id="cb1-6"><a href="#cb1-6"></a>n&lt;-<span class="dv">10000</span></span>
-<span id="cb1-7"><a href="#cb1-7"></a>mu&lt;-<span class="dv">6</span></span>
-<span id="cb1-8"><a href="#cb1-8"></a>sigma&lt;-<span class="fl">1.7</span></span>
-<span id="cb1-9"><a href="#cb1-9"></a>Cap &lt;-<span class="st"> </span><span class="dv">10000</span></span>
-<span id="cb1-10"><a href="#cb1-10"></a></span>
-<span id="cb1-11"><a href="#cb1-11"></a><span class="co">#Set seed to keep simulations constant</span></span>
-<span id="cb1-12"><a href="#cb1-12"></a><span class="kw">set.seed</span>(<span class="dv">10</span>)</span>
-<span id="cb1-13"><a href="#cb1-13"></a></span>
-<span id="cb1-14"><a href="#cb1-14"></a><span class="co">#Simulate data</span></span>
-<span id="cb1-15"><a href="#cb1-15"></a>x&lt;-<span class="kw">round</span>(<span class="kw">rlnorm</span>(n,mu,sigma),<span class="dv">0</span>)</span>
-<span id="cb1-16"><a href="#cb1-16"></a><span class="kw">head</span>(x)</span></code></pre></div>
+<p>The example suggests that the proposed method outperforms the market
+approach on LogNormal distribution. The one-way benefit will not be
+significant on a Gamma distribution, but when we move to a GLM and the
+model relativities are larger, the capped mean benefit may also be
+significant.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">#required packages</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;NetSimR&quot;</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;crch&quot;</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co">#Set parameters</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>n<span class="ot">&lt;-</span><span class="dv">10000</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>mu<span class="ot">&lt;-</span><span class="dv">6</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>sigma<span class="ot">&lt;-</span><span class="fl">1.7</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>Cap <span class="ot">&lt;-</span> <span class="dv">10000</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co">#Set seed to keep simulations constant</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">10</span>)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="co">#Simulate data</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>x<span class="ot">&lt;-</span><span class="fu">round</span>(<span class="fu">rlnorm</span>(n,mu,sigma),<span class="dv">0</span>)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(x)</span></code></pre></div>
 <pre><code>## [1] 416 295  39 146 666 783</code></pre>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">summary</span>(x)</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(x)</span></code></pre></div>
 <pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 ##       1     128     400    1769    1279  263389</code></pre>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">plot</span>(x)</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x)</span></code></pre></div>
 <p><img src="data:image/png;base64,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" /><!-- --></p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">hist</span>(x, <span class="dt">breaks =</span> <span class="dv">400</span>, <span class="dt">xlim =</span> <span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">10000</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(x, <span class="at">breaks =</span> <span class="dv">400</span>, <span class="at">xlim =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">10000</span>))</span></code></pre></div>
 <p><img src="data:image/png;base64,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" /><!-- --></p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a><span class="co">#cap data</span></span>
-<span id="cb7-2"><a href="#cb7-2"></a>z&lt;-<span class="kw">ifelse</span>(x<span class="op">&gt;</span>Cap,Cap,x)</span>
-<span id="cb7-3"><a href="#cb7-3"></a><span class="kw">head</span>(z)</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">#cap data</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>z<span class="ot">&lt;-</span><span class="fu">ifelse</span>(x<span class="sc">&gt;</span>Cap,Cap,x)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(z)</span></code></pre></div>
 <pre><code>## [1] 416 295  39 146 666 783</code></pre>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">summary</span>(z)</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(z)</span></code></pre></div>
 <pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 ##       1     128     400    1282    1279   10000</code></pre>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a><span class="kw">plot</span>(z)</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(z)</span></code></pre></div>
 <p><img src="data:image/png;base64,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" /><!-- --></p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="kw">hist</span>(z, <span class="dt">breaks =</span> <span class="dv">200</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(z, <span class="at">breaks =</span> <span class="dv">200</span>)</span></code></pre></div>
 <p><img src="data:image/png;base64,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" /><!-- --></p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a><span class="co">#fit linear regression</span></span>
-<span id="cb13-2"><a href="#cb13-2"></a>lmLinear&lt;-<span class="kw">lm</span>(<span class="kw">log</span>(z)<span class="op">~</span><span class="dv">1</span>)</span>
-<span id="cb13-3"><a href="#cb13-3"></a><span class="kw">summary</span>(lmLinear)</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co">#fit linear regression</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>lmLinear<span class="ot">&lt;-</span><span class="fu">lm</span>(<span class="fu">log</span>(z)<span class="sc">~</span><span class="dv">1</span>)</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(lmLinear)</span></code></pre></div>
 <pre><code>## 
 ## Call:
 ## lm(formula = log(z) ~ 1)
@@ -463,9 +501,9 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## Residual standard error: 1.662 on 9999 degrees of freedom</code></pre>
-<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a><span class="co">#fit right censored regression</span></span>
-<span id="cb15-2"><a href="#cb15-2"></a>lmCensored&lt;-<span class="kw">crch</span>(<span class="kw">log</span>(z)<span class="op">~</span><span class="dv">1</span>, <span class="dt">right =</span> <span class="kw">log</span>(Cap), <span class="dt">link.scale=</span><span class="st">&quot;identity&quot;</span>, <span class="dt">dist =</span> <span class="st">&quot;gaussian&quot;</span>)</span>
-<span id="cb15-3"><a href="#cb15-3"></a><span class="kw">summary</span>(lmCensored)</span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co">#fit right censored regression</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>lmCensored<span class="ot">&lt;-</span><span class="fu">crch</span>(<span class="fu">log</span>(z)<span class="sc">~</span><span class="dv">1</span>, <span class="at">right =</span> <span class="fu">log</span>(Cap), <span class="at">link.scale=</span><span class="st">&quot;identity&quot;</span>, <span class="at">dist =</span> <span class="st">&quot;gaussian&quot;</span>)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(lmCensored)</span></code></pre></div>
 <pre><code>## 
 ## Call:
 ## crch(formula = log(z) ~ 1, link.scale = &quot;identity&quot;, dist = &quot;gaussian&quot;, 
@@ -488,36 +526,48 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 ## Distribution: gaussian
 ## Log-likelihood: -1.936e+04 on 2 Df
 ## Number of iterations in BFGS optimization: 6</code></pre>
-<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1"></a><span class="co">#Compare regression outputs</span></span>
-<span id="cb17-2"><a href="#cb17-2"></a><span class="kw">cbind</span>(<span class="kw">coefficients</span>(lmLinear),<span class="kw">summary</span>(lmLinear)<span class="op">$</span>sigma)</span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Compare regression outputs</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cbind</span>(<span class="fu">coefficients</span>(lmLinear),<span class="fu">summary</span>(lmLinear)<span class="sc">$</span>sigma)</span></code></pre></div>
 <pre><code>##                 [,1]     [,2]
 ## (Intercept) 5.981527 1.662243</code></pre>
-<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1"></a><span class="kw">coefficients</span>(lmCensored)</span></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">coefficients</span>(lmCensored)</span></code></pre></div>
 <pre><code>##         (Intercept) (scale)_(Intercept) 
 ##            6.000537            1.705257</code></pre>
-<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1"></a><span class="co">#Compare regressions&#39; attritional capped cost to empirical</span></span>
-<span id="cb21-2"><a href="#cb21-2"></a><span class="kw">round</span>(<span class="kw">cbind</span>(</span>
-<span id="cb21-3"><a href="#cb21-3"></a>  <span class="dt">Empirical=</span><span class="kw">mean</span>(z)</span>
-<span id="cb21-4"><a href="#cb21-4"></a>  ,<span class="dt">LinearModel=</span><span class="kw">exp</span>(<span class="kw">coefficients</span>(lmLinear)<span class="op">+</span><span class="fl">0.5</span><span class="op">*</span><span class="kw">summary</span>(lmLinear)<span class="op">$</span>sigma<span class="op">*</span><span class="kw">summary</span>(lmLinear)<span class="op">$</span>sigma)</span>
-<span id="cb21-5"><a href="#cb21-5"></a>  ,<span class="dt">CensoredModel=</span><span class="kw">LNormCappedMean</span>(Cap,<span class="kw">coefficients</span>(lmCensored)[<span class="dv">1</span>],<span class="kw">coefficients</span>(lmCensored)[<span class="dv">2</span>])</span>
-<span id="cb21-6"><a href="#cb21-6"></a>),<span class="dv">0</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Compare regressions&#39; attritional capped cost to empirical</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">cbind</span>(</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">Empirical=</span><span class="fu">mean</span>(z)</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  ,<span class="at">LinearModel=</span><span class="fu">exp</span>(<span class="fu">coefficients</span>(lmLinear)<span class="sc">+</span><span class="fl">0.5</span><span class="sc">*</span><span class="fu">summary</span>(lmLinear)<span class="sc">$</span>sigma<span class="sc">*</span><span class="fu">summary</span>(lmLinear)<span class="sc">$</span>sigma)</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>  ,<span class="at">CensoredModel=</span><span class="fu">LNormCappedMean</span>(Cap,<span class="fu">coefficients</span>(lmCensored)[<span class="dv">1</span>],<span class="fu">coefficients</span>(lmCensored)[<span class="dv">2</span>])</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>),<span class="dv">0</span>)</span></code></pre></div>
 <pre><code>##             Empirical LinearModel CensoredModel
 ## (Intercept)      1282        1577          1284</code></pre>
-<p>Modelling excess levels would be similar to the above approach. In that case the expected mean above the excess levels would be the mean less the expected mean below the excess level. This is elaborated in the article cited in the introduction section.</p>
+<p>Modelling excess levels would be similar to the above approach. In
+that case the expected mean above the excess levels would be the mean
+less the expected mean below the excess level. This is elaborated in the
+article cited in the introduction section.</p>
 </div>
 <div id="exposure-curve-2" class="section level3">
 <h3>4.2 Exposure curve</h3>
-<p>For a LogNormal severity, generating the exposure curve value at a particular point is obtained by running the below code:</p>
-<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1"></a><span class="kw">ExposureCurveLNorm</span>(<span class="dv">1000</span>,<span class="dv">5</span>,<span class="fl">1.6</span>)</span></code></pre></div>
+<p>For a LogNormal severity, generating the exposure curve value at a
+particular point is obtained by running the below code:</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ExposureCurveLNorm</span>(<span class="dv">1000</span>,<span class="dv">5</span>,<span class="fl">1.6</span>)</span></code></pre></div>
 <pre><code>## [1] 0.5601327</code></pre>
-<p>This would be interpreted as: 56% of the expected cost is up to 1,000 currency units. Other distributions follow the same logic. The challenge for this exercise would be fitting the correct severity distribution, rather than calculating the Exposure curve’s value.</p>
+<p>This would be interpreted as: 56% of the expected cost is up to 1,000
+currency units. Other distributions follow the same logic. The challenge
+for this exercise would be fitting the correct severity distribution,
+rather than calculating the Exposure curve’s value.</p>
 </div>
 <div id="increased-limit-factor-curve-2" class="section level3">
 <h3>4.3 Increased limit factor curve</h3>
-<p>For a LogNormal severity, generating the increased limit factor value between two particular points is obtained by running the below code:</p>
-<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1"></a><span class="kw">ILFLNorm</span>(<span class="dv">1000</span>,<span class="dv">1500</span>,<span class="dv">5</span>,<span class="fl">1.6</span>)</span></code></pre></div>
+<p>For a LogNormal severity, generating the increased limit factor value
+between two particular points is obtained by running the below code:</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ILFLNorm</span>(<span class="dv">1000</span>,<span class="dv">1500</span>,<span class="dv">5</span>,<span class="fl">1.6</span>)</span></code></pre></div>
 <pre><code>## [1] 1.155086</code></pre>
-<p>This would be interpreted as: the expected cost of the claims up to 1,500 currency units is 1.155 times the expected cost is up to 1,000 currency units. Other distributions follow the same logic. The challenge for this exercise would be fitting the severity distribution, rather than calculating the Increased Limit Factor curve’s value.</p>
+<p>This would be interpreted as: the expected cost of the claims up to
+1,500 currency units is 1.155 times the expected cost is up to 1,000
+currency units. Other distributions follow the same logic. The challenge
+for this exercise would be fitting the severity distribution, rather
+than calculating the Increased Limit Factor curve’s value.</p>
 </div>
 </div>
 

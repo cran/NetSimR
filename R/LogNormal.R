@@ -8,6 +8,7 @@
 #'
 #' @param x A real number.
 #' @return The value of the error function at \code{x}.
+#' @export
 #' @examples
 #' erf(0.1)
 #' erf(0.5)
@@ -21,6 +22,7 @@ erf<-function(x){2*pnorm(sqrt(2)*x)-1}
 #' @param mu A real number - the first parameter of the Claim Severity's LogNormal distribution.
 #' @param sigma A positive real number - the second parameter of the Claim Severity's LogNormal distribution.
 #' @return The mean of the claim severity capped at \code{cap} with a LogNormal distribution with parameters \code{mu} and \code{sigma}.
+#' @export
 #' @examples
 #' LNormCappedMean(2000,6,1.5)
 #' LNormCappedMean(1000,5,1.6)
@@ -36,6 +38,7 @@ LNormCappedMean<- function(cap,mu,sigma){
 #' @param mu A real number - the first parameter of the Claim Severity's LogNormal distribution.
 #' @param sigma A positive real number - the second parameter of the Claim Severity's LogNormal distribution.
 #' @return The value of the Exposure curve at \code{x} with Claim Severity from a LogNormal distribution with parameters \code{mu} and \code{sigma}.
+#' @export
 #' @examples
 #' ExposureCurveLNorm(2000,6,1.5)
 #' ExposureCurveLNorm(1000,5,1.6)
@@ -52,6 +55,7 @@ ExposureCurveLNorm<-function(x,mu,sigma){
 #' @param mu A real number - the first parameter of the Claim Severity's LogNormal distribution.
 #' @param sigma A positive real number - the second parameter of the Claim Severity's LogNormal distribution.
 #' @return The value of the Increased Limit Factor curve from \code{xLow} to \code{xHigh} with Claim Severity from a LogNormal distribution with parameters \code{mu} and \code{sigma}.
+#' @export
 #' @examples
 #' ILFLNorm(1000,2000,6,1.5)
 #' ILFLNorm(1000,1500,5,1.6)
@@ -69,6 +73,7 @@ ILFLNorm<-function(xLow,xHigh,mu,sigma){
 #' @param mu A real number - the first parameter of the reporing delay's LogNormal distribution.
 #' @param sigma A positive real number - the second parameter of the reporing delay's LogNormal distribution.
 #' @return Unearned and Pure IBNR exposure in days and as a percentage of the period's duration, where the reporting delay has a LogNormal distribution with parameters \code{mu} and \code{sigma}.
+#' @export
 #' @examples
 #' Dates = data.frame(
 #'     inceptionDate = c("01/01/2006", "01/07/2006", "01/01/2007")

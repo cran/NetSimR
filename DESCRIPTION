@@ -1,7 +1,7 @@
 Package: NetSimR
 Type: Package
 Title: Actuarial Functions for Non-Life Insurance Modelling
-Version: 0.1.1
+Version: 0.1.2
 Author: Yiannis Parizas [aut, cre]
 Authors@R: person("Yiannis", "Parizas", email = "yiannis.parizas@gmail.com", role = c("aut", "cre"))
 Maintainer: Yiannis Parizas <yiannis.parizas@gmail.com>
@@ -19,12 +19,15 @@ Description: Assists actuaries and other insurance modellers in pricing,
     distributions.
     Includes calculating pure IBNR exposure with LogNormal and
     Gamma distribution for reporting delay.
+    Includes a shiny tool to simulate insurance claims.
 License: GPL-3
 Encoding: UTF-8
-Suggests: knitr, crch, testthat, rmarkdown
+Imports: rmarkdown, shiny, shinybusy, future.apply, scales, future,
+        methods
+Suggests: knitr, crch, testthat
 VignetteBuilder: knitr
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.3
 NeedsCompilation: no
-Packaged: 2021-04-21 17:36:30 UTC; yiann
+Packaged: 2023-01-17 22:47:43 UTC; yiann
 Repository: CRAN
-Date/Publication: 2021-04-22 01:50:02 UTC
+Date/Publication: 2023-01-17 23:10:02 UTC

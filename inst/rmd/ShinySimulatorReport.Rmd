@@ -1,0 +1,94 @@
+---
+title: "Simulation report"
+output: html_document
+params:
+  numOfSimulations: NULL
+  freq_params: NULL
+  sev_params: NULL
+  seedSetBinary: NULL
+  seedValue: NULL
+  freqDistr: NULL
+  sevDistr: NULL
+  paretoSlice: NULL
+  pareto_slice_times: NULL
+  slice_pareto_alphas: NULL
+  slice_pareto_x_ms: NULL
+  sevCapBinary: NULL
+  sev_cap_amount: NULL
+  reinsuranceStructureEEL: NULL
+  reinsurance_structure_eel_dedctible_amount: NULL
+  reinsurance_structure_eel_limit_amount: NULL
+  reinsuranceStructureAL: NULL
+  reinsurance_structure_al_dedctible_amount: NULL
+  reinsurance_structure_al_limit_amount: NULL
+  multiprocessing: NULL
+  reinsuranceStructureLimitedReinstatements: NULL
+  reinsuranceStructureReinstatementLimit: NULL
+  total_claims_data: NULL
+---
+### Report produced by NetSimR
+
+## Simulation settings
+```{r, echo=FALSE, comment="", null_prefix=TRUE}
+writeLines(c(
+  paste('Number Of Simulations:', formatC(params$numOfSimulations, format="d", big.mark=","))
+  ,paste('Multiprocessing used:', params$multiprocessing)
+  ,paste('Fixed Seed:', params$seedSetBinary)
+  ,if(!is.null(params$seedValue)) {paste('Fixed Seed Value:', params$seedValue)}
+  ,paste('Frequency Distribution:', params$freqDistr)
+  ,paste('Frequency Parameters:', paste(params$freq_params, collapse = ', '))
+  ,paste('Severity Distribution:', params$sevDistr)
+  ,paste('Severity Parameters:', paste(params$sev_params, collapse = ', '))
+  ,paste('Pareto Slicing Applied:', params$paretoSlice)
+  ,if(params$paretoSlice) {paste('Pareto Slice times:', params$pareto_slice_times)}
+  ,if(params$paretoSlice) {paste('Pareto Slice alpha parameters:', params$slice_pareto_alphas)}
+  ,if(params$paretoSlice) {paste('Pareto Slice x_m parameters:', params$slice_pareto_x_ms)}
+  ,paste('Severity Cap Applied:', params$sevCapBinary)
+  ,if(!is.null(params$sev_cap_amount)) {paste('Severity Cap Amount:', params$sev_cap_amount)}
+  ,paste('Reinsurance Structure - EEL:', params$reinsuranceStructureEEL)
+  ,if(!is.null(params$reinsurance_structure_eel_dedctible_amount)) {paste('Reinsurance Structure - EEL dedctible:',   params$reinsurance_structure_eel_dedctible_amount)}
+  ,if(!is.null(params$reinsurance_structure_eel_limit_amount)) {paste('Reinsurance Structure - EEL limit:',   params$reinsurance_structure_eel_limit_amount)}
+  ,if(!is.null(params$reinsuranceStructureLimitedReinstatements)) {paste('Reinsurance Structure - EEL Limited Reinstatements:',   params$reinsuranceStructureLimitedReinstatements)}
+  ,if(!is.null(params$reinsuranceStructureReinstatementLimit)) {paste('Reinsurance Structure - EEL Number of Reinstatements Limit:',   params$reinsuranceStructureReinstatementLimit)}
+  ,paste('Reinsurance Structure - AL:', params$reinsuranceStructureAL)
+  ,if(!is.null(params$reinsurance_structure_al_dedctible_amount)) {paste('Reinsurance Structure - AL dedctible:',   params$reinsurance_structure_al_dedctible_amount)}
+  ,if(!is.null(params$reinsurance_structure_al_limit_amount)) {paste('Reinsurance Structure - AL limit:',   params$reinsurance_structure_al_limit_amount)}
+))
+```
+
+
+## Summary of Total Claims
+```{r, echo=FALSE, comment="", null_prefix=TRUE}
+noquote(formatC(summary(params$total_claims_data), format="d", big.mark=","))
+```
+
+## Table summarising percentiles of Total Claims
+```{r, echo=FALSE, comment="", null_prefix=TRUE}
+percentile_values <- c(seq(0.1,0.7,0.1), seq(0.75, 0.95, 0.05), 0.975, 0.99, 0.995)
+print(data.frame(
+  Percentile = paste0(percentile_values*100,"%")
+  ,Claims = formatC(round(quantile(params$total_claims_data, probs = percentile_values),0), format="d", big.mark=",")
+), row.names = F)
+
+```
+
+## Histogram of Total Claims
+
+```{r, echo=FALSE}
+hist(params$total_claims_data, breaks=200, main="Histogram of Total Claims", xlab="Total Claims", ylab="Simulation Count", xaxt='n')
+axis(1, pretty(params$total_claims_data), formatC(pretty(params$total_claims_data), format = "f", big.mark = ",", digits = 0))
+```
+
+## A box plot plot of Total Claims
+
+```{r, echo=FALSE}
+boxplot(params$total_claims_data, main = "Box-Plot of Total Claims", ylab = "Total Claim Amount", col = "blue", yaxt = "n")
+axis(2, pretty(params$total_claims_data), formatC(pretty(params$total_claims_data), format = "f", big.mark = ",", digits = 0))
+```
+
+## Cumulative distribution function (CDF) plot of Total Claims
+
+```{r, echo=FALSE}
+plot(ecdf(params$total_claims_data), xlab = "Total Claims", ylab = "Cumulative Density", main = "Cumulative Density Function of Total Claims", xaxt = "n")
+axis(1, pretty(params$total_claims_data), formatC(pretty(params$total_claims_data), format = "f", big.mark = ",", digits = 0))
+```

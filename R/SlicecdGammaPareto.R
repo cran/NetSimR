@@ -9,6 +9,7 @@
 #' @param SlicePoint A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution.
 #' @param PShape A positive real number - the Shape parameter of the tail Claim Severity's Pareto distribution.
 #' @return The mean of the claim severity with an attritional claim Gamma distribution with parameters \code{GShape} and \code{GRate} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{PShape}.
+#' @export
 #' @examples
 #' SlicedGammaParetoMean(1,0.0005,1000,1.2)
 #' SlicedGammaParetoMean(1.1,0.0006,2000,1.6)
@@ -31,6 +32,7 @@ SlicedGammaParetoMean<-function(GShape, GRate, SlicePoint, PShape){
 #' @param SlicePoint A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution.
 #' @param PShape A positive real number - the shape parameter of the tail Claim Severity's Pareto distribution.
 #' @return The mean of the claim severity capped at \code{cap} with an attritional claim Gamma distribution with parameters \code{GShape} and \code{GRate} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{PShape}.
+#' @export
 #' @examples
 #' SlicedGammaParetoCappedMean(3000,1,0.0005,1000,1.2)
 #' SlicedGammaParetoCappedMean(1000,1.1,0.0006,2000,1.6)
@@ -52,6 +54,7 @@ SlicedGammaParetoCappedMean<-function(cap, GShape, GRate, SlicePoint, PShape){
 #' @param SlicePoint A positive real number - the slice point and the scale parameter of the Claim Severity's Pareto distribution.
 #' @param PShape A positive real number - the shape parameter of the Claim Severity's Pareto distribution.
 #' @return The value of the Exposure curve at \code{x} with an attritional claim Gamma distribution with parameters \code{GShape} and \code{GRate} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{PShape}.
+#' @export
 #' @examples
 #' ExposureCurveSlicedGammaPareto(3000,1,0.0005,1000,1.2)
 #' ExposureCurveSlicedGammaPareto(1000,1.1,0.0006,2000,1.6)
@@ -75,6 +78,7 @@ ExposureCurveSlicedGammaPareto<-function(x, GShape, GRate, SlicePoint, PShape){
 #' @param SlicePoint A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution.
 #' @param PShape A positive real number - the shape parameter of the tail Claim Severity's Pareto distribution.
 #' @return The value of the Increased Limit Factor curve from \code{xLow} to \code{xHigh} with an attritional claim Gamma distribution with parameters \code{GShape} and \code{GRate} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{PShape}.
+#' @export
 #' @examples
 #' ILFSlicedGammaPareto(2000,3000,1,0.0005,1000,1.2)
 #' ILFSlicedGammaPareto(800,1000,1.1,0.0006,2000,1.6)
@@ -93,6 +97,7 @@ ILFSlicedGammaPareto<-function(xLow, xHigh, GShape, GRate, SlicePoint, PShape){
 #' @param SlicePoint A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution.
 #' @param PShape A positive real number - the shape parameter of the tail Claim Severity's Pareto distribution.
 #' @return The value of the cumulative density function (cdf) at \code{x} with an attritional claim Gamma distribution with parameters \code{GShape} and \code{GRate} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{PShape}.
+#' @export
 #' @examples
 #' pSlicedGammaPareto(3000,1,0.0005,1000,1.2)
 #' pSlicedGammaPareto(1000,1.1,0.0006,2000,1.6)
@@ -114,6 +119,7 @@ pSlicedGammaPareto<-function(x, GShape, GRate, SlicePoint, PShape){
 #' @param SlicePoint A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution.
 #' @param PShape A positive real number - the shape parameter of the tail Claim Severity's Pareto distribution.
 #' @return The value of the inverse cumulative density function at \code{q} with an attritional claim Gamma distribution with parameters \code{GShape} and \code{GRate} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{PShape}.
+#' @export
 #' @examples
 #' qSlicedGammaPareto(0.5,1,0.0005,1000,1.2)
 #' qSlicedGammaPareto(0.2,1.1,0.0006,2000,1.6)
@@ -137,6 +143,7 @@ qSlicedGammaPareto<-function(q, GShape, GRate, SlicePoint, PShape){
 #' @param SlicePoint A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution.
 #' @param PShape A positive real number - the shape parameter of the tail Claim Severity's Pareto distribution.
 #' @return The value of the probability density function (pdf) at \code{x} with an attritional claim Gamma distribution with parameters \code{GShape} and \code{GRate} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{PShape}.
+#' @export
 #' @examples
 #' dSlicedGammaPareto(3000,1,0.0005,1000,1.2)
 #' dSlicedGammaPareto(1000,1.1,0.0006,2000,1.6)

@@ -15,106 +15,103 @@
 
 <title>SlicedDistributions</title>
 
-<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
-// v0.0.1
-// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
-
-document.addEventListener('DOMContentLoaded', function() {
-  const codeList = document.getElementsByClassName("sourceCode");
-  for (var i = 0; i < codeList.length; i++) {
-    var linkList = codeList[i].getElementsByTagName('a');
-    for (var j = 0; j < linkList.length; j++) {
-      if (linkList[j].innerHTML === "") {
-        linkList[j].setAttribute('aria-hidden', 'true');
-      }
-    }
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
   }
 });
 </script>
 
 <style type="text/css">
-  code{white-space: pre-wrap;}
-  span.smallcaps{font-variant: small-caps;}
-  span.underline{text-decoration: underline;}
-  div.column{display: inline-block; vertical-align: top; width: 50%;}
-  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
-  ul.task-list{list-style: none;}
-    </style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
 
 
 <style type="text/css">
-  code {
-    white-space: pre;
-  }
-  .sourceCode {
-    overflow: visible;
-  }
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
 </style>
 <style type="text/css" data-origin="pandoc">
-code.sourceCode > span { display: inline-block; line-height: 1.25; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-code.sourceCode > span:empty { height: 1.2em; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
-code.sourceCode { white-space: pre; position: relative; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
 div.sourceCode { margin: 1em 0; }
 pre.sourceCode { margin: 0; }
 @media screen {
 div.sourceCode { overflow: auto; }
 }
 @media print {
-code.sourceCode { white-space: pre-wrap; }
-code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
-  { counter-reset: source-line 0; }
+{ counter-reset: source-line 0; }
 pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
+{ position: relative; left: -4em; counter-increment: source-line; }
 pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-    color: #aaaaaa;
-  }
-pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
 }
-code span.al { color: #ff0000; font-weight: bold; } /* Alert */
-code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-code span.at { color: #7d9029; } /* Attribute */
-code span.bn { color: #40a070; } /* BaseN */
-code span.bu { } /* BuiltIn */
-code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-code span.ch { color: #4070a0; } /* Char */
-code span.cn { color: #880000; } /* Constant */
-code span.co { color: #60a0b0; font-style: italic; } /* Comment */
-code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-code span.do { color: #ba2121; font-style: italic; } /* Documentation */
-code span.dt { color: #902000; } /* DataType */
-code span.dv { color: #40a070; } /* DecVal */
-code span.er { color: #ff0000; font-weight: bold; } /* Error */
-code span.ex { } /* Extension */
-code span.fl { color: #40a070; } /* Float */
-code span.fu { color: #06287e; } /* Function */
-code span.im { } /* Import */
-code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
-code span.kw { color: #007020; font-weight: bold; } /* Keyword */
-code span.op { color: #666666; } /* Operator */
-code span.ot { color: #007020; } /* Other */
-code span.pp { color: #bc7a00; } /* Preprocessor */
-code span.sc { color: #4070a0; } /* SpecialChar */
-code span.ss { color: #bb6688; } /* SpecialString */
-code span.st { color: #4070a0; } /* String */
-code span.va { color: #19177c; } /* Variable */
-code span.vs { color: #4070a0; } /* VerbatimString */
-code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
-
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
 </style>
 <script>
 // apply pandoc div.sourceCode style to pre.sourceCode instead
@@ -123,13 +120,20 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   for (var i = 0; i < sheets.length; i++) {
     if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
     try { var rules = sheets[i].cssRules; } catch (e) { continue; }
-    for (var j = 0; j < rules.length; j++) {
+    var j = 0;
+    while (j < rules.length) {
       var rule = rules[j];
       // check if there is a div.sourceCode rule
-      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
       var style = rule.style.cssText;
       // check if color or background-color is set
-      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
       // replace div.sourceCode by a pre.sourceCode rule
       sheets[i].deleteRule(j);
       sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
@@ -335,38 +339,68 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">SlicedDistributions</h1>
 <h4 class="author">Yiannis Parizas</h4>
-<h4 class="date">21-04-2021</h4>
+<h4 class="date">18-01-2023</h4>
 
 
 
 <div id="introduction" class="section level2">
 <h2>1.Introduction</h2>
-<p>This vignette will cover the sliced distributions available in the NetSimR package. It will overview the theory behind these functions, propose posible uses and illustrate examples. Currently, Sliced distributions available are LogNormal and Gamma with a Pareto distribution for the tail.</p>
+<p>This vignette will cover the sliced distributions available in the
+NetSimR package. It will overview the theory behind these functions,
+propose posible uses and illustrate examples. Currently, Sliced
+distributions available are LogNormal and Gamma with a Pareto
+distribution for the tail.</p>
 <div style="page-break-after: always;"></div>
 </div>
 <div id="backround-theory" class="section level2">
 <h2>2.Backround theory</h2>
 <div id="sliced-distribution-backround" class="section level3">
 <h3>2.1 Sliced distribution backround</h3>
-<p>At various insurance modelling exercises, it may be the case that a sliced distribution provides a significantly better fit than a non-sliced distribution. Tail losses may be very influential on the premium, as such modelling the tail more accurately would significantly improve the accuacy of the premium. This becomes more important when modelling upper layers that will be mainly based on the severity tail. The analyst may opt to model attritional losses using a regression and have a single dimensional Pareto covering all cases. Theory suggests that Pareto distributions provide an appropriate fit for the tail of distributions and the mean excess function can be used to set the slice point. The analyst may consider using a truncated or censored distribution fit for the attritional data, in order to improve the fit.</p>
+<p>At various insurance modelling exercises, it may be the case that a
+sliced distribution provides a significantly better fit than a
+non-sliced distribution. Tail losses may be very influential on the
+premium, as such modelling the tail more accurately would significantly
+improve the accuacy of the premium. This becomes more important when
+modelling upper layers that will be mainly based on the severity tail.
+The analyst may opt to model attritional losses using a regression and
+have a single dimensional Pareto covering all cases. Theory suggests
+that Pareto distributions provide an appropriate fit for the tail of
+distributions and the mean excess function can be used to set the slice
+point. The analyst may consider using a truncated or censored
+distribution fit for the attritional data, in order to improve the
+fit.</p>
 </div>
 <div id="sliced-distribution-definition" class="section level3">
 <h3>2.2 Sliced distribution definition</h3>
-<p>Let claim severity <span class="math inline">\(x\)</span> have a probability density function <span class="math inline">\(f(x)\)</span> and a cumulative density funtion <span class="math inline">\(F(x)\)</span>. Let <span class="math inline">\(s\)</span> be the slice point. We define <span class="math inline">\(f(x)\)</span> as: <span class="math display">\[f(x)= \left[\begin{array}
+<p>Let claim severity <span class="math inline">\(x\)</span> have a
+probability density function <span class="math inline">\(f(x)\)</span>
+and a cumulative density funtion <span class="math inline">\(F(x)\)</span>. Let <span class="math inline">\(s\)</span> be the slice point. We define <span class="math inline">\(f(x)\)</span> as: <span class="math display">\[f(x)= \left[\begin{array}
 {rrr}
 g(x) &amp; x \le s \\
-(1-G(s))*h(x) &amp; x &gt; s 
+(1-G(s))*h(x) &amp; x &gt; s
 \end{array}\right]
-\]</span> <span class="math inline">\(g(x)\)</span> is the attritional attritional probability density function, fitted to the full claims. As suggested this could be fitted to full claims as a censored distribution or to the claims below <span class="math inline">\(s\)</span> as a truncated distribution for a better fit. <span class="math inline">\(g(x)\)</span> in NetSimR package will either be Gamma or LogNormal. <span class="math inline">\(h(x)\)</span> is the large probability density function. <span class="math inline">\(h(x)\)</span> in NetSimR package will be a single parameter Pareto distribution. The scale paramter <span class="math inline">\(x_{m}\)</span> will be the slice point <span class="math inline">\(s\)</span>. The shape parameter will be estimated from the claims larger than the slice point. <span class="math inline">\(H(x)\)</span> and <span class="math inline">\(G(x)\)</span> are the cumulative density functions of <span class="math inline">\(h(x)\)</span> and <span class="math inline">\(g(x)\)</span> respectively.</p>
+\]</span> <span class="math inline">\(g(x)\)</span> is the attritional
+attritional probability density function, fitted to the full claims. As
+suggested this could be fitted to full claims as a censored distribution
+or to the claims below <span class="math inline">\(s\)</span> as a
+truncated distribution for a better fit. <span class="math inline">\(g(x)\)</span> in NetSimR package will either be
+Gamma or LogNormal. <span class="math inline">\(h(x)\)</span> is the
+large probability density function. <span class="math inline">\(h(x)\)</span> in NetSimR package will be a single
+parameter Pareto distribution. The scale paramter <span class="math inline">\(x_{m}\)</span> will be the slice point <span class="math inline">\(s\)</span>. The shape parameter will be estimated
+from the claims larger than the slice point. <span class="math inline">\(H(x)\)</span> and <span class="math inline">\(G(x)\)</span> are the cumulative density functions
+of <span class="math inline">\(h(x)\)</span> and <span class="math inline">\(g(x)\)</span> respectively.</p>
 <p>We define <span class="math inline">\(F(x)\)</span> as: <span class="math display">\[F(x)= \left[\begin{array}
 {rrr}
 G(x) &amp; x \le s \\
-G(s)+(1-G(s))*H(x) &amp; x &gt; s 
+G(s)+(1-G(s))*H(x) &amp; x &gt; s
 \end{array}\right]
-\]</span> The mean <span class="math inline">\(E(x)\)</span> is defined to be: <span class="math display">\[E(x)=Capped Mean (g(x) @ s) + (1-G(s))*(Mean(h(x))-s)\]</span> Let claims be capped at amount <span class="math inline">\(c\)</span>. The capped claim severity is defined as <span class="math inline">\(y=Min(x,c)\)</span>.The capped mean <span class="math inline">\(E(y)\)</span> is defined to be: <span class="math display">\[E(y)= \left[\begin{array}
+\]</span> The mean <span class="math inline">\(E(x)\)</span> is defined
+to be: <span class="math display">\[E(x)=Capped Mean (g(x) @ s) +
+(1-G(s))*(Mean(h(x))-s)\]</span> Let claims be capped at amount <span class="math inline">\(c\)</span>. The capped claim severity is defined
+as <span class="math inline">\(y=Min(x,c)\)</span>.The capped mean <span class="math inline">\(E(y)\)</span> is defined to be: <span class="math display">\[E(y)= \left[\begin{array}
 {rrr}
 Capped Mean (g(y)@c) &amp; c \le s \\
-Capped Mean (g(x) @ s)+(1-G(s))*(Capped Mean (h(y)@c)-s) &amp; c &gt; s 
+Capped Mean (g(x) @ s)+(1-G(s))*(Capped Mean (h(y)@c)-s) &amp; c &gt; s
 \end{array}\right]
 \]</span></p>
 <div style="page-break-after: always;"></div>
@@ -374,52 +408,77 @@ Capped Mean (g(x) @ s)+(1-G(s))*(Capped Mean (h(y)@c)-s) &amp; c &gt; s
 </div>
 <div id="functions-usage" class="section level2">
 <h2>3. Functions usage</h2>
-<p>NetSimR package provides functions for the mean, capped mean, exposure curve and increased limit factor curves. These were discussed in the “Capped mean, Exposure and Increased Limit Factor curves” vignette and will not be repeated here. The package also provides the probability density function (pdf), the cumulative probability density function (cdf) and the inverse cumulative probability function for the sliced distributions.</p>
-<p>The probability density function can be used for optimising parameters with the maximum likelihood method, when fitting such a distribution, in cases where fitting the distributions separately is not appropriate.</p>
-<p>The cumulative density function provides probability of claims being less or more than a particular level. The distribution can be used alongst methods such as the Panjer recursion, in order to combine it with the frequency distribution and provide the aggrecate claims distribution.</p>
-<p>The inverse cumulative probability distribution can be used to run simulations over the defined distribution. Reinsurance strucutures can then be applied to use the simulation exercise for reinsurance pricing.</p>
+<p>NetSimR package provides functions for the mean, capped mean,
+exposure curve and increased limit factor curves. These were discussed
+in the “Capped mean, Exposure and Increased Limit Factor curves”
+vignette and will not be repeated here. The package also provides the
+probability density function (pdf), the cumulative probability density
+function (cdf) and the inverse cumulative probability function for the
+sliced distributions.</p>
+<p>The probability density function can be used for optimising
+parameters with the maximum likelihood method, when fitting such a
+distribution, in cases where fitting the distributions separately is not
+appropriate.</p>
+<p>The cumulative density function provides probability of claims being
+less or more than a particular level. The distribution can be used
+alongst methods such as the Panjer recursion, in order to combine it
+with the frequency distribution and provide the aggrecate claims
+distribution.</p>
+<p>The inverse cumulative probability distribution can be used to run
+simulations over the defined distribution. Reinsurance strucutures can
+then be applied to use the simulation exercise for reinsurance
+pricing.</p>
 <div style="page-break-after: always;"></div>
 </div>
 <div id="examples" class="section level2">
 <h2>4. Examples</h2>
 <div id="mean-of-a-sliced-distribution" class="section level3">
 <h3>4.1 Mean of a sliced distribution</h3>
-<p>Here we calculate the expected severity from a sliced lognormal pareto distributions, sliced at 10,000 currency units, with a Pareto shape parameter <span class="math inline">\(shape = 1.2\)</span> and lognormal parameters <span class="math inline">\(mu = 6\)</span> and <span class="math inline">\(sigma = 1.6\)</span>.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">library</span>(<span class="st">&quot;NetSimR&quot;</span>)</span>
-<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">round</span>(<span class="kw">SlicedLNormParetoMean</span>(<span class="dv">6</span>,<span class="fl">1.6</span>,<span class="dv">10000</span>,<span class="fl">1.2</span>),<span class="dv">0</span>)</span></code></pre></div>
+<p>Here we calculate the expected severity from a sliced lognormal
+pareto distributions, sliced at 10,000 currency units, with a Pareto
+shape parameter <span class="math inline">\(shape = 1.2\)</span> and
+lognormal parameters <span class="math inline">\(mu = 6\)</span> and
+<span class="math inline">\(sigma = 1.6\)</span>.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;NetSimR&quot;</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">SlicedLNormParetoMean</span>(<span class="dv">6</span>,<span class="fl">1.6</span>,<span class="dv">10000</span>,<span class="fl">1.2</span>),<span class="dv">0</span>)</span></code></pre></div>
 <pre><code>## [1] 2299</code></pre>
-<p>Multiplying the above with claim frequency would provide the expected claims cost. A capped mean of a sliced distribution follows the capped mean vignette examples.</p>
+<p>Multiplying the above with claim frequency would provide the expected
+claims cost. A capped mean of a sliced distribution follows the capped
+mean vignette examples.</p>
 </div>
 <div id="sliced-distribution-simulations" class="section level3">
 <h3>4.2 Sliced distribution simulations</h3>
-<p>We will only demonstrate simulating from the inverse distribution, the probability density and cumulative probability functions’ use is simpler. Below we simulate from a sliced distribution, applying an each and every loss excess of loss reinsurance structure.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="co">#set seed</span></span>
-<span id="cb3-2"><a href="#cb3-2"></a><span class="kw">set.seed</span>(<span class="dv">1</span>)</span>
-<span id="cb3-3"><a href="#cb3-3"></a></span>
-<span id="cb3-4"><a href="#cb3-4"></a><span class="co">#set parameters</span></span>
-<span id="cb3-5"><a href="#cb3-5"></a>numberOfSimulations=<span class="dv">20000</span></span>
-<span id="cb3-6"><a href="#cb3-6"></a>freq=<span class="dv">15</span></span>
-<span id="cb3-7"><a href="#cb3-7"></a>mu=<span class="dv">6</span></span>
-<span id="cb3-8"><a href="#cb3-8"></a>sigma=<span class="fl">1.6</span></span>
-<span id="cb3-9"><a href="#cb3-9"></a>s=<span class="dv">1000</span></span>
-<span id="cb3-10"><a href="#cb3-10"></a>alpha=<span class="fl">1.2</span></span>
-<span id="cb3-11"><a href="#cb3-11"></a>Deductible=<span class="dv">10000</span></span>
-<span id="cb3-12"><a href="#cb3-12"></a>limit=<span class="dv">100000</span></span>
-<span id="cb3-13"><a href="#cb3-13"></a>XoLCededClaims &lt;-<span class="st"> </span><span class="kw">numeric</span>(<span class="dt">length =</span> numberOfSimulations)</span>
-<span id="cb3-14"><a href="#cb3-14"></a></span>
-<span id="cb3-15"><a href="#cb3-15"></a><span class="co">#loop simulates frequency then severity and applies layer deductible and limit</span></span>
-<span id="cb3-16"><a href="#cb3-16"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span> <span class="op">:</span>numberOfSimulations){</span>
-<span id="cb3-17"><a href="#cb3-17"></a>  x=<span class="kw">qSlicedLNormPareto</span>(<span class="kw">runif</span>(<span class="kw">rpois</span>(<span class="dv">1</span>,freq)),mu,sigma,s,alpha)</span>
-<span id="cb3-18"><a href="#cb3-18"></a>  x=<span class="kw">ifelse</span>(x<span class="op">&lt;</span>Deductible,<span class="dv">0</span>,<span class="kw">ifelse</span>(x<span class="op">-</span>Deductible<span class="op">&gt;</span>limit,limit,x<span class="op">-</span>Deductible))</span>
-<span id="cb3-19"><a href="#cb3-19"></a>  XoLCededClaims[i]=<span class="kw">round</span>(<span class="kw">sum</span>(x),<span class="dv">0</span>)</span>
-<span id="cb3-20"><a href="#cb3-20"></a>}</span>
-<span id="cb3-21"><a href="#cb3-21"></a></span>
-<span id="cb3-22"><a href="#cb3-22"></a><span class="co">#Visualising Simulation results</span></span>
-<span id="cb3-23"><a href="#cb3-23"></a><span class="kw">head</span>(XoLCededClaims)</span></code></pre></div>
+<p>We will only demonstrate simulating from the inverse distribution,
+the probability density and cumulative probability functions’ use is
+simpler. Below we simulate from a sliced distribution, applying an each
+and every loss excess of loss reinsurance structure.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">#set seed</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co">#set parameters</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>numberOfSimulations<span class="ot">=</span><span class="dv">20000</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>freq<span class="ot">=</span><span class="dv">15</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>mu<span class="ot">=</span><span class="dv">6</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>sigma<span class="ot">=</span><span class="fl">1.6</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>s<span class="ot">=</span><span class="dv">1000</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>alpha<span class="ot">=</span><span class="fl">1.2</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>Deductible<span class="ot">=</span><span class="dv">10000</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>limit<span class="ot">=</span><span class="dv">100000</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>XoLCededClaims <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="at">length =</span> numberOfSimulations)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co">#loop simulates frequency then severity and applies layer deductible and limit</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span> <span class="sc">:</span>numberOfSimulations){</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>  x<span class="ot">=</span><span class="fu">qSlicedLNormPareto</span>(<span class="fu">runif</span>(<span class="fu">rpois</span>(<span class="dv">1</span>,freq)),mu,sigma,s,alpha)</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>  x<span class="ot">=</span><span class="fu">ifelse</span>(x<span class="sc">&lt;</span>Deductible,<span class="dv">0</span>,<span class="fu">ifelse</span>(x<span class="sc">-</span>Deductible<span class="sc">&gt;</span>limit,limit,x<span class="sc">-</span>Deductible))</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>  XoLCededClaims[i]<span class="ot">=</span><span class="fu">round</span>(<span class="fu">sum</span>(x),<span class="dv">0</span>)</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="co">#Visualising Simulation results</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(XoLCededClaims)</span></code></pre></div>
 <pre><code>## [1]     0  9463     0     0     0 11173</code></pre>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">hist</span>(XoLCededClaims, <span class="dt">breaks =</span> <span class="dv">100</span>, <span class="dt">xlim =</span> <span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">100000</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(XoLCededClaims, <span class="at">breaks =</span> <span class="dv">100</span>, <span class="at">xlim =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">100000</span>))</span></code></pre></div>
 <p><img src="data:image/png;base64,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" /><!-- --></p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">summary</span>(XoLCededClaims)</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(XoLCededClaims)</span></code></pre></div>
 <pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 ##       0       0       0    5300       0  201873</code></pre>
 </div>
