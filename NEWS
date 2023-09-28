@@ -7,3 +7,13 @@ Changes in Version 0.1.0
 Changes in Version 0.1.1
 
   o Updates a dependency to the rmarkdown package.
+
+
+Changes in Version 0.1.2
+
+  o Added shiny simulation tool.
+
+
+Changes in Version 0.1.3
+
+  o Added Shiny glm fitting tool.

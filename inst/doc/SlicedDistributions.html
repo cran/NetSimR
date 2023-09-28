@@ -339,7 +339,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">SlicedDistributions</h1>
 <h4 class="author">Yiannis Parizas</h4>
-<h4 class="date">18-01-2023</h4>
+<h4 class="date">28-09-2023</h4>
 
 
 
@@ -439,8 +439,8 @@ pareto distributions, sliced at 10,000 currency units, with a Pareto
 shape parameter <span class="math inline">\(shape = 1.2\)</span> and
 lognormal parameters <span class="math inline">\(mu = 6\)</span> and
 <span class="math inline">\(sigma = 1.6\)</span>.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;NetSimR&quot;</span>)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">SlicedLNormParetoMean</span>(<span class="dv">6</span>,<span class="fl">1.6</span>,<span class="dv">10000</span>,<span class="fl">1.2</span>),<span class="dv">0</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;NetSimR&quot;</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">SlicedLNormParetoMean</span>(<span class="dv">6</span>,<span class="fl">1.6</span>,<span class="dv">10000</span>,<span class="fl">1.2</span>),<span class="dv">0</span>)</span></code></pre></div>
 <pre><code>## [1] 2299</code></pre>
 <p>Multiplying the above with claim frequency would provide the expected
 claims cost. A capped mean of a sliced distribution follows the capped
@@ -452,33 +452,33 @@ mean vignette examples.</p>
 the probability density and cumulative probability functions’ use is
 simpler. Below we simulate from a sliced distribution, applying an each
 and every loss excess of loss reinsurance structure.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">#set seed</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co">#set parameters</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>numberOfSimulations<span class="ot">=</span><span class="dv">20000</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>freq<span class="ot">=</span><span class="dv">15</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>mu<span class="ot">=</span><span class="dv">6</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>sigma<span class="ot">=</span><span class="fl">1.6</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>s<span class="ot">=</span><span class="dv">1000</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>alpha<span class="ot">=</span><span class="fl">1.2</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>Deductible<span class="ot">=</span><span class="dv">10000</span></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>limit<span class="ot">=</span><span class="dv">100000</span></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>XoLCededClaims <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="at">length =</span> numberOfSimulations)</span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co">#loop simulates frequency then severity and applies layer deductible and limit</span></span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span> <span class="sc">:</span>numberOfSimulations){</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>  x<span class="ot">=</span><span class="fu">qSlicedLNormPareto</span>(<span class="fu">runif</span>(<span class="fu">rpois</span>(<span class="dv">1</span>,freq)),mu,sigma,s,alpha)</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>  x<span class="ot">=</span><span class="fu">ifelse</span>(x<span class="sc">&lt;</span>Deductible,<span class="dv">0</span>,<span class="fu">ifelse</span>(x<span class="sc">-</span>Deductible<span class="sc">&gt;</span>limit,limit,x<span class="sc">-</span>Deductible))</span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>  XoLCededClaims[i]<span class="ot">=</span><span class="fu">round</span>(<span class="fu">sum</span>(x),<span class="dv">0</span>)</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="co">#Visualising Simulation results</span></span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(XoLCededClaims)</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co">#set seed</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co">#set parameters</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>numberOfSimulations<span class="ot">=</span><span class="dv">20000</span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>freq<span class="ot">=</span><span class="dv">15</span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>mu<span class="ot">=</span><span class="dv">6</span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>sigma<span class="ot">=</span><span class="fl">1.6</span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>s<span class="ot">=</span><span class="dv">1000</span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>alpha<span class="ot">=</span><span class="fl">1.2</span></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>Deductible<span class="ot">=</span><span class="dv">10000</span></span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a>limit<span class="ot">=</span><span class="dv">100000</span></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a>XoLCededClaims <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="at">length =</span> numberOfSimulations)</span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a></span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a><span class="co">#loop simulates frequency then severity and applies layer deductible and limit</span></span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span> <span class="sc">:</span>numberOfSimulations){</span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a>  x<span class="ot">=</span><span class="fu">qSlicedLNormPareto</span>(<span class="fu">runif</span>(<span class="fu">rpois</span>(<span class="dv">1</span>,freq)),mu,sigma,s,alpha)</span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a>  x<span class="ot">=</span><span class="fu">ifelse</span>(x<span class="sc">&lt;</span>Deductible,<span class="dv">0</span>,<span class="fu">ifelse</span>(x<span class="sc">-</span>Deductible<span class="sc">&gt;</span>limit,limit,x<span class="sc">-</span>Deductible))</span>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a>  XoLCededClaims[i]<span class="ot">=</span><span class="fu">round</span>(<span class="fu">sum</span>(x),<span class="dv">0</span>)</span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a>}</span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a></span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a><span class="co">#Visualising Simulation results</span></span>
+<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a><span class="fu">head</span>(XoLCededClaims)</span></code></pre></div>
 <pre><code>## [1]     0  9463     0     0     0 11173</code></pre>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(XoLCededClaims, <span class="at">breaks =</span> <span class="dv">100</span>, <span class="at">xlim =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">100000</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">hist</span>(XoLCededClaims, <span class="at">breaks =</span> <span class="dv">100</span>, <span class="at">xlim =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">100000</span>))</span></code></pre></div>
 <p><img src="data:image/png;base64,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" /><!-- --></p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(XoLCededClaims)</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">summary</span>(XoLCededClaims)</span></code></pre></div>
 <pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 ##       0       0       0    5300       0  201873</code></pre>
 </div>
