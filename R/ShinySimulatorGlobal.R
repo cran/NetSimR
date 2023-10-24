@@ -144,12 +144,12 @@ sev_dist_options <- c(
   ,Gamma=distributionClass(
     distrID='Gamma'
     ,distr_label='Gamma'
-    ,paramIDs=c("rate", "scale")
-    ,param_labels=c("rate", "scale")
+    ,paramIDs=c("shape", "scale")
+    ,param_labels=c("shape", "scale")
     ,param_min_values=c(0,0)
     ,param_max_values=c(NA,1)
     ,simulate_func = function(number_of_simulations, parameters){return(
-      rgamma(n = number_of_simulations, rate = parameters[1], scale = parameters[2])
+      rgamma(n = number_of_simulations, shape = parameters[1], scale = parameters[2])
     )}
   )
   ,Exponential=distributionClass(

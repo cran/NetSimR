@@ -19,83 +19,98 @@ GLMFittingToolServer = function(input, output, session) {
   #import data
   selected_data <- eventReactive(input$submit, {
     show_spinner()
-    if (input$data_source == "Database") {
-      # need to test all connectors work
-      if (input$db_type == "MySQL") {
-        con <- dbConnect(RMySQL::MySQL(),
-                         host = input$db_host,
-                         user = input$db_user,
-                         password = input$db_password,
-                         dbname = input$db_name)
-        # Execute the query
-        df_input <- dbGetQuery(con, input$sql_query)
-        # Close the connection
-        dbDisconnect(con)
+    result <- tryCatch({
+      if (input$data_source == "Database") {
+        # need to test all connectors work
+        if (input$db_type == "MySQL") {
+          port <- if (input$db_port == "") 3306 else as.numeric(input$db_port)
+          con <- dbConnect(RMySQL::MySQL(),
+                           host = input$db_host,
+                           user = input$db_user,
+                           password = input$db_password,
+                           port = port,
+                           dbname = input$db_name)
+          # Execute the query
+          df_input <- dbGetQuery(con, input$sql_query)
+          # Close the connection
+          dbDisconnect(con)
 
-      } else if (input$db_type == "SQLite") {
-        con <- dbConnect(RSQLite::SQLite(),
-                         dbname = input$db_name)
-        # Execute the query
-        df_input <- dbGetQuery(con, input$sql_query)
-        # Close the connection
-        dbDisconnect(con)
+        } else if (input$db_type == "SQLite") {
+          con <- dbConnect(RSQLite::SQLite(),
+                           dbname = input$db_name)
+          # Execute the query
+          df_input <- dbGetQuery(con, input$sql_query)
+          # Close the connection
+          dbDisconnect(con)
 
-      } else if (input$db_type == "SQL Server") {
-        if (isTRUE(input$windows_auth)) {
-          # Use Windows authentication
-          con <- odbcDriverConnect(
-            connection = paste0(
-              "Driver={SQL Server};Server=", input$db_host,
-              ";Database=", input$db_name,
-              ";Trusted_Connection=yes"
+        } else if (input$db_type == "SQL Server") {
+          if (isTRUE(input$windows_auth)) {
+            # Use Windows authentication
+            con <- odbcDriverConnect(
+              connection = paste0(
+                "Driver={SQL Server};Server=", input$db_host,
+                ";Database=", input$db_name,
+                ";Trusted_Connection=yes"
+              )
             )
-          )
-        } else {
-          # Ask for username and password
-          con <- odbcDriverConnect(
-            connection = paste0(
-              "Driver={SQL Server};Server=", input$db_host,
-              ";Database=", input$db_name,
-              ";Uid=", input$db_user,
-              ";Pwd=", input$db_password
+          } else {
+            # Ask for username and password
+            con <- odbcDriverConnect(
+              connection = paste0(
+                "Driver={SQL Server};Server=", input$db_host,
+                ";Database=", input$db_name,
+                ";Uid=", input$db_user,
+                ";Pwd=", input$db_password
+              )
             )
+          }
+          # Execute the query
+          df_input <- sqlQuery(con, input$sql_query)
+          # Close the connection
+          odbcClose(con)
+
+        } else if (input$db_type == "PostgreSQL") {
+          port <- if (input$db_port == "") 5432 else as.numeric(input$db_port)
+          con <- dbConnect(
+            RPostgreSQL::PostgreSQL(),
+            host = input$db_host,
+            port = port,
+            dbname = input$db_name,
+            user = input$db_user,
+            password = input$db_password
           )
+          # Execute the query
+          df_input <- dbGetQuery(con, input$sql_query)
+          # Close the connection
+          dbDisconnect(con)
         }
-        # Execute the query
-        df_input <- sqlQuery(con, input$sql_query)
-        # Close the connection
-        odbcClose(con)
 
-      } else if (input$db_type == "PostgreSQL") {
-        con <- dbConnect(
-          RPostgreSQL::PostgreSQL(),
-          host = input$db_host,
-          dbname = input$db_name,
-          user = input$db_user,
-          password = input$db_password
-        )
-        # Execute the query
-        df_input <- dbGetQuery(con, input$sql_query)
-        # Close the connection
-        dbDisconnect(con)
-      }
-
-      #return data
-      hide_spinner()
-      return(df_input)
-
-    } else if (input$data_source == "CSV File") {
-
-      # Read the uploaded CSV file
-      file <- input$csv_file
-      if (is.null(file)) {
+        #return data
         hide_spinner()
-        return(NULL)
+        return(df_input)
+
+      } else if (input$data_source == "CSV File") {
+
+        # Read the uploaded CSV file
+        file <- input$csv_file
+        if (is.null(file)) {
+          hide_spinner()
+          return(NULL)
+        }
+        df <- read.csv(file$datapath)
+        hide_spinner()
+        return(df)
       }
-      df <- read.csv(file$datapath)
+    }, error = function(e) {
       hide_spinner()
-      return(df)
-    }
+      showModal(modalDialog(
+        title = "Error",
+        "An error occurred while importing data. Please check your settings and try again.",
+        footer = NULL
+      ))
+      return(NULL)
+    })
+    return(result)
   })
 
   # Display the query result or uploaded data in a data table

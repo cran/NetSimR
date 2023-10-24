@@ -17,3 +17,9 @@ Changes in Version 0.1.2
 Changes in Version 0.1.3
 
   o Added Shiny glm fitting tool.
+
+
+Changes in Version 0.1.4
+
+  o Added port selection for sql and prioritised csv input in Shiny glm fitting tool.
+  o Added distribution fitting tool

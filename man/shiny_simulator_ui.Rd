@@ -3,7 +3,7 @@
 \docType{data}
 \name{shiny_simulator_ui}
 \alias{shiny_simulator_ui}
-\title{UI file for the Shiny Simulator application}
+\title{UI file for the Shiny GLM Fitting Tool}
 \format{
 An object of class \code{shiny.tag.list} (inherits from \code{list}) of length 4.
 }
@@ -14,6 +14,6 @@ shiny_simulator_ui
 Returns the UI code for the shiny application.
 }
 \description{
-UI file for the Shiny Simulator application
+UI file for the Shiny GLM Fitting Tool
 }
 \keyword{datasets}
