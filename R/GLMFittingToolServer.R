@@ -119,10 +119,9 @@ GLMFittingToolServer = function(input, output, session) {
   #save configurtations
   output$DownloadDataHandlerConf <- downloadHandler(
     filename = function() {paste0('app_config','.rds')}
-    ,content = function(file) {saveRDS(
-      reactiveValuesToList(input)
-      ,file
-    )}
+    ,content = function(file) {
+      saveRDS(reactiveValuesToList(input), file)
+    }
   )
   output$downloadConfButton <- renderUI({
     downloadButton('DownloadDataHandlerConf', 'Save data')
@@ -131,10 +130,12 @@ GLMFittingToolServer = function(input, output, session) {
   #load configurations
   observeEvent(input$load_config, {
     input_config <- readRDS(input$load_config$datapath)
-    lapply(
-      names(input_config)
-      ,function(x) session$sendInputMessage(x, list(value = input_config[[x]]))
-    )
+    for (x in names(input_config)) {
+      if (is.null(input_config[[x]])) {
+      } else {
+        updateSelectInput(session, inputId = x, selected = input_config[[x]])
+      }
+    }
   })
 
 

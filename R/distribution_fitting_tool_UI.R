@@ -143,6 +143,29 @@ distribution_fitting_tool_UI = fluidPage(
           tabPanel(title="Claim Severity Cumulative Density Function",plotly::plotlyOutput('sliced_sev_cdf_plot'))
         )
       )
+    ),
+
+
+    tabPanel(
+      "Piecewise Pareto fit",
+      sidebarLayout(
+        sidebarPanel(
+          selectInput(inputId='piecewise_pareto_var', label='Piecewise Pareto severity variable',choices=""),
+          actionButton("execute_piecewise_sev_analysis", "Execute Analysis"),
+          sliderInput(inputId = "num_pareto_slices", label = "Number of Inputs (1-6):", min = 1, max = 6, value = 3),
+          uiOutput("pareto_slider_inputs"),
+          br(),
+          br(),
+          p('Note: the above will remove any negative, zero or non numeric values'),
+          br(),
+          checkboxInput("piecewise_pareto_fit_log_scale", "Log Scale for Severity cdf", value = F)
+        ),
+        mainPanel(
+          tableOutput("fitted_sliced_pareto"),
+          verbatimTextOutput("piecewise_pareto_ks_test"),
+          tabPanel(title="Claim Severity Cumulative Density Function", plotly::plotlyOutput('piewcewise_pareto_cdf_plot'))
+        )
+      )
     )
   )
 )

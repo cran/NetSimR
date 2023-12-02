@@ -23,3 +23,10 @@ Changes in Version 0.1.4
 
   o Added port selection for sql and prioritised csv input in Shiny glm fitting tool.
   o Added distribution fitting tool
+
+Changes in Version 0.1.5
+
+  o Added database name in inputs of glm database
+  o Increased the maximum csv file size for glm builder and distribution fitting to 64gb
+  o Fixed bug loading inputs for GLM builder
+  o Added piecewise pareto fit to distribution fitting tool

@@ -9,6 +9,7 @@
 #' @import shinyWidgets
 #' @importFrom plotly plot_ly add_lines layout add_bars renderPlotly
 #' @import fitdistrplus
+#' @import Pareto
 
 distribution_fitting_tool_Server = function(input, output, session) {
 
@@ -424,5 +425,71 @@ distribution_fitting_tool_Server = function(input, output, session) {
     noquote(param)
   })
 
+
+
+  ######################
+  #piecewise pareto
+  ######################
+
+
+  piecewise_sev_data <- eventReactive(input$execute_piecewise_sev_analysis, {
+    sort(clean_and_convert_to_numeric(data()[, input$piecewise_pareto_var], T))
+  })
+
+  # Create a reactive to generate the dynamic sliders
+  dynamic_sliders <- eventReactive(list(input$num_pareto_slices, input$execute_piecewise_sev_analysis), {
+    num_sliders <- input$num_pareto_slices
+    slider_list <- lapply(1:num_sliders, function(i) {
+      min_val <- sort(piecewise_sev_data())[2]
+      max_val <- sort(piecewise_sev_data())[length(piecewise_sev_data())-1]
+      sliderInput(paste0("slider_", i), label = paste("Slider", i), min = min_val, max = max_val, value = quantile(piecewise_sev_data(), (i/(input$num_pareto_slices+1))^0.1))
+    })
+    do.call(fluidRow, slider_list)
+  })
+
+  # Render the dynamic sliders
+  output$pareto_slider_inputs <- renderUI({
+    dynamic_sliders()
+  })
+
+  piecwise_pareto_mu <- reactive({
+    mu_values <- c(min(piecewise_sev_data()), input$slider_1)
+    if (input$num_pareto_slices>1) {
+      for (i in 2:input$num_pareto_slices) {
+        mu_values <- append(mu_values, input[[paste0('slider_', i)]])
+      }
+    }
+    mu_values <- sort(mu_values)
+    return(mu_values)
+  })
+
+  piecwise_pareto_alpha <- reactive({
+    Pareto::PiecewisePareto_ML_Estimator_Alpha(piecewise_sev_data(), piecwise_pareto_mu())
+  })
+
+  output$fitted_sliced_pareto <- renderTable({
+    data.frame(
+      mu = piecwise_pareto_mu()
+      ,alpha = piecwise_pareto_alpha()
+    )
+  })
+
+
+  empirical_piecwise_cdf <- reactive({1:length(piecewise_sev_data())/(length(piecewise_sev_data())+1)})
+  predicted_piecwise_cdf <- reactive({Pareto::pPiecewisePareto(piecewise_sev_data(), piecwise_pareto_mu(), piecwise_pareto_alpha())})
+  output$piecewise_pareto_ks_test <- renderText({paste(
+    'k-s test:'
+    ,round(max(abs(empirical_piecwise_cdf() - predicted_piecwise_cdf())),4)
+  )})
+
+  output$piewcewise_pareto_cdf_plot <- renderPlotly({
+    x_axis <- piecewise_sev_data()
+    if (input$piecewise_pareto_fit_log_scale) {x_axis <- log(x_axis)}
+    p <- plot_ly()
+    p <- add_lines(p, x = ~x_axis, y = ~empirical_piecwise_cdf(), name = "Actual", line = list(color = "blue"))
+    p <- add_lines(p, x = ~x_axis, y = ~predicted_piecwise_cdf(), name = "Predicted", line = list(color = "red"))
+    p <- layout(p, title = "CDF Empirical vs Fitted", xaxis = list(title = "Claims amount"), yaxis = list(title = "CDF"))
+    return(p)
+  })
 
 }

@@ -38,6 +38,7 @@ GLMFittingToolUI = fluidPage(
           selectInput("db_type", "Select Database Type",
                       choices = c("MySQL", "SQLite", "SQL Server", "PostgreSQL")),
           textInput("db_host", "Database Host/Path", "localhost"),
+          textInput("db_name", "Database Name", "public"),
           conditionalPanel(
             condition = "((input.db_type == 'MySQL') || (input.db_type == 'PostgreSQL'))",
             textInput("db_port", "Database Port (optional)", ""),

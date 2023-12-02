@@ -1,5 +1,5 @@
 #settings
-options(shiny.maxRequestSize=30*1024^2)
+options(shiny.maxRequestSize=64*1024^3)
 
 #' A function to run the glm fitting tool application
 #'

@@ -1,7 +1,7 @@
 Package: NetSimR
 Type: Package
 Title: Actuarial Functions for Non-Life Insurance Modelling
-Version: 0.1.4
+Version: 0.1.5
 Author: Yiannis Parizas [aut, cre]
 Authors@R: person("Yiannis", "Parizas", email = "yiannis.parizas@gmail.com", role = c("aut", "cre"))
 Maintainer: Yiannis Parizas <yiannis.parizas@gmail.com>
@@ -30,11 +30,11 @@ License: GPL-3
 Encoding: UTF-8
 Imports: rmarkdown, shiny, shinybusy, future.apply, scales, future,
         methods, DBI, RMySQL, RODBC, RPostgreSQL, RSQLite, plotly,
-        shinyjs, MASS, fitdistrplus, shinyWidgets
+        shinyjs, MASS, fitdistrplus, shinyWidgets, Pareto
 Suggests: knitr, crch, testthat
 VignetteBuilder: knitr
 RoxygenNote: 7.2.3
 NeedsCompilation: no
-Packaged: 2023-10-24 21:16:25 UTC; yiann
+Packaged: 2023-12-02 07:52:02 UTC; yiann
 Repository: CRAN
-Date/Publication: 2023-10-24 22:10:10 UTC
+Date/Publication: 2023-12-02 08:10:02 UTC
