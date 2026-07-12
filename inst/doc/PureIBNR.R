@@ -15,7 +15,7 @@ x<-rlnorm(1000,mu,sigma)
 summary(x)
 hist(x, breaks = 100)
 
-## ----pure IBNR example continued----------------------------------------------
+## ----pure IBNR example continued, eval=requireNamespace("crch", quietly = TRUE)----
 #Generate dates data
 PoliciesPerDay<-100
 PeriodLength<-365*2
@@ -57,8 +57,7 @@ lm<-lm(log(ModelData$ReportingDelay)~1)
 cbind(coefficients(lm),summary(lm)$sigma)
 
 #model reporting delays with a truncated model (splitting to monthly periods would be more accurate in terms of maximum reporting delay)
-library("crch")
-rTLm<-crch(log(ModelData$ReportingDelay)~1, truncated = TRUE, right = log(ModelData$MaxReportingDelay), dist = "gaussian", link.scale = "identity")
+rTLm<-crch::crch(log(ModelData$ReportingDelay)~1, truncated = TRUE, right = log(ModelData$MaxReportingDelay), dist = "gaussian", link.scale = "identity")
 #summary(rTLm)
 coefficients(rTLm)
 

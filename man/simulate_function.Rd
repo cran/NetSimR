@@ -2,7 +2,9 @@
 % Please edit documentation in R/ShinySimulatorGlobal.R
 \name{simulate_function}
 \alias{simulate_function}
-\title{A function to simulate frequency - severity of insurance claims. The function applies severity cap, reinsurance structure for each and every loss claim, reinsurance structure for each and aggregate claims. The function allows for piecewise pareto slices.}
+\title{A function to simulate frequency - severity of insurance claims using chunked vectorisation.
+The function applies severity cap, reinsurance structure for each and every loss claim,
+reinsurance structure for aggregate claims, and allows for piecewise pareto slices.}
 \usage{
 simulate_function(
   numOfSimulations,
@@ -26,7 +28,8 @@ simulate_function(
   reinsurance_structure_al_limit_amount,
   reinsuranceStructureLimitedReinstatements,
   reinsuranceStructureReinstatementLimit,
-  multiprocessing
+  multiprocessing,
+  chunk_size = 10000
 )
 }
 \arguments{
@@ -48,7 +51,7 @@ simulate_function(
 
 \item{pareto_slice_times}{The number of Pareto slices.}
 
-\item{slice_pareto_alphas}{A vector of Pareto slices' aphla parameters.}
+\item{slice_pareto_alphas}{A vector of Pareto slices' alpha parameters.}
 
 \item{slice_pareto_x_ms}{A vector of Pareto slices' x_m parameters.}
 
@@ -73,10 +76,14 @@ simulate_function(
 \item{reinsuranceStructureReinstatementLimit}{The reinstatement limit.}
 
 \item{multiprocessing}{True if multiprocessing is used, otherwise false.}
+
+\item{chunk_size}{The number of simulations processed per vectorised batch. Defaults to 10000.}
 }
 \value{
 A data frame with claims counts, ceded claims and the number of reinstatements used.
 }
 \description{
-A function to simulate frequency - severity of insurance claims. The function applies severity cap, reinsurance structure for each and every loss claim, reinsurance structure for each and aggregate claims. The function allows for piecewise pareto slices.
+A function to simulate frequency - severity of insurance claims using chunked vectorisation.
+The function applies severity cap, reinsurance structure for each and every loss claim,
+reinsurance structure for aggregate claims, and allows for piecewise pareto slices.
 }

@@ -1,10 +1,8 @@
 ## ----setup, include=FALSE-----------------------------------------------------
 knitr::opts_chunk$set(echo = TRUE)
 
-## ----capped mean example------------------------------------------------------
-#required packages
+## ----capped mean example, eval=requireNamespace("crch", quietly = TRUE)-------
 library("NetSimR")
-library("crch")
 
 #Set parameters
 n<-10000
@@ -37,7 +35,7 @@ summary(lmLinear)
 
 
 #fit right censored regression
-lmCensored<-crch(log(z)~1, right = log(Cap), link.scale="identity", dist = "gaussian")
+lmCensored<-crch::crch(log(z)~1, right = log(Cap), link.scale="identity", dist = "gaussian")
 summary(lmCensored)
 
 

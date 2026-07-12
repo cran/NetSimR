@@ -1,5 +1,5 @@
 ---
-title: "SlicedDistributions"
+title: "SlicedDistribution"
 author: "Yiannis Parizas"
 date: '`r format(Sys.Date(), "%d-%m-%Y")`'
 output: rmarkdown::html_vignette

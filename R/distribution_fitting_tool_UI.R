@@ -33,7 +33,7 @@ distribution_fitting_tool_UI = fluidPage(
         ),
         mainPanel(
           br(),
-          dataTableOutput("data_table")
+          reactable::reactableOutput("data_table")
         )
       )
     ),

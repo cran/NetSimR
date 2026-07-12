@@ -95,10 +95,8 @@ The code steps are:
 
 The example suggests that the proposed method outperforms the market approach on LogNormal distribution. The one-way benefit will not be significant on a Gamma distribution, but when we move to a GLM and the model relativities are larger, the capped mean benefit may also be significant.
 
-```{r capped mean example}
-#required packages
+```{r capped mean example, eval=requireNamespace("crch", quietly = TRUE)}
 library("NetSimR")
-library("crch")
 
 #Set parameters
 n<-10000
@@ -131,7 +129,7 @@ summary(lmLinear)
 
 
 #fit right censored regression
-lmCensored<-crch(log(z)~1, right = log(Cap), link.scale="identity", dist = "gaussian")
+lmCensored<-crch::crch(log(z)~1, right = log(Cap), link.scale="identity", dist = "gaussian")
 summary(lmCensored)
 
 

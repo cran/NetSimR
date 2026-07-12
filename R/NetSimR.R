@@ -44,6 +44,5 @@
 #' \code{\link{qSlicedGammaPareto}}
 #' \code{\link{qSlicedLNormPareto}}
 #'
-#' @docType package
-#' @name NetSimR
-NULL
+#' @keywords internal
+"_PACKAGE"

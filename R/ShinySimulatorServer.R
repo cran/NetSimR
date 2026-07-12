@@ -8,6 +8,7 @@
 #' @import shiny
 #' @import shinybusy
 #' @import future.apply
+#' @import data.table
 #' @importFrom future plan
 #' @importFrom future sequential
 #' @importFrom future multisession
@@ -16,7 +17,16 @@
 #' @import stats
 #' @import scales
 #' @import utils
+#' @import reactable
 shiny_simulator_server = function(input, output, session) {
+  #set data.table threads once per session, leave one core free for the main process
+  data.table::setDTthreads(max(1, parallel::detectCores() - 1))
+
+  #ensure any future workers are cleaned up when the session ends
+  session$onSessionEnded(function() {
+    future::plan(future::sequential)
+  })
+
   #seed input
   output$seed_value <- renderUI({
     if (input$seedSetBinary) {
@@ -121,9 +131,27 @@ shiny_simulator_server = function(input, output, session) {
   #create simulation data dataFrame reactive to enable download buttons & simulation settings list
   simulated_data <- reactiveValues(data=NULL)
   simulation_settings <- list()
+  is_running <- reactiveVal(FALSE)
+
+  observe({
+    if (is_running()) {
+      updateActionButton(session, "RunSimulations", label = "Running...")
+    } else {
+      updateActionButton(session, "RunSimulations", label = "Run Simulations")
+    }
+  })
 
   #run simulation button
   observeEvent(input$RunSimulations,{
+    if (is_running()) return(NULL)
+    is_running(TRUE)
+
+    on.exit({
+      is_running(FALSE)
+      hide_spinner()
+      gc()
+    }, add = TRUE)
+
     show_spinner()
 
     #set parameters
@@ -167,22 +195,46 @@ shiny_simulator_server = function(input, output, session) {
     simulated_data$data <- tryCatch(
       {
         do.call(simulate_function, simulation_settings)
-      }, error=function(cond) {
-        plan(sequential)
-        showNotification("Error!")
+      }, error = function(cond) {
+        future::plan(future::sequential)
+        showNotification(
+          paste("Error:", conditionMessage(cond)),
+          type = "error",
+          duration = NULL
+        )
         print(cond)
         NULL
       }
     )
-    hide_spinner()
-    gc()
+  })
+
+  is_downloading_report <- reactiveVal(FALSE)
+
+  output$downloadReportButton <- renderUI({
+    req(simulated_data$data)
+
+    label <- if (is_downloading_report()) {
+      "Preparing report..."
+    } else {
+      "Report"
+    }
+
+    downloadButton('downloadReportHandler', label)
   })
 
   #download data button
   output$DownloadDataHandler <- downloadHandler(
-    filename = function() {paste0('Simulation_data','.csv')}
-    ,content = function(file) {write.csv(simulated_data$data, file, row.names = F)}
+    filename = function() { paste0('Simulation_data', '.csv') },
+    content = function(file) {
+      showNotification(
+        "Preparing data file, save dialog will appear shortly...",
+        type = "message",
+        duration = 2
+      )
+      write.csv(simulated_data$data, file, row.names = FALSE)
+    }
   )
+
   output$downloadDataButton <- renderUI({
     req(simulated_data$data)
     downloadButton('DownloadDataHandler', 'Data')
@@ -192,19 +244,35 @@ shiny_simulator_server = function(input, output, session) {
   output$downloadReportHandler <- downloadHandler(
     filename = "simulation_report.html",
     content = function(file) {
-      tempReport <- normalizePath(file.path(tempdir(), "ShinySimulatorReport.Rmd"), mustWork = FALSE)
-      file.copy(normalizePath(system.file("rmd", "ShinySimulatorReport.Rmd", package = "NetSimR")), tempReport, overwrite = TRUE)
-      rmarkdown::render(
-        tempReport, output_file = file
-        ,quiet = TRUE
-        ,params = append(simulation_settings, list(total_claims_data = simulated_data$data$total_claims))
-        ,envir = new.env(parent = globalenv()
-        )
+      is_downloading_report(TRUE)
+      on.exit(is_downloading_report(FALSE), add = TRUE)
+
+      showNotification(
+        "Preparing report, save dialog will appear shortly...",
+        type = "message",
+        duration = 3
       )
+
+      shiny::withProgress(message = "Preparing report", value = 0, {
+        incProgress(0.2, detail = "Copying template")
+        tempReport <- normalizePath(file.path(tempdir(), "ShinySimulatorReport.Rmd"), mustWork = FALSE)
+        file.copy(
+          normalizePath(system.file("rmd", "ShinySimulatorReport.Rmd", package = "NetSimR")),
+          tempReport,
+          overwrite = TRUE
+        )
+
+        incProgress(0.5, detail = "Rendering report")
+        rmarkdown::render(
+          tempReport,
+          output_file = file,
+          quiet = TRUE,
+          params = append(simulation_settings, list(total_claims_data = simulated_data$data$total_claims)),
+          envir = new.env(parent = globalenv())
+        )
+
+        incProgress(1, detail = "Done")
+      })
     }
   )
-  output$downloadReportButton <- renderUI({
-    req(simulated_data$data)
-    downloadButton('downloadReportHandler', 'Report')
-  })
 }
