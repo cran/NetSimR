@@ -14,7 +14,7 @@ ExposureCurvePareto(x, scale, shape)
 \item{shape}{A positive real number - the shape parameter of the Claim Severity's Pareto distribution.}
 }
 \value{
-The value of the Exposure curve at \code{x} with Claim Severity from a Pareto distribution with parameters \code{scale} and \code{shape}.
+The value of the Exposure curve at \code{x} with Claim Severity from a Pareto distribution with parameters \code{scale} and \code{shape}. The exposure curve divides by the mean, which is infinite when \code{shape <= 1}; the function returns 0 in that case.
 }
 \description{
 Exposure Curve from a Pareto severity distribution

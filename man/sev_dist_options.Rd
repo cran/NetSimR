@@ -10,5 +10,10 @@ sev_dist_options
 The severity distribution objects.
 }
 \description{
-A vector with the severity distribution objects
+A named list of \code{distributionClass} objects, one for each severity distribution
+of the simulator: Normal, LogNormal, Gamma, Exponential, Pareto and Fixed_Severity.
+The names are the values accepted by the \code{sevDistr} argument of
+\code{simulate_function()}. The Normal distribution has its own parameter ids
+(normal_mean, normal_sd), so that switching between the Normal and the Log-Normal in
+the app does not carry values across.
 }

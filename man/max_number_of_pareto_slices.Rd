@@ -7,7 +7,7 @@
 max_number_of_pareto_slices
 }
 \value{
-The the maximum number of Pareto Slices.
+The maximum number of Pareto Slices.
 }
 \description{
 Parameter to set the maximum number of pareto slices

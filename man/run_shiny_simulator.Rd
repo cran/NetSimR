@@ -12,3 +12,8 @@ Opens the shiny simulator application
 \description{
 A function to run the shiny simulator application
 }
+\examples{
+if (interactive()) {
+  run_shiny_simulator()
+}
+}

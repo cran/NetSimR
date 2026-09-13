@@ -32,41 +32,24 @@ export(qSlicedLNormPareto)
 export(run_shiny_distribution_fitting_tool)
 export(run_shiny_glm_fitting_tool)
 export(run_shiny_simulator)
+export(simulate_claims)
 export(simulate_function)
-import(DBI)
-import(MASS)
-import(Pareto)
-import(RODBC)
-import(RPostgreSQL)
-import(data.table)
-import(fitdistrplus)
 import(future.apply)
 import(methods)
-import(reactable)
-import(rmarkdown)
-import(scales)
 import(shiny)
-import(shinybusy)
 import(stats)
 import(utils)
-importFrom(RMySQL,MySQL)
-importFrom(RSQLite,SQLite)
-importFrom(bslib,bs_theme)
-importFrom(bslib,card)
-importFrom(bslib,card_body)
-importFrom(bslib,card_header)
-importFrom(bslib,font_google)
-importFrom(bslib,layout_columns)
-importFrom(bslib,nav_panel)
-importFrom(bslib,navbar_options)
-importFrom(bslib,page_navbar)
-importFrom(future,multisession)
-importFrom(future,plan)
-importFrom(future,sequential)
-importFrom(plotly,add_bars)
-importFrom(plotly,add_lines)
-importFrom(plotly,layout)
-importFrom(plotly,plot_ly)
-importFrom(plotly,plotlyOutput)
-importFrom(plotly,renderPlotly)
-importFrom(shinyjs,useShinyjs)
+importFrom(fitdistrplus,fitdist)
+importFrom(future,
+  multisession,
+  plan,
+  sequential
+)
+importFrom(plotly,
+  add_bars,
+  add_lines,
+  layout,
+  plot_ly,
+  plotlyOutput,
+  renderPlotly
+)

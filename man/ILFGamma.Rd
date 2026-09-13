@@ -22,6 +22,6 @@ The value of the Increased Limit Factor curve from \code{xLow} to \code{xHigh} w
 Increased Limit Factor Curve from a Gamma severity distribution
 }
 \examples{
-ILFGamma(1000,700,1,0.0005)
-ILFGamma(1200,1000,1.5,0.0006)
+ILFGamma(700,1000,1,0.0005)
+ILFGamma(1000,1200,1.5,0.0006)
 }

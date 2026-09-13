@@ -18,7 +18,7 @@ ExposureCurveSlicedGammaPareto(x, GShape, GRate, SlicePoint, PShape)
 \item{PShape}{A positive real number - the shape parameter of the Claim Severity's Pareto distribution.}
 }
 \value{
-The value of the Exposure curve at \code{x} with an attritional claim Gamma distribution with parameters \code{GShape} and \code{GRate} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{PShape}.
+The value of the Exposure curve at \code{x} with an attritional claim Gamma distribution with parameters \code{GShape} and \code{GRate} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{PShape}. The exposure curve divides by the mean, which is infinite when \code{PShape <= 1}; the function returns 0 in that case.
 }
 \description{
 Exposure Curve from a Sliced Gamma Pareto severity distribution

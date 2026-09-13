@@ -2,20 +2,20 @@
 % Please edit documentation in R/Gamma.R
 \name{IGamma}
 \alias{IGamma}
-\title{Lower incomplete gamma function}
+\title{Upper incomplete gamma function}
 \usage{
 IGamma(a, x)
 }
 \arguments{
-\item{a}{A positive real number.}
+\item{a}{A positive real number - the shape parameter.}
 
 \item{x}{A positive real number.}
 }
 \value{
-The value of the lower incomplete gamma function at \code{x} with shape parameter \code{a}.
+The value of the upper incomplete gamma function at \code{x} with shape parameter \code{a}, i.e. \code{gamma(a) * pgamma(x, a, lower.tail = FALSE)}.
 }
 \description{
-Lower incomplete gamma function
+Upper incomplete gamma function
 }
 \examples{
 IGamma(1,1)

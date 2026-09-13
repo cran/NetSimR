@@ -2,13 +2,20 @@
 % Please edit documentation in R/GLMFittingToolGlobal.R
 \name{run_shiny_glm_fitting_tool}
 \alias{run_shiny_glm_fitting_tool}
-\title{A function to run the glm fitting tool application}
+\title{A function to run the GLM fitting tool application}
 \usage{
 run_shiny_glm_fitting_tool()
 }
 \value{
-Opens the glm fitting tool application
+A shiny app object. Printing it, as happens when the function is
+  called at the console, opens the application; it can also be passed to
+  shiny::runApp().
 }
 \description{
-A function to run the glm fitting tool application
+A function to run the GLM fitting tool application
+}
+\examples{
+if (interactive()) {
+  run_shiny_glm_fitting_tool()
+}
 }

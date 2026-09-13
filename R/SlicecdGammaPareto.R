@@ -15,8 +15,10 @@
 #' SlicedGammaParetoMean(1.1,0.0006,2000,1.6)
 #' SlicedGammaParetoMean(1.2,0.0004,3000,1.4)
 SlicedGammaParetoMean<-function(GShape, GRate, SlicePoint, PShape){
+  # recycle every argument to a common length, so that ifelse() keeps them all
   df<-data.frame(GShape, GRate, SlicePoint, PShape)
-  ifelse(df$PShape>1
+  GShape<-df$GShape; GRate<-df$GRate; SlicePoint<-df$SlicePoint; PShape<-df$PShape
+  ifelse(PShape>1
          ,GammaCappedMean(SlicePoint,GShape,GRate)+pgamma(SlicePoint,GShape,GRate,lower.tail = FALSE)*((PShape*SlicePoint)/(PShape-1)-SlicePoint)
          ,Inf
   )
@@ -38,6 +40,9 @@ SlicedGammaParetoMean<-function(GShape, GRate, SlicePoint, PShape){
 #' SlicedGammaParetoCappedMean(1000,1.1,0.0006,2000,1.6)
 #' SlicedGammaParetoCappedMean(2000,1.2,0.0004,3000,1.4)
 SlicedGammaParetoCappedMean<-function(cap, GShape, GRate, SlicePoint, PShape){
+  # recycle every argument to a common length, so that ifelse() keeps them all
+  df<-data.frame(cap, GShape, GRate, SlicePoint, PShape)
+  cap<-df$cap; GShape<-df$GShape; GRate<-df$GRate; SlicePoint<-df$SlicePoint; PShape<-df$PShape
   ifelse(cap<=SlicePoint
          ,GammaCappedMean(cap,GShape,GRate)
          ,GammaCappedMean(SlicePoint,GShape,GRate)+pgamma(SlicePoint,GShape,GRate,lower.tail = FALSE)*(ParetoCappedMean(cap, SlicePoint, PShape)-SlicePoint)
@@ -53,15 +58,17 @@ SlicedGammaParetoCappedMean<-function(cap, GShape, GRate, SlicePoint, PShape){
 #' @param GRate A positive real number -  the rate parameter of the Claim Severity's Gamma distribution.
 #' @param SlicePoint A positive real number - the slice point and the scale parameter of the Claim Severity's Pareto distribution.
 #' @param PShape A positive real number - the shape parameter of the Claim Severity's Pareto distribution.
-#' @return The value of the Exposure curve at \code{x} with an attritional claim Gamma distribution with parameters \code{GShape} and \code{GRate} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{PShape}.
+#' @return The value of the Exposure curve at \code{x} with an attritional claim Gamma distribution with parameters \code{GShape} and \code{GRate} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{PShape}. The exposure curve divides by the mean, which is infinite when \code{PShape <= 1}; the function returns 0 in that case.
 #' @export
 #' @examples
 #' ExposureCurveSlicedGammaPareto(3000,1,0.0005,1000,1.2)
 #' ExposureCurveSlicedGammaPareto(1000,1.1,0.0006,2000,1.6)
 #' ExposureCurveSlicedGammaPareto(2000,1.2,0.0004,3000,1.4)
 ExposureCurveSlicedGammaPareto<-function(x, GShape, GRate, SlicePoint, PShape){
+  # recycle every argument to a common length, so that ifelse() keeps them all
   df<-data.frame(x, GShape, GRate, SlicePoint, PShape)
-  ifelse(df$PShape>1
+  x<-df$x; GShape<-df$GShape; GRate<-df$GRate; SlicePoint<-df$SlicePoint; PShape<-df$PShape
+  ifelse(PShape>1
          ,SlicedGammaParetoCappedMean(x, GShape, GRate, SlicePoint, PShape)/SlicedGammaParetoMean(GShape, GRate, SlicePoint, PShape)
          ,0
   )
@@ -103,6 +110,9 @@ ILFSlicedGammaPareto<-function(xLow, xHigh, GShape, GRate, SlicePoint, PShape){
 #' pSlicedGammaPareto(1000,1.1,0.0006,2000,1.6)
 #' pSlicedGammaPareto(2000,1.2,0.0004,3000,1.4)
 pSlicedGammaPareto<-function(x, GShape, GRate, SlicePoint, PShape){
+  # recycle every argument to a common length, so that ifelse() keeps them all
+  df<-data.frame(x, GShape, GRate, SlicePoint, PShape)
+  x<-df$x; GShape<-df$GShape; GRate<-df$GRate; SlicePoint<-df$SlicePoint; PShape<-df$PShape
   ifelse(x>SlicePoint
          ,pgamma(SlicePoint, GShape, GRate)+pgamma(SlicePoint, GShape, GRate, lower.tail = FALSE)*(1-(SlicePoint/x)^PShape)
          ,pgamma(x, GShape, GRate)
@@ -125,10 +135,15 @@ pSlicedGammaPareto<-function(x, GShape, GRate, SlicePoint, PShape){
 #' qSlicedGammaPareto(0.2,1.1,0.0006,2000,1.6)
 #' qSlicedGammaPareto(0.8,1.2,0.0004,3000,1.4)
 qSlicedGammaPareto<-function(q, GShape, GRate, SlicePoint, PShape){
+  # recycle every argument to a common length, so that ifelse() keeps them all
+  df<-data.frame(q, GShape, GRate, SlicePoint, PShape)
+  q<-df$q; GShape<-df$GShape; GRate<-df$GRate; SlicePoint<-df$SlicePoint; PShape<-df$PShape
   lp<-pgamma(SlicePoint, GShape, GRate)
-  up<-1-lp
+  up<-pgamma(SlicePoint, GShape, GRate, lower.tail = FALSE)
+  # above the slice point 1 - q = up * (SlicePoint / x)^PShape; using 1 - q directly
+  # (rather than 1 - (q - lp) / up) keeps the precision as q -> 1
   ifelse(q>lp
-         ,SlicePoint/((1-((q-lp)/up))^(1/PShape))
+         ,SlicePoint/(((1-q)/up)^(1/PShape))
          ,qgamma(q, GShape, GRate)
   )
 }
@@ -149,6 +164,9 @@ qSlicedGammaPareto<-function(q, GShape, GRate, SlicePoint, PShape){
 #' dSlicedGammaPareto(1000,1.1,0.0006,2000,1.6)
 #' dSlicedGammaPareto(2000,1.2,0.0004,3000,1.4)
 dSlicedGammaPareto<-function(x, GShape, GRate, SlicePoint, PShape){
+  # recycle every argument to a common length, so that ifelse() keeps them all
+  df<-data.frame(x, GShape, GRate, SlicePoint, PShape)
+  x<-df$x; GShape<-df$GShape; GRate<-df$GRate; SlicePoint<-df$SlicePoint; PShape<-df$PShape
   ifelse(x>SlicePoint
          ,pgamma(SlicePoint, GShape, GRate, lower.tail = FALSE)*(PShape*SlicePoint^PShape)/(x^(PShape+1))
          ,dgamma(x, GShape, GRate)

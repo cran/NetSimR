@@ -14,7 +14,8 @@ GLMFittingToolServer(input, output, session)
 \item{session}{Session for the server function.}
 }
 \value{
-Returns server rendering for the shiny application.
+Called by shiny for its side effects, the outputs and observers of a
+  session; the value is not used.
 }
 \description{
 Server function for the GLM Fitting tool application

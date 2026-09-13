@@ -1,10 +1,12 @@
-#' NetSimR: A non-life insurance package for computating various statistics.
+#' NetSimR: A non-life insurance package for computing various statistics
 #'
-#' The NetSimR package provides three categories of functions:
+#' The NetSimR package provides five categories of functions:
 #' \enumerate{
 #' \item Capped means, Exposure and ILF curve from various severity distributions
 #' \item Pure IBNR and UPR earned periods
 #' \item Sliced distributions
+#' \item Frequency-severity claims simulation
+#' \item Shiny apps for simulating claims and fitting distributions
 #' }
 #'
 #' @section NetSimR mean functions:
@@ -43,6 +45,15 @@
 #' \code{\link{pSlicedLNormPareto}}
 #' \code{\link{qSlicedGammaPareto}}
 #' \code{\link{qSlicedLNormPareto}}
+#'
+#' @section NetSimR claims simulation functions:
+#' \code{\link{simulate_claims}}
+#' \code{\link{simulate_function}}
+#'
+#' @section NetSimR Shiny apps:
+#' \code{\link{run_shiny_simulator}}
+#' \code{\link{run_shiny_distribution_fitting_tool}}
+#' \code{\link{run_shiny_glm_fitting_tool}}
 #'
 #' @keywords internal
 "_PACKAGE"

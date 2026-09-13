@@ -6,5 +6,16 @@
 \alias{distributionClass}
 \title{The class of the distribution objects}
 \description{
-The class of the distribution objects
+Each object describes one frequency or severity distribution of the simulator:
+its parameters (ids used as app input ids, labels, allowed ranges and whether they
+must be whole numbers) and the functions the simulator needs. \code{simulate_func}
+draws values; \code{moments_func} gives the mean and standard deviation. Severity
+distributions also have \code{survival_func} and \code{tail_quantile_func} (the
+upper-tail probability and its inverse), used to splice Pareto tails and to draw only
+the claims that reach a layer, and optionally \code{sum_func}, which draws the total
+of a given number of claims in one step. Frequency distributions may have
+\code{split_func}, which draws the number of claims and how many of them are large.
+Allowed ranges are \code{param_min_values} and \code{param_max_values} (NA for no
+bound), with \code{param_min_strict} and \code{param_max_strict} marking bounds the
+value may not equal.
 }

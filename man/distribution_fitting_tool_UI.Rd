@@ -2,13 +2,15 @@
 % Please edit documentation in R/distribution_fitting_tool_UI.R
 \name{distribution_fitting_tool_UI}
 \alias{distribution_fitting_tool_UI}
-\title{UI file for the Shiny glm fitting tool}
+\title{User interface of the Shiny distribution fitting tool}
 \usage{
 distribution_fitting_tool_UI
 }
 \value{
-Returns the UI code for the shiny application.
+The user interface of the application, a bslib navbar page.
 }
 \description{
-UI file for the Shiny glm fitting tool
+The page is built when the package is installed;
+run_shiny_distribution_fitting_tool() pairs it with
+distribution_fitting_tool_Server.
 }

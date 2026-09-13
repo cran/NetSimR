@@ -14,7 +14,7 @@ ParetoCappedMean(cap, scale, shape)
 \item{shape}{A positive real number - the shape parameter of the Claim Severity's Pareto distribution.}
 }
 \value{
-The mean of the claim severity capped at \code{cap} with a Pareto distribution with parameters \code{scale} and \code{shape}.
+The mean of the claim severity capped at \code{cap} with a Pareto distribution with parameters \code{scale} and \code{shape}. A cap at or below \code{scale} is returned unchanged, as no claim is smaller than \code{scale}. The arguments are recycled to a common length.
 }
 \description{
 Pareto capped mean
@@ -23,4 +23,5 @@ Pareto capped mean
 ParetoCappedMean(600,200,1.2)
 ParetoCappedMean(800,100,1)
 ParetoCappedMean(1000,500,0.8)
+ParetoCappedMean(50,100,2)
 }

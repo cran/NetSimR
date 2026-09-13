@@ -1,10 +1,8 @@
 Package: NetSimR
 Type: Package
 Title: Actuarial Functions for Non-Life Insurance Modelling
-Version: 0.1.6
-Author: Yiannis Parizas [aut, cre]
+Version: 0.2.0
 Authors@R: person("Yiannis", "Parizas", email = "yiannis.parizas@gmail.com", role = c("aut", "cre"))
-Maintainer: Yiannis Parizas <yiannis.parizas@gmail.com>
 Description: Assists actuaries and other insurance modellers in pricing,
     reserving and capital modelling for non-life insurance and
     reinsurance modelling. Provides functions that help model
@@ -19,7 +17,7 @@ Description: Assists actuaries and other insurance modellers in pricing,
     distributions.
     Includes calculating pure IBNR exposure with LogNormal and
     Gamma distribution for reporting delay.
-    Includes three shiny tools, one to simulate insurance claims applying
+    Includes three 'shiny' tools, one to simulate insurance claims applying
     reinsurance structures, fit generalised linear models and fit claims
     frequency or severity distributions.
     Methods used in the package refer to
@@ -28,14 +26,17 @@ Description: Assists actuaries and other insurance modellers in pricing,
     Take to excess by Yiannis Parizas (2019) <https://www.theactuary.com/features/2019/03/2019/03/06/taken-excess>.
 License: GPL-3
 Encoding: UTF-8
-Imports: rmarkdown, shiny, shinybusy, future.apply, scales, future,
-        methods, DBI, RMySQL, RODBC, RPostgreSQL, RSQLite, plotly,
-        shinyjs, MASS, fitdistrplus, Pareto, data.table, reactable,
-        bslib
-Suggests: knitr, crch, testthat
+Imports: shiny (>= 1.8.1), htmltools, base64enc, bslib (>= 0.9.0),
+        future, future.apply, parallel, methods, stats, utils,
+        graphics, grDevices, plotly, reactable, fitdistrplus
+Suggests: knitr, rmarkdown, crch, testthat, DBI, RMySQL, RODBC,
+        RPostgreSQL, RSQLite
 VignetteBuilder: knitr
-RoxygenNote: 8.0.0
+Config/testthat/edition: 3
+Config/roxygen2/version: 8.1.0
 NeedsCompilation: no
-Packaged: 2026-07-12 15:20:44 UTC; yiann
+Packaged: 2026-09-13 22:23:57 UTC; yiann
+Author: Yiannis Parizas [aut, cre]
+Maintainer: Yiannis Parizas <yiannis.parizas@gmail.com>
 Repository: CRAN
-Date/Publication: 2026-07-12 15:50:15 UTC
+Date/Publication: 2026-09-13 22:50:02 UTC

@@ -15,8 +15,10 @@
 #' SlicedLNormParetoMean(6.5,1.4,2000,1.6)
 #' SlicedLNormParetoMean(7,1.6,3000,1.4)
 SlicedLNormParetoMean<-function(mu, sigma, SlicePoint, shape){
+  # recycle every argument to a common length, so that ifelse() keeps them all
   df<-data.frame(mu, sigma, SlicePoint, shape)
-  ifelse(df$shape>1
+  mu<-df$mu; sigma<-df$sigma; SlicePoint<-df$SlicePoint; shape<-df$shape
+  ifelse(shape>1
          ,LNormCappedMean(SlicePoint, mu, sigma)+plnorm(SlicePoint, mu, sigma, FALSE)*((shape*SlicePoint)/(shape-1)-SlicePoint)
          ,Inf
   )
@@ -38,8 +40,10 @@ SlicedLNormParetoMean<-function(mu, sigma, SlicePoint, shape){
 #' SlicedLNormParetoCappedMean(2500,6.5,1.4,2000,1.6)
 #' SlicedLNormParetoCappedMean(4000,7,1.6,3000,1.4)
 SlicedLNormParetoCappedMean<-function(cap,mu, sigma, SlicePoint, shape){
+  # recycle every argument to a common length, so that ifelse() keeps them all
   df<-data.frame(cap,mu, sigma, SlicePoint, shape)
-  ifelse(df$cap<=df$SlicePoint
+  cap<-df$cap; mu<-df$mu; sigma<-df$sigma; SlicePoint<-df$SlicePoint; shape<-df$shape
+  ifelse(cap<=SlicePoint
          ,LNormCappedMean(cap, mu, sigma)
          ,LNormCappedMean(SlicePoint, mu, sigma)+plnorm(SlicePoint,mu,sigma,lower.tail = FALSE)*(ParetoCappedMean(cap, SlicePoint, shape)-SlicePoint)
   )
@@ -54,14 +58,16 @@ SlicedLNormParetoCappedMean<-function(cap,mu, sigma, SlicePoint, shape){
 #' @param sigma A positive real number -  the second parameter of the attritional Claim Severity's LogNormal distribution.
 #' @param SlicePoint A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution.
 #' @param shape A positive real number - the shape parameter of the tail Claim Severity's Pareto distribution.
-#' @return The value of the Exposure curve at \code{x} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}.
+#' @return The value of the Exposure curve at \code{x} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}. The exposure curve divides by the mean, which is infinite when \code{shape <= 1}; the function returns 0 in that case.
 #' @export
 #' @examples
 #' ExposureCurveSlicedLNormPareto(1200,6,1.5,1000,1.2)
 #' ExposureCurveSlicedLNormPareto(4000,7,1.6,3000,1.4)
 ExposureCurveSlicedLNormPareto<-function(x, mu, sigma, SlicePoint, shape){
+  # recycle every argument to a common length, so that ifelse() keeps them all
   df<-data.frame(x, mu, sigma, SlicePoint, shape)
-  ifelse(df$shape>1
+  x<-df$x; mu<-df$mu; sigma<-df$sigma; SlicePoint<-df$SlicePoint; shape<-df$shape
+  ifelse(shape>1
          ,SlicedLNormParetoCappedMean(x, mu, sigma, SlicePoint, shape)/SlicedLNormParetoMean(mu, sigma, SlicePoint, shape)
          ,0
   )
@@ -101,6 +107,9 @@ ILFSlicedLNormPareto<-function(xLow,xHigh, mu, sigma, SlicePoint, shape){
 #' pSlicedLNormPareto(1200,6,1.5,1000,1.2)
 #' pSlicedLNormPareto(4000,7,1.6,3000,1.4)
 pSlicedLNormPareto<-function(x, mu, sigma, SlicePoint, shape){
+  # recycle every argument to a common length, so that ifelse() keeps them all
+  df<-data.frame(x, mu, sigma, SlicePoint, shape)
+  x<-df$x; mu<-df$mu; sigma<-df$sigma; SlicePoint<-df$SlicePoint; shape<-df$shape
   ifelse(x>SlicePoint
          ,plnorm(SlicePoint, mu, sigma)+plnorm(SlicePoint, mu, sigma, FALSE)*(1-(SlicePoint/x)^shape)
          ,plnorm(x, mu, sigma)
@@ -122,10 +131,15 @@ pSlicedLNormPareto<-function(x, mu, sigma, SlicePoint, shape){
 #' qSlicedLNormPareto(0.5,6,1.5,1000,1.2)
 #' qSlicedLNormPareto(0.7,7,1.6,3000,1.4)
 qSlicedLNormPareto<-function(q, mu, sigma, SlicePoint, shape){
+  # recycle every argument to a common length, so that ifelse() keeps them all
+  df<-data.frame(q, mu, sigma, SlicePoint, shape)
+  q<-df$q; mu<-df$mu; sigma<-df$sigma; SlicePoint<-df$SlicePoint; shape<-df$shape
   lp<-plnorm(SlicePoint, mu, sigma)
-  up<-1-lp
+  up<-plnorm(SlicePoint, mu, sigma, lower.tail = FALSE)
+  # above the slice point 1 - q = up * (SlicePoint / x)^shape; using 1 - q directly
+  # (rather than 1 - (q - lp) / up) keeps the precision as q -> 1
   ifelse(q>lp
-         ,SlicePoint/((1-((q-lp)/up))^(1/shape))
+         ,SlicePoint/(((1-q)/up)^(1/shape))
          ,qlnorm(q,mu, sigma)
   )
 }
@@ -145,6 +159,9 @@ qSlicedLNormPareto<-function(q, mu, sigma, SlicePoint, shape){
 #' dSlicedLNormPareto(1200,6,1.5,1000,1.2)
 #' dSlicedLNormPareto(4000,7,1.6,3000,1.4)
 dSlicedLNormPareto<-function(x, mu, sigma, SlicePoint, shape){
+  # recycle every argument to a common length, so that ifelse() keeps them all
+  df<-data.frame(x, mu, sigma, SlicePoint, shape)
+  x<-df$x; mu<-df$mu; sigma<-df$sigma; SlicePoint<-df$SlicePoint; shape<-df$shape
   ifelse(x>SlicePoint
          ,plnorm(SlicePoint, mu, sigma, FALSE)*(shape*SlicePoint^shape)/(x^(shape+1))
          ,dlnorm(x, mu, sigma)

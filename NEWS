@@ -1,7 +1,7 @@
 Changes in Version 0.1.0
 
-  o First official release of the package on CRAN. See citation("NetSimR")
-    for the accompanying manuscripts.
+  o First official release of the package on CRAN. The accompanying articles
+    are listed in the package description.
 
 
 Changes in Version 0.1.1
@@ -30,3 +30,170 @@ Changes in Version 0.1.5
   o Increased the maximum csv file size for glm builder and distribution fitting to 64gb
   o Fixed bug loading inputs for GLM builder
   o Added piecewise pareto fit to distribution fitting tool
+
+Changes in Version 0.1.6
+
+  o Updated the shiny simulation tool.
+
+Changes in Version 0.2.0
+
+  o Fewer dependencies: rmarkdown, shinybusy, data.table, scales, shinyjs, MASS
+    and Pareto are no longer imported. The Gamma maximum likelihood fit and the
+    piecewise Pareto fit of the distribution fitting tool are now computed with
+    base R and give the same results as before.
+  o The database drivers of the GLM fitting tool (DBI, RMySQL, RSQLite, RODBC,
+    RPostgreSQL) moved from Imports to Suggests, so they are no longer installed
+    with the package. The tool shows a message naming the package to install when
+    a database type is selected whose driver is missing.
+  o The GLM and distribution fitting tools raise the shiny upload limit only while
+    they run and restore the option when they stop; loading the package no longer
+    changes options(shiny.maxRequestSize).
+  o GammaCappedMean() and LNormCappedMean() are computed with pgamma() and pnorm()
+    directly: no NaN for large shapes (gamma() overflow) and no loss of precision
+    for caps far above or far below the mean. Results elsewhere are unchanged up
+    to floating point.
+  o ParetoCappedMean() with shape == 1 uses the exact limit
+    scale * (1 + log(cap / scale)) instead of averaging shape +/- 0.0001; values
+    change by less than 1e-6 relative to before.
+  o An infinite cap now gives the uncapped mean (or Inf when the mean is infinite)
+    in the capped mean, exposure curve and ILF functions, instead of NaN.
+  o Distribution fitting tool: the mean excess function plot now shows the
+    empirical mean excess of the claims (mean of the claims above each point,
+    less the point) instead of a mean over the plotted grid points; fitting
+    errors are shown in the app instead of the console; the severity cdf plots
+    are labelled correctly when the log scale is off.
+  o GLM fitting tool: model fitting errors are shown in the app.
+  o IGamma() documentation corrected: it is the upper incomplete gamma function.
+  o Added examples to run_shiny_glm_fitting_tool() and
+    run_shiny_distribution_fitting_tool(), and a testthat suite.
+  o Claims simulator: redesigned interface with light, dark and system themes;
+    a Report tab that shows the full report inside the app; a Compare tab that
+    keeps up to six runs with side-by-side metrics and a return-period chart;
+    save and load of settings, and three built-in examples.
+  o Claims simulator inputs: clearer parameter labels, the implied mean and
+    standard deviation of each distribution shown while typing, number boxes for
+    the simulations and seed, and checks that name any missing or invalid
+    setting before a run (including whole-number claim counts and increasing
+    Pareto slice thresholds).
+  o New option to truncate Normal claim sizes at zero, so no claim is negative
+    (argument sevTruncateAtZero of simulate_function()).
+  o simulate_function() also returns the gross total claims before reinsurance,
+    works outside a Shiny session, reuses running parallel workers and has
+    examples.
+  o The simulation report is built in R and no longer needs pandoc or
+    rmarkdown. It adds gross, ceded and net figures, layer metrics, simulation
+    accuracy, claim frequency and return periods, and follows the light or dark
+    theme. TVaR now averages exactly the worst share of simulations.
+  o Shiny's built-in busy indicators replace the shinybusy package in the
+    simulator and the GLM fitting tool.
+  o simulate_function() checks every distribution parameter against its range
+    (e.g. Poisson mean at least 0, Binomial probability between 0 and 1,
+    positive Gamma, Exponential and Pareto parameters) and checks that
+    deductibles, the cap and reinstatements are not negative and that limits
+    are positive, instead of failing or returning NA part-way through a run.
+    The Normal mean and the Log-Normal mu may now be negative, and the implied
+    moments are shown for them.
+  o simulate_function() random numbers: every chunk of simulations has its own
+    L'Ecuyer-CMRG stream, so a run gives the same results in sequence and in
+    parallel, and a fixed seed no longer changes the caller's random number
+    stream. Results for a given seed differ from earlier versions.
+  o simulate_function() is faster: Pareto slices are drawn in one step; when
+    nothing acts on individual claims, each year's total is drawn at once for
+    Normal, Gamma, Exponential and fixed severities; with the new argument
+    gross = FALSE and an each-and-every-loss layer only the claims that reach
+    the layer are drawn. The chunk size adapts to the expected number of
+    claims (new default chunk_size = NULL), which keeps memory use flat for
+    high claim frequencies. The new argument shortcuts = FALSE turns the
+    shortcuts off.
+  o simulate_function() has defaults for every optional argument, a progress
+    argument for progress reporting, and no longer calls Shiny itself.
+  o The Normal severity has its own parameter ids in the simulator, so values
+    no longer carry over between the Normal and the Log-Normal. Settings files
+    saved by earlier versions still load.
+  o Distribution fitting tool: redesigned interface in the style of the
+    simulator, with light, dark and system themes (system by default), summary
+    tiles, result tables that mark the best fit, and charts that follow the
+    theme. Messages replace errors when a column cannot be used, and the column
+    lists default to likely count, amount and weight columns.
+  o Distribution fitting tool data upload: decimal comma option, thousands
+    separators such as "1,234.5" read as numbers, a UTF-8 byte order mark no
+    longer ends up in the first column name, column names are kept as in the
+    file, and the preview is capped at 10,000 rows.
+  o Distribution fitting tool fixes: weighted frequency fits keep each count
+    with the weight of its own row, and the weighted choice is fixed when the
+    analysis runs; the mean, variance and suggestion use the weights; claim
+    counts and weights must be whole numbers (non-integer counts gave a
+    meaningless Negative Binomial fit). The Kolmogorov-Smirnov figures are now
+    the distance of stats::ks.test() in every tab (before, a scaled statistic
+    based on rank / (n + 1)). The single Pareto cdf is zero below its threshold
+    instead of negative. The sliced LogNormal body allows a negative mu (claims
+    below 1 were fitted with mu held at 0.0001). The Gamma fit no longer fails
+    on small whole numbers or claims far below 1. Severity cdfs of claims below
+    1,000 are drawn on a fine grid instead of whole numbers, and the log scale
+    uses a log axis.
+  o GLM fitting tool: redesigned interface in the style of the simulator, with
+    light, dark and system themes (system by default); CSV separator, decimal
+    and quote options; links offered per family with the family's default;
+    column buttons that add terms to the formula; a coefficient table with
+    relativities or odds ratios; tiles for AIC, deviance explained and
+    dispersion; and download buttons that appear once a model is fitted.
+  o GLM fitting tool fixes: an offset can be the log of an exposure column (the
+    column was always used raw, so an exposure gave a wrong model); the actual
+    against predicted chart uses the fitted model's columns, divides by the
+    exposure only when it is one, weighs rows by the weights, and offers bands
+    of equal counts. A stored model keeps the AIC, family, link and offset of
+    the model it was fitted with (before, the AIC of whatever was fitted last
+    was shown next to the saved formula) and marks the lower AIC when the
+    models are comparable. Predictions no longer fail on a factor level found
+    only in rows the fit left out. Fit warnings are shown instead of hidden,
+    text binomial responses are read as factors, "." stands for every other
+    column, and import errors show the actual error in a dialog that can be
+    closed.
+  o GLM fitting tool settings file: only the import options and model choices
+    are kept, never the database password; loading checks the file and applies
+    the column choices once the data is imported. Files saved by earlier
+    versions still load.
+  o Distribution fitting tool sliders: slicing points start at the 75th and
+    95th percentiles with a fine step, moving the first past the second moves
+    only the second, and piecewise Pareto thresholds start at the 50th, 75th,
+    87.5th, ... percentiles and are kept when the number of thresholds changes.
+  o Claims simulator: up to six Pareto slices, added with an Add slice button
+    and removed with a button on each slice; removing a slice moves the later
+    slices up. The switch and the number-of-slices list are gone. Settings
+    files saved with the old switch still load.
+  o New simulate_claims(): a simpler interface to simulate_function() with
+    short argument names (n_sims, frequency, severity_params, eel_layer,
+    agg_limit, ...), distributions chosen by name in any case, parameters
+    that may be named, and defaults for every optional feature.
+  o ParetoCappedMean() now returns the cap when it is at or below the scale
+    (it gave wrong values, 0 or NaN before), which also fixes
+    ExposureCurvePareto() and ILFPareto() for small limits, and it stays
+    accurate for shapes very close to 1.
+  o The sliced Gamma-Pareto and LogNormal-Pareto functions work with vectors
+    of parameters (extra values were silently dropped, and the exposure curve
+    could return wrong values). qSlicedGammaPareto() and qSlicedLNormPareto()
+    stay accurate for probabilities very close to 1. IGamma() no longer
+    returns Inf for large shapes when the result is finite.
+  o simulate_claims() checks that gross, shortcuts, parallel and
+    truncate_at_zero are a single TRUE or FALSE, and gives a clearer error
+    when distribution parameters mix named and unnamed values.
+  o GLM fitting tool: the actual against predicted chart codes a binomial
+    response as glm() does, so a text response with more than two values
+    shows the share of responses other than the first value, and an all-TRUE
+    logical response is no longer treated as failures. The app says which
+    value it takes as failure when a text response has more than two values.
+  o GLM fitting tool: the download section explains that the saved model
+    refers to its data as model_data, so update() needs the data assigned to
+    model_data or passed as data =.
+  o Distribution fitting tool: the sliced Pareto table note says that the
+    alpha of the layer between the slicing points is a least-squares fit; only
+    the tail alphas are maximum likelihood estimates.
+  o Claims simulator: a failed run keeps the previous results, downloads and
+    results tabs, and shows the error.
+  o Claims simulator: the app restores the user's future plan when the session
+    ends or a run fails, and only shuts down workers it started.
+  o Seeds outside the integer range are rejected with a clear message, and a
+    fixed seed gives the same results whatever the caller's RNGkind().
+  o Claims simulator: the number of simulations input accepts 1 to
+    10,000,000, the same range as the validation.
+  o bslib 0.9.0 or later is required.

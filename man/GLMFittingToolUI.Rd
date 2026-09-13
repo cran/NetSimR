@@ -2,13 +2,17 @@
 % Please edit documentation in R/GLMFittingToolUI.R
 \name{GLMFittingToolUI}
 \alias{GLMFittingToolUI}
-\title{UI file for the Shiny GLM fitting tool}
+\title{User interface of the Shiny GLM fitting tool}
 \usage{
-GLMFittingToolUI
+GLMFittingToolUI(request)
+}
+\arguments{
+\item{request}{The request, supplied by shiny.}
 }
 \value{
-Returns the UI code for the shiny application.
+The user interface of the application, a bslib navbar page.
 }
 \description{
-UI file for the Shiny GLM fitting tool
+A function of the request, so that it is built when the app starts, after
+every helper of the package is defined.
 }

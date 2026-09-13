@@ -27,7 +27,15 @@ erf<-function(x){2*pnorm(sqrt(2)*x)-1}
 #' LNormCappedMean(2000,6,1.5)
 #' LNormCappedMean(1000,5,1.6)
 LNormCappedMean<- function(cap,mu,sigma){
-  cap-(0.5*(exp(mu+0.5*sigma*sigma)*erf((mu+sigma*sigma-log(cap))/(sigma*sqrt(2)))+cap+cap*erf((log(cap)-mu)/(sqrt(2)*sigma)))-0.5*exp(mu+0.5*sigma*sigma))
+  # E[min(X, cap)] = exp(mu + sigma^2 / 2) * Phi((log(cap) - mu - sigma^2) / sigma)
+  #                  + cap * (1 - Phi((log(cap) - mu) / sigma)).
+  # Written with pnorm() directly (rather than erf() and cap - cap cancellations)
+  # so that it stays accurate for caps far above the mean.
+  logCap <- log(cap)
+  capTerm <- cap * pnorm(logCap, mean = mu, sd = sigma, lower.tail = FALSE)
+  # an infinite cap contributes nothing (Inf * 0 would be NaN); cap is recycled to the result length
+  capTerm[which(rep_len(cap, length(capTerm)) == Inf)] <- 0
+  exp(mu + 0.5 * sigma * sigma) * pnorm(logCap, mean = mu + sigma * sigma, sd = sigma) + capTerm
 }
 
 
