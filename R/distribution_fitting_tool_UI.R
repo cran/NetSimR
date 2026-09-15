@@ -297,14 +297,6 @@ dft_ui_css <- "
   border-bottom-color: var(--dft-accent);
 }
 
-.dft-plot .js-plotly-plot .plotly .modebar-btn path {
-  fill: var(--sim-muted);
-}
-
-.dft-plot .js-plotly-plot .plotly .modebar {
-  background: transparent !important;
-}
-
 /* messages shown in place of an output before an analysis has run */
 .shiny-output-error-validation {
   display: flex;
@@ -383,6 +375,11 @@ dft_ui_css <- "
   color: var(--sim-muted);
 }
 
+.dft-table th.dft-left,
+.dft-table td.dft-left {
+  text-align: left;
+}
+
 .dft-badge {
   display: inline-block;
   margin-left: 0.5rem;
@@ -423,9 +420,51 @@ dft_ui_css <- "
   overflow-wrap: anywhere;
 }
 
-.reactable {
-  font-size: 0.88rem;
+/* the first rows of the data, scrolling both ways under a header that stays in view */
+.dft-table-preview {
+  max-height: 32rem;
+  overflow: auto;
+  border: 1px solid var(--sim-border);
   border-radius: 10px;
+}
+
+.dft-table-preview .dft-table {
+  font-size: 0.85rem;
+}
+
+.dft-table-preview th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--sim-card-bg);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.78rem;
+}
+
+.dft-table-preview td {
+  padding: 0.4rem 0.75rem;
+  max-width: 22rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dft-table-preview td:first-child {
+  font-weight: 400;
+  color: var(--sim-muted);
+}
+
+.dft-table-preview tbody tr:last-child td {
+  border-bottom: 1px solid var(--sim-border);
+}
+
+.dft-table-preview + .dft-table-note {
+  margin-top: 0.5rem;
+}
+
+/* charts: PNG images drawn on the server for the current theme */
+.dft-plot img {
+  max-width: 100%;
 }
 
 /* ---------- Welcome ---------- */
@@ -497,9 +536,11 @@ dft_page_intro <- function(title, subtitle) {
 
 #' Plot output with the tool's styling
 #'
+#' The chart is an image drawn on the server to the width of its card, and
+#' drawn again when the card or the theme changes.
 #' @noRd
 dft_plot_output <- function(id, height = "440px") {
-  div(class = "dft-plot", plotly::plotlyOutput(id, height = height))
+  div(class = "dft-plot", plotOutput(id, height = height))
 }
 
 #' Card with underlined tabs for the results of an analysis
@@ -539,6 +580,7 @@ dft_log_switch <- function(id) {
 #' run_shiny_distribution_fitting_tool() pairs it with
 #' distribution_fitting_tool_Server.
 #' @return The user interface of the application, a bslib navbar page.
+#' @keywords internal
 distribution_fitting_tool_UI <- bslib::page_navbar(
   title = div(
     class = "sim-brand",
@@ -705,9 +747,9 @@ distribution_fitting_tool_UI <- bslib::page_navbar(
       ),
       uiOutput("data_overview"),
       bslib::card(
-        sim_card_header("table-list", "Preview", "Search, sort and page through the uploaded data."),
+        sim_card_header("table-list", "Preview", "The first rows of the uploaded data, as the analysis tabs read them."),
         bslib::card_body(
-          reactable::reactableOutput("data_table")
+          uiOutput("data_table")
         )
       )
     )

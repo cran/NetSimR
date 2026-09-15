@@ -7,7 +7,7 @@
 ExposureCurvePareto(x, scale, shape)
 }
 \arguments{
-\item{x}{A positive real number -  the claim amount where the exposure curve will be evaluated.}
+\item{x}{A non-negative real number -  the claim amount where the exposure curve will be evaluated.}
 
 \item{scale}{A positive real number - the scale parameter of the Claim Severity's Pareto distribution.}
 
@@ -23,3 +23,11 @@ Exposure Curve from a Pareto severity distribution
 ExposureCurvePareto(700,500,1.2)
 ExposureCurvePareto(20000,200,1.1)
 }
+\seealso{
+Other exposure curve functions:
+\code{\link[=ExposureCurveGamma]{ExposureCurveGamma()}},
+\code{\link[=ExposureCurveLNorm]{ExposureCurveLNorm()}},
+\code{\link[=ExposureCurveSlicedGammaPareto]{ExposureCurveSlicedGammaPareto()}},
+\code{\link[=ExposureCurveSlicedLNormPareto]{ExposureCurveSlicedLNormPareto()}}
+}
+\concept{exposure curve functions}

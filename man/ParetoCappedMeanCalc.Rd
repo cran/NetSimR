@@ -7,14 +7,14 @@
 ParetoCappedMeanCalc(cap, scale, shape)
 }
 \arguments{
-\item{cap}{A positive real number -  the claim severity cap.}
+\item{cap}{A non-negative real number -  the claim severity cap.}
 
 \item{scale}{A positive real number - the scale parameter of the Claim Severity's Pareto distribution.}
 
 \item{shape}{A positive real number - the shape parameter of the Claim Severity's Pareto distribution.}
 }
 \value{
-An interim calculation for the mean of the claim severity capped at \code{cap} with a Pareto distribution with parameters \code{scale} and \code{shape}. It is the closed form for \code{cap >= scale} and \code{shape != 1}; use \code{\link{ParetoCappedMean}} for the capped mean itself.
+An interim calculation for the mean of the claim severity capped at \code{cap} with a Pareto distribution with parameters \code{scale} and \code{shape}. It is the closed form for \code{cap >= scale} and \code{shape != 1}; use \code{\link{ParetoCappedMean}} for the capped mean itself. The arguments are recycled to a common length.
 }
 \description{
 Pareto capped mean intermediary calculation
@@ -23,3 +23,12 @@ Pareto capped mean intermediary calculation
 ParetoCappedMeanCalc(800,100,1.1)
 ParetoCappedMeanCalc(1000,500,0.9)
 }
+\seealso{
+Other capped mean functions:
+\code{\link[=GammaCappedMean]{GammaCappedMean()}},
+\code{\link[=LNormCappedMean]{LNormCappedMean()}},
+\code{\link[=ParetoCappedMean]{ParetoCappedMean()}},
+\code{\link[=SlicedGammaParetoCappedMean]{SlicedGammaParetoCappedMean()}},
+\code{\link[=SlicedLNormParetoCappedMean]{SlicedLNormParetoCappedMean()}}
+}
+\concept{capped mean functions}

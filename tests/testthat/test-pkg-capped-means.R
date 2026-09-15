@@ -56,6 +56,24 @@ test_that("LNormCappedMean handles edge cases", {
   expect_true(is.na(LNormCappedMean(NA, 6, 1.5)))
 })
 
+test_that("LNormCappedMean does not overflow for large sigmas when the capped mean is finite", {
+  #exp(mu + sigma^2 / 2) overflows, so these used to be NaN and Inf
+  reference <- vapply(c(38, 40), function(sigma) capped_mean_reference(function(x) plnorm(x, 0, sigma, lower.tail = FALSE), 1000), numeric(1))
+  expect_equal(LNormCappedMean(1000, 0, c(38, 40)), reference, tolerance = 1e-8)
+  expect_equal(LNormCappedMean(1000, 0, 40), 441.3084, tolerance = 1e-6)
+  #an infinite cap still gives the (infinite) mean
+  expect_equal(LNormCappedMean(Inf, 0, 40), Inf)
+})
+
+test_that("erf keeps its precision near 0", {
+  #2 * pnorm(sqrt(2) * x) - 1 had a relative error of 4.6e-5 at 1e-12 and gave 0 at 1e-20
+  x <- c(1e-5, 1e-12, 1e-20, 1e-150)
+  expect_equal(erf(x), 2 / sqrt(pi) * x, tolerance = 1e-9)
+  expect_equal(erf(-x), -erf(x))
+  expect_equal(erf(c(-Inf, Inf)), c(-1, 1))
+  expect_true(is.na(erf(NA)))
+})
+
 test_that("LogNormal exposure curve, ILF and erf", {
   expect_equal(ExposureCurveLNorm(2000, 6, 1.5), LNormCappedMean(2000, 6, 1.5) / exp(6 + 1.5^2 / 2))
   expect_equal(ExposureCurveLNorm(Inf, 6, 1.5), 1)

@@ -7,21 +7,21 @@
 PureIBNRLNorm(IncDate, ExpDate, ValDate, mu, sigma)
 }
 \arguments{
-\item{IncDate}{A date -  the inception date of the period.}
+\item{IncDate}{A \code{Date} or \code{POSIXct} vector -  the inception dates of the periods. Numbers and character strings are not accepted; convert them with \code{as.Date()} first.}
 
-\item{ExpDate}{A date -  the expiry date of the period. Must be greater than inception date.}
+\item{ExpDate}{A \code{Date} or \code{POSIXct} vector -  the expiry dates of the periods. Must not be before the inception dates.}
 
-\item{ValDate}{A date -  the valuation date.}
+\item{ValDate}{A \code{Date} or \code{POSIXct} date -  the valuation date.}
 
-\item{mu}{A real number - the first parameter of the reporing delay's LogNormal distribution.}
+\item{mu}{A real number - the first parameter of the reporting delay's LogNormal distribution, with the delay measured in days.}
 
-\item{sigma}{A positive real number - the second parameter of the reporing delay's LogNormal distribution.}
+\item{sigma}{A positive real number - the second parameter of the reporting delay's LogNormal distribution.}
 }
 \value{
-Unearned and Pure IBNR exposure in days and as a percentage of the period's duration, where the reporting delay has a LogNormal distribution with parameters \code{mu} and \code{sigma}.
+A data frame with the unearned and pure IBNR exposure of each period in days (\code{UnearnedDuration}, and \code{PureIBNRDuration} rounded to 2 decimals) and as proportions between 0 and 1 of the period's duration (\code{UnearnedDurationRatio} and \code{PureIBNRDurationRatio}, rounded to 5 decimals), where the reporting delay has a LogNormal distribution with parameters \code{mu} and \code{sigma}. The dates and parameters are recycled to a common length, one row each; lengths that do not recycle are an error.
 }
 \description{
-Pure IBNR exposure from a LogNormal reporting delay distribution
+Durations are counted in days on each date's own calendar and clock: a \code{POSIXct} time of day counts as a fraction of a day, and daylight saving changes do not add fractions of a day, so \code{Date} and \code{POSIXct} dates (or a mix of them) give the same results.
 }
 \examples{
 Dates = data.frame(
@@ -37,3 +37,8 @@ ValuationDate<-as.POSIXct("30/10/2007", format="\%d/\%m/\%Y")
 
 PureIBNRLNorm(Dates$inceptionDate,Dates$expiryDate,ValuationDate,4,1.5)
 }
+\seealso{
+Other pure IBNR functions:
+\code{\link[=PureIBNRGamma]{PureIBNRGamma()}}
+}
+\concept{pure IBNR functions}

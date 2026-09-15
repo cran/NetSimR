@@ -7,18 +7,18 @@
 qSlicedLNormPareto(q, mu, sigma, SlicePoint, shape)
 }
 \arguments{
-\item{q}{A real number between 0 and 1 -  the probability where the inverse cumulative density function will be evaluated.}
+\item{q}{A real number between 0 and 1 -  the probability where the inverse cumulative density function will be evaluated. Values outside [0, 1] give \code{NaN}, as in \code{qlnorm()}.}
 
 \item{mu}{A real number -  the first parameter of the attritional Claim Severity's LogNormal distribution.}
 
 \item{sigma}{A positive real number -  the second parameter of the attritional Claim Severity's LogNormal distribution.}
 
-\item{SlicePoint}{A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution.}
+\item{SlicePoint}{A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution. An infinite slice point gives the LogNormal distribution.}
 
 \item{shape}{A positive real number - the shape parameter of the tail Claim Severity's Pareto distribution.}
 }
 \value{
-The value of the inverse cumulative density function at \code{q} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}.
+The value of the inverse cumulative density function at \code{q} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}. A non-numeric argument or a non-positive \code{sigma}, \code{SlicePoint} or \code{shape} is an error; \code{NA} values give \code{NA}.
 }
 \description{
 The inverse cumulative density function of a Sliced LogNormal Pareto severity distribution
@@ -27,3 +27,14 @@ The inverse cumulative density function of a Sliced LogNormal Pareto severity di
 qSlicedLNormPareto(0.5,6,1.5,1000,1.2)
 qSlicedLNormPareto(0.7,7,1.6,3000,1.4)
 }
+\seealso{
+Other sliced distribution functions:
+\code{\link[=SlicedGammaParetoMean]{SlicedGammaParetoMean()}},
+\code{\link[=SlicedLNormParetoMean]{SlicedLNormParetoMean()}},
+\code{\link[=dSlicedGammaPareto]{dSlicedGammaPareto()}},
+\code{\link[=dSlicedLNormPareto]{dSlicedLNormPareto()}},
+\code{\link[=pSlicedGammaPareto]{pSlicedGammaPareto()}},
+\code{\link[=pSlicedLNormPareto]{pSlicedLNormPareto()}},
+\code{\link[=qSlicedGammaPareto]{qSlicedGammaPareto()}}
+}
+\concept{sliced distribution functions}

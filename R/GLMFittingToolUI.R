@@ -274,6 +274,7 @@ glm_family_links <- list(
 #' every helper of the package is defined.
 #' @param request The request, supplied by shiny.
 #' @return The user interface of the application, a bslib navbar page.
+#' @keywords internal
 GLMFittingToolUI <- function(request) {
   bslib::page_navbar(
     title = div(
@@ -483,8 +484,8 @@ GLMFittingToolUI <- function(request) {
         ),
         uiOutput("data_overview"),
         bslib::card(
-          sim_card_header("table-list", "Preview", "Search, sort and page through the imported data."),
-          bslib::card_body(reactable::reactableOutput("selected_input_data_table"))
+          sim_card_header("table-list", "Preview", "The first rows of the imported data."),
+          bslib::card_body(uiOutput("selected_input_data_table"))
         )
       )
     ),

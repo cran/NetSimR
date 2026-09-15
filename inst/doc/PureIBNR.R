@@ -63,7 +63,7 @@ coefficients(rTLm)
 
 #Generate and predict pure IBNR and UPR Claims
 Data$PureIBNRClaims<-ifelse(Data$AccidentDate>ValuationDate,0,Data$ClaimCount-Data$ClaimReportedBeforeValuation)
-Data$UPRClaims<-Data$ClaimCount-Data$ClaimReportedBeforeValuation-Data$PureIBNR
+Data$UPRClaims<-Data$ClaimCount-Data$ClaimReportedBeforeValuation-Data$PureIBNRClaims
 PureIBNRPrediction<-PureIBNRLNorm(Data$InceptionDate,Data$ExpiryDate,ValuationDate,coefficients(rTLm)[1],coefficients(rTLm)[2])
 Data$PredictedPureIBNRYears<-PureIBNRPrediction$PureIBNRDuration/DayPolicyDuration
 Data$PredictedUPRYears<-PureIBNRPrediction$UnearnedDuration/DayPolicyDuration
@@ -84,10 +84,12 @@ cbind(AdjustedModel=round(exp(AdjFreqGLM$coefficients),3),UnAdjustedModel=round(
 #Compare UPR Claim predictions
 cbind(Actual=sum(Data$UPRClaims),Predicted=round(sum(Data$PredictedUPRYears)*PredictedFrequency,0))
 
-#Compare Pure IBNR Claim predictions
-cbind(Actual=sum(Data$PureIBNRClaims),Predicted=round(sum(Data$PredictedPureIBNRYears)*PredictedFrequency,0), Theoretical=327)
+#Theoretical uses the true reporting delay parameters and claim frequency instead of the fitted ones
+TheoreticalPureIBNR<-PureIBNRLNorm(Data$InceptionDate,Data$ExpiryDate,ValuationDate,mu,sigma)
+TheoreticalPureIBNRClaims<-sum(TheoreticalPureIBNR$PureIBNRDuration/DayPolicyDuration)*ClaimFreq
 
-#Theoretical comes from re-running with the theoretical parameter values
+#Compare Pure IBNR Claim predictions
+cbind(Actual=sum(Data$PureIBNRClaims),Predicted=round(sum(Data$PredictedPureIBNRYears)*PredictedFrequency,0), Theoretical=round(TheoreticalPureIBNRClaims,0))
 
 #Compare Pure IBNR predictions with Chain Ladder
 ClaimsAY1RY1<-sum(Data[Data$AccidentDate<as.Date("2012/1/1") & Data$NotificationDate<as.Date("2012/1/1"), ]$ClaimReportedBeforeValuation)
@@ -100,7 +102,7 @@ PredictedPureIBNRClaimsChainLadder<-(ClaimsAY1RY2/ClaimsAY1RY1-1)*ClaimsAY2RY1
 
 cbind(Actual=sum(Data$PureIBNRClaims),PredictedGLM=round(sum(Data$PredictedPureIBNRYears)*PredictedFrequency,0),PredictedCL=round(PredictedPureIBNRClaimsChainLadder,0))
 
-#Note: Chain ladder can predict better if periods brake down to months or quarters
+#Note: Chain ladder can predict better if periods break down to months or quarters
 
 #Sliced LogNormal-Pareto claim Severity assumption
 mu=5.6

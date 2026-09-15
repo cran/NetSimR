@@ -7,15 +7,15 @@
 ILFSlicedLNormPareto(xLow, xHigh, mu, sigma, SlicePoint, shape)
 }
 \arguments{
-\item{xLow}{A positive real number -  the claim amount where the Limit Factor Curve will be evaluated from.}
+\item{xLow}{A non-negative real number -  the claim amount where the Limit Factor Curve will be evaluated from.}
 
-\item{xHigh}{A positive real number -  the claim amount where the Limit Factor Curve will be evaluated to.}
+\item{xHigh}{A non-negative real number -  the claim amount where the Limit Factor Curve will be evaluated to.}
 
 \item{mu}{A real number -  the first parameter of the attritional Claim Severity's LogNormal distribution.}
 
 \item{sigma}{A positive real number -  the second parameter of the attritional Claim Severity's LogNormal distribution.}
 
-\item{SlicePoint}{A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution.}
+\item{SlicePoint}{A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution. An infinite slice point gives the LogNormal distribution.}
 
 \item{shape}{A positive real number - the shape parameter of the tail Claim Severity's Pareto distribution.}
 }
@@ -29,3 +29,11 @@ Increased Limit Factor Curve from a Sliced LogNormal Pareto severity distributio
 ILFSlicedLNormPareto(800,1200,6,1.5,1000,1.2)
 ILFSlicedLNormPareto(2000,4000,7,1.6,3000,1.4)
 }
+\seealso{
+Other ILF functions:
+\code{\link[=ILFGamma]{ILFGamma()}},
+\code{\link[=ILFLNorm]{ILFLNorm()}},
+\code{\link[=ILFPareto]{ILFPareto()}},
+\code{\link[=ILFSlicedGammaPareto]{ILFSlicedGammaPareto()}}
+}
+\concept{ILF functions}

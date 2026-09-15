@@ -12,3 +12,4 @@ The severity distribution parameter placeholders.
 \description{
 A data frame with the severity distribution parameter placeholders
 }
+\keyword{internal}

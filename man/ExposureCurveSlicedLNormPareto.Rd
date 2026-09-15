@@ -7,18 +7,18 @@
 ExposureCurveSlicedLNormPareto(x, mu, sigma, SlicePoint, shape)
 }
 \arguments{
-\item{x}{A positive real number -  the claim amount where the exposure curve will be evaluated.}
+\item{x}{A non-negative real number -  the claim amount where the exposure curve will be evaluated.}
 
 \item{mu}{A real number -  the first parameter of the attritional Claim Severity's LogNormal distribution.}
 
 \item{sigma}{A positive real number -  the second parameter of the attritional Claim Severity's LogNormal distribution.}
 
-\item{SlicePoint}{A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution.}
+\item{SlicePoint}{A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution. An infinite slice point gives the LogNormal distribution.}
 
 \item{shape}{A positive real number - the shape parameter of the tail Claim Severity's Pareto distribution.}
 }
 \value{
-The value of the Exposure curve at \code{x} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}. The exposure curve divides by the mean, which is infinite when \code{shape <= 1}; the function returns 0 in that case.
+The value of the Exposure curve at \code{x} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}. The exposure curve divides by the mean, which is infinite when \code{shape <= 1} (and \code{SlicePoint} is finite); the function returns 0 in that case.
 }
 \description{
 Exposure Curve from a Sliced LogNormal Pareto severity distribution
@@ -27,3 +27,11 @@ Exposure Curve from a Sliced LogNormal Pareto severity distribution
 ExposureCurveSlicedLNormPareto(1200,6,1.5,1000,1.2)
 ExposureCurveSlicedLNormPareto(4000,7,1.6,3000,1.4)
 }
+\seealso{
+Other exposure curve functions:
+\code{\link[=ExposureCurveGamma]{ExposureCurveGamma()}},
+\code{\link[=ExposureCurveLNorm]{ExposureCurveLNorm()}},
+\code{\link[=ExposureCurvePareto]{ExposureCurvePareto()}},
+\code{\link[=ExposureCurveSlicedGammaPareto]{ExposureCurveSlicedGammaPareto()}}
+}
+\concept{exposure curve functions}

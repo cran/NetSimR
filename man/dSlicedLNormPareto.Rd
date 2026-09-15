@@ -7,18 +7,18 @@
 dSlicedLNormPareto(x, mu, sigma, SlicePoint, shape)
 }
 \arguments{
-\item{x}{A positive real number -  the claim amount where the probability density function (pdf) will be evaluated.}
+\item{x}{A real number -  the claim amount where the probability density function (pdf) will be evaluated. The pdf is 0 for negative \code{x}.}
 
 \item{mu}{A real number -  the first parameter of the attritional Claim Severity's LogNormal distribution.}
 
 \item{sigma}{A positive real number -  the second parameter of the attritional Claim Severity's LogNormal distribution.}
 
-\item{SlicePoint}{A positive real number - the slice point and the scale parameter of the Claim Severity's Pareto distribution.}
+\item{SlicePoint}{A positive real number - the slice point and the scale parameter of the Claim Severity's Pareto distribution. An infinite slice point gives the LogNormal distribution.}
 
 \item{shape}{A positive real number - the shape parameter of the Claim Severity's Pareto distribution.}
 }
 \value{
-The value of the probability density function (pdf) at \code{x} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}.
+The value of the probability density function (pdf) at \code{x} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}. A non-numeric argument or a non-positive \code{sigma}, \code{SlicePoint} or \code{shape} is an error; \code{NA} values give \code{NA}.
 }
 \description{
 The probability density function (pdf) of a Sliced LogNormal Pareto severity distribution
@@ -27,3 +27,14 @@ The probability density function (pdf) of a Sliced LogNormal Pareto severity dis
 dSlicedLNormPareto(1200,6,1.5,1000,1.2)
 dSlicedLNormPareto(4000,7,1.6,3000,1.4)
 }
+\seealso{
+Other sliced distribution functions:
+\code{\link[=SlicedGammaParetoMean]{SlicedGammaParetoMean()}},
+\code{\link[=SlicedLNormParetoMean]{SlicedLNormParetoMean()}},
+\code{\link[=dSlicedGammaPareto]{dSlicedGammaPareto()}},
+\code{\link[=pSlicedGammaPareto]{pSlicedGammaPareto()}},
+\code{\link[=pSlicedLNormPareto]{pSlicedLNormPareto()}},
+\code{\link[=qSlicedGammaPareto]{qSlicedGammaPareto()}},
+\code{\link[=qSlicedLNormPareto]{qSlicedLNormPareto()}}
+}
+\concept{sliced distribution functions}

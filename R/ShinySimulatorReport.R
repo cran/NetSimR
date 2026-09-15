@@ -589,23 +589,23 @@ simulation_report_theme_js <- "
 #' @noRd
 report_theme_switch <- function() {
   icon <- function(paths) {
-    htmltools::HTML(paste0(
+    shiny::HTML(paste0(
       '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" ',
       'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">', paths, '</svg>'
     ))
   }
   button <- function(value, label, paths) {
-    htmltools::tags$button(
+    shiny::tags$button(
       type = "button",
       class = "theme-btn",
       `data-theme-value` = value,
       `aria-pressed` = "false",
       title = paste(label, "theme"),
       icon(paths),
-      htmltools::tags$span(label)
+      shiny::tags$span(label)
     )
   }
-  htmltools::div(
+  shiny::div(
     class = "theme-switch",
     role = "group",
     `aria-label` = "Colour theme",
@@ -620,7 +620,7 @@ report_theme_switch <- function() {
 
 #' Write the simulation report as a self-contained HTML file
 #'
-#' Builds the page with htmltools and embeds the charts as PNG images, so the
+#' Builds the page with shiny's HTML tag functions and embeds the charts as PNG images, so the
 #' report needs neither pandoc nor rmarkdown.
 #'
 #' @param file Path of the HTML file to write.
@@ -643,8 +643,8 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
   gross <- column_or_null("gross_claims")
   counts <- column_or_null("claim_counts")
 
-  div <- htmltools::div
-  tags <- htmltools::tags
+  div <- shiny::div
+  tags <- shiny::tags
 
   #special characters built from code points keep this file ASCII-only
   dash <- intToUtf8(8212)
@@ -656,7 +656,13 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
   is_blank <- function(x) is.null(x) || length(x) == 0 || all(is.na(x))
   fmt_num <- function(x, digits = 2) {
     if (is_blank(x)) return(dash)
-    formatC(as.numeric(x), format = "f", digits = digits, big.mark = ",")
+    #adding zero turns -0 (e.g. no claims under a Normal severity with a negative mean) into 0
+    x <- as.numeric(x) + 0
+    out <- formatC(x, format = "f", digits = digits, big.mark = ",")
+    #amounts too large for a readable fixed format (a Pareto severity with a tiny alpha)
+    huge <- is.finite(x) & abs(x) >= 1e15
+    out[huge] <- formatC(x[huge], format = "e", digits = 3)
+    out
   }
   fmt_int <- function(x) if (is_blank(x)) dash else formatC(round(as.numeric(x)), format = "d", big.mark = ",")
   fmt_pct <- function(x, digits = 1) paste0(formatC(100 * x, format = "f", digits = digits), "%")
@@ -666,10 +672,11 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
     if (p > 0 && p < 0.01) fmt_pct(p, 2) else fmt_pct(p)
   }
   #headline amounts use one decimal style for the whole report, set by the scale of the results
-  amount_digits <- if (max(abs(c(claims, gross))) >= 1000) 0 else 2
+  #(the results are unrounded; small amounts get enough decimals not to show as zero)
+  amount_digits <- display_digits(c(claims, gross))
   fmt_amount <- function(x) if (is_blank(x)) dash else fmt_num(x, amount_digits)
   #settings amounts are formatted on their own scale
-  fmt_setting <- function(x) if (is_blank(x)) dash else fmt_num(x, if (abs(as.numeric(x)) >= 1000) 0 else 2)
+  fmt_setting <- function(x) if (is_blank(x)) dash else fmt_num(x, display_digits(x))
   fmt_return_period <- function(p) paste("1 in", formatC(round(1 / (1 - p)), format = "d", big.mark = ","))
 
   known <- function(options, id) !is_blank(id) && is.character(id) && id %in% names(options)
@@ -723,16 +730,23 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
     graphics::par(mar = mar, mgp = c(3.4, 0.7, 0), las = 1, col.axis = pal$muted,
                   col.lab = pal$label, fg = pal$muted, cex.axis = 0.85, cex.lab = 0.95)
   }
-  axis_labels <- function(at) {
-    if (max(abs(at), na.rm = TRUE) >= 100) formatC(at, format = "f", digits = 0, big.mark = ",") else format(at)
-  }
+  axis_labels <- axis_amount_labels
   x_axis <- function(at) graphics::axis(1, at = at, labels = axis_labels(at), col = pal$grid, col.ticks = pal$grid)
+
+  #infinite totals (draws that overflow, e.g. from a Pareto severity with a tiny alpha)
+  #cannot be drawn: the histogram leaves them out and the curves stop where they start
+  finite_claims <- claims[is.finite(claims)]
+  n_infinite <- n - length(finite_claims)
+  infinite_note <- if (n_infinite > 0) {
+    paste0(fmt_int(n_infinite), " simulations (", fmt_prob(n_infinite / n),
+           ") had infinite totals and are left out of the charts.")
+  }
 
   #layers that are rarely hit produce many zero totals; a single bar at zero would flatten
   #the histogram, so it shows the non-zero totals and states the zero share
   zero_share <- st$zero_share
-  drop_zeros <- zero_share >= 0.2 && any(claims > 0)
-  plot_claims <- if (drop_zeros) claims[claims > 0] else claims
+  drop_zeros <- zero_share >= 0.2 && any(finite_claims > 0)
+  plot_claims <- if (drop_zeros) finite_claims[finite_claims > 0] else finite_claims
   zero_note <- if (drop_zeros) {
     paste0(" ", fmt_pct(zero_share), " of simulations had zero total claims and are left out of this chart.")
   } else {
@@ -752,10 +766,18 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
       tags$img(class = paste0("chart-", theme), src = base64enc::dataURI(file = path, mime = "image/png"), alt = alt)
     })
     pal <<- palettes$light
-    htmltools::tagList(images)
+    shiny::tagList(images)
+  }
+
+  #a chart with nothing finite to draw shows a short message instead
+  draw_no_data <- function(message) {
+    chart_par()
+    graphics::plot.new()
+    graphics::text(0.5, 0.5, message, col = pal$muted, cex = 0.95)
   }
 
   draw_histogram <- function() {
+    if (length(plot_claims) == 0) return(draw_no_data("Every total is infinite, so there is nothing to draw."))
     chart_par()
     h <- graphics::hist(plot_claims, breaks = 80, plot = FALSE)
     y_top <- max(h$counts) * 1.1
@@ -766,8 +788,9 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
     graphics::plot(h, col = pal$blue, border = pal$bg, add = TRUE)
     x_axis(pretty(h$breaks))
     graphics::axis(2, at = y_at, labels = formatC(y_at, format = "d", big.mark = ","), lwd = 0)
-    graphics::abline(v = claims_mean, col = pal$navy, lty = 2, lwd = 1.8)
-    graphics::abline(v = var995, col = pal$red, lty = 2, lwd = 1.8)
+    #an infinite mean or VaR has no place on the axis; the legend still gives it
+    if (is.finite(claims_mean)) graphics::abline(v = claims_mean, col = pal$navy, lty = 2, lwd = 1.8)
+    if (is.finite(var995)) graphics::abline(v = var995, col = pal$red, lty = 2, lwd = 1.8)
     graphics::legend("topright", bty = "n", cex = 0.85, text.col = pal$label, lty = 2, lwd = 1.8,
                      col = c(pal$navy, pal$red),
                      legend = c(paste("Mean", fmt_amount(claims_mean)), paste("VaR 99.5%", fmt_amount(var995))))
@@ -779,23 +802,31 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
   draw_return_periods <- function(series) {
     rps <- exp(seq(log(2), log(max_return_period), length.out = 300))
     ys <- lapply(series, function(x) quantile_of_vec(x$values, 1 - 1 / rps))
-    y_range <- range(c(0, unlist(ys)))
+    #infinite losses are left out of the limits; the curves stop where they start
+    y_range <- range(c(0, unlist(ys)), finite = TRUE)
+    #totals that are all zero still need an axis
+    if (y_range[1] == y_range[2]) y_range[2] <- 1
     y_at <- pretty(y_range)
     y_labels <- axis_labels(y_at)
     #widen the left margin for long axis labels so the axis title does not overlap them
     left <- max(5.6, 1.6 + 0.62 * max(nchar(y_labels)))
     chart_par(mar = c(4.2, left, 1, 1))
-    graphics::plot(rps, ys[[1]], type = "n", log = "x", axes = FALSE, main = "",
+    graphics::plot(range(rps), y_range, type = "n", log = "x", axes = FALSE, main = "",
                    xlab = "Return period", ylab = "", ylim = y_range)
     graphics::title(ylab = "Total claims", line = left - 1.3)
-    ticks <- c(2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000)
-    ticks <- ticks[ticks <= max_return_period]
+    ticks <- return_period_axis_ticks[return_period_axis_ticks <= max_return_period]
     graphics::abline(v = ticks, col = pal$grid, lwd = 0.8)
     graphics::abline(h = y_at, col = pal$grid, lwd = 0.8)
     show_200 <- 200 <= max_return_period
     if (show_200) graphics::abline(v = 200, col = pal$red, lty = 2, lwd = 1.5)
     for (i in rev(seq_along(series))) {
-      graphics::lines(rps, ys[[i]], col = pal[[series[[i]]$col]], lwd = series[[i]]$lwd, lty = series[[i]]$lty)
+      finite <- is.finite(ys[[i]])
+      graphics::lines(rps[finite], ys[[i]][finite], col = pal[[series[[i]]$col]], lwd = series[[i]]$lwd, lty = series[[i]]$lty)
+    }
+    if (!any(is.finite(unlist(ys)))) {
+      #centred on the log scale of the x axis
+      graphics::text(sqrt(2 * max_return_period), mean(y_range), "The losses are infinite at every return period shown.",
+                     col = pal$muted, cex = 0.95)
     }
     graphics::axis(1, at = ticks, labels = paste("1 in", formatC(ticks, format = "d", big.mark = ",")),
                    col = pal$grid, col.ticks = pal$grid, cex.axis = 0.8)
@@ -808,13 +839,18 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
   }
 
   draw_cdf <- function() {
-    chart_par()
     cdf_probs <- seq(0, 1, length.out = 1001)
     cdf_x <- quantile_of_vec(claims, cdf_probs)
+    #with infinite totals the curve stops below 100%, at the share of finite totals
+    finite <- is.finite(cdf_x)
+    if (!any(finite)) return(draw_no_data("Every total is infinite, so there is nothing to draw."))
+    cdf_x <- cdf_x[finite]
+    cdf_probs <- cdf_probs[finite]
+    chart_par()
     graphics::plot(cdf_x, cdf_probs, type = "n", axes = FALSE, main = "",
                    xlab = modelled_label, ylab = "Cumulative probability", ylim = c(0, 1))
     graphics::abline(h = seq(0, 1, 0.25), col = pal$grid, lwd = 0.8)
-    graphics::abline(v = var995, col = pal$red, lty = 2, lwd = 1.5)
+    if (is.finite(var995)) graphics::abline(v = var995, col = pal$red, lty = 2, lwd = 1.5)
     graphics::lines(cdf_x, cdf_probs, type = "s", col = pal$blue, lwd = 2.4)
     x_axis(pretty(range(cdf_x)))
     graphics::axis(2, at = seq(0, 1, 0.25), labels = paste0(seq(0, 100, 25), "%"), lwd = 0)
@@ -872,7 +908,7 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
     div(
       class = "setting-card",
       div(class = "setting-title", title),
-      tags$dl(lapply(names(rows), function(key) htmltools::tagList(tags$dt(key), tags$dd(rows[[key]]))))
+      tags$dl(lapply(names(rows), function(key) shiny::tagList(tags$dt(key), tags$dd(rows[[key]]))))
     )
   }
 
@@ -908,6 +944,10 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
   key_results <- report_section(
     "key-results", "Key results",
     tags$p(class = "section-intro", key_intro),
+    if (n_infinite > 0) div(class = "callout callout-warning", paste0(
+      fmt_int(n_infinite), " of ", fmt_int(n), " simulations had infinite totals, so the figures that ",
+      "include them are infinite. This happens when claim draws overflow, e.g. with a very small Pareto alpha."
+    )),
     div(
       class = "kpi-grid",
       tile("Mean", fmt_amount(claims_mean), paste(fmt_int(n), "simulations")),
@@ -1005,6 +1045,18 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
       net = "The structures exclude layers, so the modelled totals are the retained (net) losses. Ceded is gross minus net.",
       mixed = "The structures mix layers and exclusions, so the totals are shown as they come out of the structures, next to gross."
     )
+    #when gross and the modelled total are both infinite, their difference is unknown; its
+    #column is blank and its curve left out
+    unknown_note <- NULL
+    known <- !vapply(columns, anyNA, logical(1))
+    if (isTRUE(summary$gross$unknown > 0)) {
+      unknown_name <- names(columns)[!known][1]
+      unknown_note <- paste0(
+        fmt_int(summary$gross$unknown), " simulations had infinite gross and ", tolower(names(columns)[2]),
+        " totals, so their ", tolower(unknown_name), " amount (infinite minus infinite) is unknown and the ",
+        unknown_name, " column is left blank."
+      )
+    }
     comparison_chart <- if (max_return_period >= 5) {
       styles <- list(
         list(col = "grey", lty = 2, lwd = 2.2),
@@ -1014,9 +1066,9 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
       comparison_series <- stats::setNames(
         lapply(seq_along(columns), function(i) c(list(values = columns[[i]]), styles[[i]])),
         names(columns)
-      )
+      )[known]
       div(class = "chart-card",
-          tags$h3(paste(paste(names(columns), collapse = ", "), "by return period")),
+          tags$h3(paste(paste(names(comparison_series), collapse = ", "), "by return period")),
           tags$p(class = "chart-note", "How the structures change the loss at each return period, on a log scale."),
           chart_image(function() draw_return_periods(comparison_series), 4.2, "Gross, ceded and net losses by return period"))
     }
@@ -1027,7 +1079,8 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
         class = "table-card",
         report_table(comparison, numeric_cols = seq(2, ncol(comparison))),
         tags$p(class = "table-note",
-               "Gross is after tail adjustments and the severity cap, before reinsurance. Each column's percentiles come from its own simulations, so net VaR is not gross VaR minus ceded VaR.")
+               "Gross is after tail adjustments and the severity cap, before reinsurance. Each column's percentiles come from its own simulations, so net VaR is not gross VaR minus ceded VaR."),
+        if (!is.null(unknown_note)) tags$p(class = "table-note", unknown_note)
       ),
       if (!is.null(comparison_chart)) div(style = "margin-top: 16px;", comparison_chart)
     )
@@ -1180,6 +1233,7 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
 
   charts <- report_section(
     "charts", "Charts",
+    if (!is.null(infinite_note)) div(class = "callout callout-warning", infinite_note),
     div(class = "chart-card",
         tags$h3("Distribution of total claims"),
         tags$p(class = "chart-note", paste0("Dashed lines mark the mean and the 99.5% VaR of all simulations.", zero_note)),
@@ -1199,6 +1253,9 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
       tags$li("VaR is the loss exceeded only with the stated probability. TVaR is the average loss in those worst cases, so it is always at least as large as VaR."),
       tags$li("The return period shows the same probability as a frequency: 99.5% corresponds to a 1 in 200 year event."),
       if (has_gross) tags$li("Gross is before reinsurance. Ceded is what the layers pay, and net is what remains."),
+      if (!no_structure(eel) && !no_structure(al)) {
+        tags$li("The aggregate layer works on each period's total after the each-and-every-loss structure: the aggregate deductible comes off first, then the aggregate limit and the reinstatement capacity cap what is left.")
+      },
       tags$li("The accuracy ranges reflect simulation noise only, not uncertainty in the chosen distributions or parameters."),
       tags$li("Figures reflect the tail adjustments and reinsurance structures listed under Model settings.")
     ))
@@ -1255,7 +1312,7 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
     )
   )
 
-  #the head is written by hand: htmltools moves tags$head() content out when rendering to text,
+  #the head is written by hand: rendering tags to text moves tags$head() content out,
   #which would drop the title and the styles
   html <- enc2utf8(paste0(
     "<!DOCTYPE html>\n",

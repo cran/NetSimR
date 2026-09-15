@@ -26,8 +26,30 @@ test_that("an excluded layer keeps what the limited layer does not take", {
   expect_equal(retained, c(0, 5, 40, 40, 150))
 })
 
-test_that("an unknown structure is an error", {
+test_that("the structure must be one of the options, given as a single string", {
+  options_text <- "must be one of 'No Reinsurance Structure', 'Unlimited Layer', 'Limited Layer', 'Exclude Layer'."
   expect_error(apply_deductible_limit(c(1, 2), "Something Else", 1, 1), "Unknown reinsurance structure")
+  expect_error(apply_deductible_limit(c(1, 2), "Something Else", 1, 1), "(got 'Something Else')", fixed = TRUE)
+  expect_error(apply_deductible_limit(c(1, 2), "limited", 1, 1), options_text, fixed = TRUE)
+  #NA and two structures used to give "missing value where TRUE/FALSE needed" and
+  #"the condition has length > 1"
+  for (bad in list(NA, NA_character_, c("Limited Layer", "Exclude Layer"), character(0), NULL, 1)) {
+    expect_error(apply_deductible_limit(1:3, bad, 1, 1), options_text, fixed = TRUE, info = deparse(bad))
+  }
+})
+
+test_that("a negative deductible or limit is an error", {
+  #a limit of -20 used to give -20 for every claim
+  expect_error(apply_deductible_limit(c(100, 50, 20), "Limited Layer", 40, -20), "limit must not be negative")
+  expect_error(apply_deductible_limit(c(100, 50, 20), "Exclude Layer", 40, -20), "limit must not be negative")
+  expect_error(apply_deductible_limit(c(100, 50, 20), "Unlimited Layer", -1, 20), "deductible must not be negative")
+  expect_error(apply_deductible_limit(c(100, 50, 20), "Limited Layer", -1, 20), "deductible must not be negative")
+  #amounts a structure does not use are not checked
+  expect_equal(apply_deductible_limit(100, "Unlimited Layer", 40, -5), 60)
+  expect_identical(apply_deductible_limit(c(1, 2), "No Reinsurance Structure", -1, -1), c(1, 2))
+  #zero and infinite amounts are valid
+  expect_equal(apply_deductible_limit(c(100, 50), "Limited Layer", 0, Inf), c(100, 50))
+  expect_equal(apply_deductible_limit(c(100, 50), "Limited Layer", Inf, 10), c(0, 0))
 })
 
 test_that("the functions are vectorised and keep zero-length input", {

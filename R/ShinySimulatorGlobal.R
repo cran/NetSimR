@@ -1,8 +1,9 @@
 #help functions
 
-#' Parameter to set the maximum number of pareto slices
+#' Parameter to set the maximum number of Pareto slices
 #'
 #' @return The maximum number of Pareto Slices.
+#' @keywords internal
 max_number_of_pareto_slices <- 6
 
 #' The largest number of simulations a run may have
@@ -46,6 +47,7 @@ rnorm_truncated_at_zero <- function(n, mean, sd) {
 #' @param severity_cap_boolean A variable that if true, the function will cap the claims, otherwise will just return them.
 #' @param severity_cap_amount The claim cap value.
 #' @return If \code{severity_cap_boolean} is true, then will return the minimum of \code{severity_cap_amount} or \code{claims} otherwise will return \code{claims}. The operation is vectorised.
+#' @noRd
 apply_severity_cap <- function(claims, severity_cap_boolean, severity_cap_amount){
   if (!severity_cap_boolean) return(claims)
   pmin(claims, severity_cap_amount)
@@ -54,33 +56,53 @@ apply_severity_cap <- function(claims, severity_cap_boolean, severity_cap_amount
 #' A vector with the reinsurance structure options
 #'
 #' @return The reinsurance structure options
+#' @keywords internal
 reinsurance_structures_options <- c('No Reinsurance Structure', 'Unlimited Layer', 'Limited Layer', 'Exclude Layer')
 
 #' Apply a deductible and limit to claims
 #'
 #' @param gross_claims_data A vector of Claims.
-#' @param reinsurance_structure The chosen reinsurance structure. Options are: 'No Reinsurance Structure', 'Unlimited Layer', 'Limited Layer', 'Exclude Layer'.
-#' @param deductible The deductible of the reinsurance structure.
-#' @param limit The limit of the reinsurance structure.
-#' @return The ceded claims for the structure, with the chosen deductible and limit.
+#' @param reinsurance_structure The chosen reinsurance structure, a single string. Options are: 'No Reinsurance Structure', 'Unlimited Layer', 'Limited Layer', 'Exclude Layer'; anything else is an error.
+#' @param deductible The deductible of the reinsurance structure, zero or more. Not used by 'No Reinsurance Structure'.
+#' @param limit The limit of the reinsurance structure, zero or more. Used only by 'Limited Layer' and 'Exclude Layer'.
+#' @return A vector with one value per claim: for 'Unlimited Layer' and 'Limited Layer', the
+#' amount ceded to the layer; for 'Exclude Layer', the claims with the layer taken out (the
+#' claims less what a 'Limited Layer' with the same deductible and limit would cede); for
+#' 'No Reinsurance Structure', the claims unchanged. Stops with an error when a deductible
+#' or limit the structure uses is negative.
 #' @export
 #' @examples
 #' apply_deductible_limit(c(100, 50, 20), 'Limited Layer', 40, 20)
 #' apply_deductible_limit(c(100, 50, 20), 'Limited Layer', 10, 30)
+#' apply_deductible_limit(c(100, 50, 20), 'Exclude Layer', 40, 20)
 apply_deductible_limit <- function(gross_claims_data, reinsurance_structure, deductible, limit){
+  #NA or several structures would otherwise give "missing value where TRUE/FALSE needed" or
+  #"the condition has length > 1" below
+  if (!(is.character(reinsurance_structure) && length(reinsurance_structure) == 1 &&
+        reinsurance_structure %in% reinsurance_structures_options)) {
+    given <- if (is.character(reinsurance_structure) && length(reinsurance_structure) == 1) {
+      paste0(" (got '", reinsurance_structure, "')")
+    } else {
+      ""
+    }
+    stop("Unknown reinsurance structure", given, ": reinsurance_structure must be one of ",
+         paste0("'", reinsurance_structures_options, "'", collapse = ", "), ".", call. = FALSE)
+  }
   if (reinsurance_structure == 'No Reinsurance Structure') {return(gross_claims_data)}
 
+  #a negative amount would cede more than the claims (or less than nothing)
+  if (isTRUE(any(deductible < 0))) stop("The deductible must not be negative.", call. = FALSE)
   layer_claims <- pmax(gross_claims_data - deductible, 0)
 
   if (reinsurance_structure == 'Unlimited Layer') {return(layer_claims)}
 
+  if (isTRUE(any(limit < 0))) stop("The limit must not be negative.", call. = FALSE)
   limited_layer_claims <- pmin(layer_claims, limit)
 
   if (reinsurance_structure == 'Limited Layer') {return(limited_layer_claims)}
 
-  if (reinsurance_structure == 'Exclude Layer') {return(gross_claims_data - limited_layer_claims)}
-
-  stop("Unknown reinsurance structure: ", reinsurance_structure)
+  # 'Exclude Layer', the only option left
+  gross_claims_data - limited_layer_claims
 }
 
 #' A function slot that may be empty
@@ -102,6 +124,7 @@ setClassUnion("functionOrNULL", c("function", "NULL"))
 #' Allowed ranges are \code{param_min_values} and \code{param_max_values} (NA for no
 #' bound), with \code{param_min_strict} and \code{param_max_strict} marking bounds the
 #' value may not equal.
+#' @keywords internal
 distributionClass <- setClass(
   "distributionClass",
   slots = c(
@@ -154,6 +177,7 @@ distributionClass <- setClass(
 #' A vector with the frequency distribution objects
 #'
 #' @return The frequency distribution objects.
+#' @keywords internal
 freq_dist_options <- c(
   Poisson=distributionClass(
     distrID='Poisson'
@@ -230,6 +254,7 @@ freq_dist_options <- c(
 #' A data frame with the frequency distribution parameter placeholders
 #'
 #' @return The frequency distribution parameter placeholders.
+#' @keywords internal
 freq_dist_parameter_placeholders <- data.frame(
   param_number = seq_len(max(vapply(freq_dist_options, function(x) length(x@paramIDs), integer(1))))
   ,param_id = paste0("freq_param_", seq_len(max(vapply(freq_dist_options, function(x) length(x@paramIDs), integer(1)))))
@@ -245,6 +270,7 @@ freq_dist_parameter_placeholders <- data.frame(
 #' the app does not carry values across.
 #'
 #' @return The severity distribution objects.
+#' @keywords internal
 sev_dist_options <- c(
   Normal=distributionClass(
     distrID='Normal'
@@ -353,6 +379,7 @@ sev_dist_options <- c(
 #' A data frame with the severity distribution parameter placeholders
 #'
 #' @return The severity distribution parameter placeholders.
+#' @keywords internal
 sev_dist_parameter_placeholders <- data.frame(
   param_number = seq_len(max(vapply(sev_dist_options, function(x) length(x@paramIDs), integer(1))))
   ,param_id = paste0("sev_param_", seq_len(max(vapply(sev_dist_options, function(x) length(x@paramIDs), integer(1)))))
@@ -377,6 +404,11 @@ distribution_param_problems <- function(object, values) {
     label <- paste0("parameter '", labels[i], "'")
     if (!(is.numeric(value) && length(value) == 1 && !is.na(value))) {
       problems <- c(problems, label)
+      next
+    }
+    if (!is.finite(value)) {
+      #an infinite parameter makes the draws fail or gives infinite or NaN totals
+      problems <- c(problems, paste(label, "must be finite"))
       next
     }
     if (isTRUE(pick(object@param_whole_numbers, i, FALSE)) && value != round(value)) {
@@ -537,7 +569,9 @@ pareto_splice <- function(model, thresholds, alphas) {
 #' Find missing or invalid simulation settings
 #'
 #' Checks every setting that the chosen options require: that it is a number, and that
-#' it lies in its allowed range.
+#' it lies in its allowed range. Distribution parameters, slice alphas, counts (the number
+#' of simulations, the chunk size, the number of reinstatements) and the seed must be
+#' finite; the severity cap, deductibles, limits and slice thresholds may be Inf.
 #'
 #' @param settings A named list of \code{simulate_function} arguments.
 #' @return A character vector naming each setting that is missing or invalid.
@@ -549,9 +583,13 @@ find_missing_simulation_settings <- function(settings) {
   is_number <- function(x) is.numeric(x) && length(x) == 1 && !is.na(x)
   nth <- function(x, i) if (i <= length(x)) x[[i]] else NULL
   #a number that must be present and at least (or, when strict, above) a minimum
-  check_amount <- function(value, label, minimum = 0, strict = FALSE, whole = FALSE, maximum = NA) {
+  check_amount <- function(value, label, minimum = 0, strict = FALSE, whole = FALSE, maximum = NA, finite = FALSE) {
     if (!is_number(value)) {
       problems <<- c(problems, label)
+      return(invisible(NULL))
+    }
+    if (finite && !is.finite(value)) {
+      problems <<- c(problems, paste(label, "must be finite"))
       return(invisible(NULL))
     }
     if (whole && value != round(value)) problems <<- c(problems, paste(label, "must be a whole number"))
@@ -573,20 +611,20 @@ find_missing_simulation_settings <- function(settings) {
 
   if (!is_number(s$numOfSimulations)) {
     problems <- c(problems, "Number of simulations")
-  } else if (s$numOfSimulations != round(s$numOfSimulations) ||
+  } else if (!is.finite(s$numOfSimulations) || s$numOfSimulations != round(s$numOfSimulations) ||
              s$numOfSimulations < 1 || s$numOfSimulations > max_number_of_simulations) {
     problems <- c(problems, paste(
       "Number of simulations must be a whole number between 1 and"
       ,format(max_number_of_simulations, big.mark = ",")
     ))
   }
-  if (!is.null(s$chunk_size)) check_amount(s$chunk_size, "Chunk size", minimum = 1, whole = TRUE)
+  if (!is.null(s$chunk_size)) check_amount(s$chunk_size, "Chunk size", minimum = 1, whole = TRUE, finite = TRUE)
   check_params(s$freq_params, s$freqDistr, freq_dist_options, "Frequency")
   check_params(s$sev_params, s$sevDistr, sev_dist_options, "Severity")
   if (isTRUE(s$seedSetBinary)) {
     if (!is_number(s$seedValue)) {
       problems <- c(problems, "Seed value")
-    } else if (s$seedValue != round(s$seedValue)) {
+    } else if (!is.finite(s$seedValue) || s$seedValue != round(s$seedValue)) {
       problems <- c(problems, "Seed value must be a whole number")
     } else if (abs(s$seedValue) > .Machine$integer.max) {
       #set.seed() only takes integers
@@ -598,7 +636,7 @@ find_missing_simulation_settings <- function(settings) {
   #a Normal truncated at zero needs some probability mass above zero to sample from
   if (isTRUE(s$sevTruncateAtZero) && identical(s$sevDistr, "Normal")) {
     sev <- suppressWarnings(as.numeric(unlist(s$sev_params)))
-    if (length(sev) == 2 && !anyNA(sev) && sev[2] >= 0 &&
+    if (length(sev) == 2 && all(is.finite(sev)) && sev[2] >= 0 &&
         stats::pnorm(0, sev[1], sev[2], lower.tail = FALSE) < 1e-9) {
       problems <- c(problems, paste(
         "Severity Normal truncated at zero has almost no probability above zero",
@@ -615,13 +653,14 @@ find_missing_simulation_settings <- function(settings) {
       problems <- c(problems, paste("Number of Pareto Slices must be a whole number from 1 to", max_number_of_pareto_slices))
     } else {
       for (j in seq_len(s$pareto_slice_times)) {
-        check_amount(nth(s$slice_pareto_alphas, j), paste("Slice", j, "alpha"), minimum = 0, strict = TRUE)
+        check_amount(nth(s$slice_pareto_alphas, j), paste("Slice", j, "alpha"), minimum = 0, strict = TRUE, finite = TRUE)
         check_amount(nth(s$slice_pareto_x_ms, j), paste("Slice", j, "threshold (x_m)"), minimum = 0, strict = TRUE)
       }
       #each slice replaces the tail above its threshold, so thresholds must increase
+      #(compared pairwise rather than with diff(), which gives NaN for two Inf thresholds)
       x_ms <- utils::head(suppressWarnings(as.numeric(unlist(s$slice_pareto_x_ms))), s$pareto_slice_times)
       if (length(x_ms) == s$pareto_slice_times && length(x_ms) > 1 &&
-          !anyNA(x_ms) && any(diff(x_ms) <= 0)) {
+          !anyNA(x_ms) && !all(x_ms[-1] > x_ms[-length(x_ms)])) {
         problems <- c(problems, "Slice thresholds must increase from one slice to the next")
       }
     }
@@ -644,7 +683,7 @@ find_missing_simulation_settings <- function(settings) {
   }
   if (isTRUE(s$reinsuranceStructureEEL == 'Limited Layer') &&
       isTRUE(s$reinsuranceStructureLimitedReinstatements)) {
-    check_amount(s$reinsuranceStructureReinstatementLimit, "Number of Reinstatements", whole = TRUE)
+    check_amount(s$reinsuranceStructureReinstatementLimit, "Number of Reinstatements", whole = TRUE, finite = TRUE)
   }
 
   if (isTRUE(s$reinsuranceStructureAL %in% layers_with_deductible)) {
@@ -661,13 +700,37 @@ find_missing_simulation_settings <- function(settings) {
 #'
 #' A function to simulate frequency - severity of insurance claims using chunked vectorisation.
 #' The function applies severity cap, reinsurance structure for each and every loss claim,
-#' reinsurance structure for aggregate claims, and allows for piecewise pareto slices
+#' reinsurance structure for aggregate claims, and allows for piecewise Pareto slices
+#'
+#' Order of the calculations, for each simulation (a period, e.g. a year): claims are drawn
+#' from the severity distribution (with its Pareto slices) and capped at the severity cap;
+#' the each-and-every-loss (EEL) structure applies to each claim; the results are summed
+#' over the period; then the aggregate deductible comes off that sum, and finally the
+#' aggregate limit and the reinstatement capacity cap what is left. In short: cap -> EEL
+#' layer per claim -> annual sum -> aggregate deductible -> aggregate limit and
+#' reinstatement capacity.
+#'
+#' The reinstatement capacity applies to a 'Limited Layer' EEL structure with limited
+#' reinstatements, which pays at most \code{(reinstatements + 1) * limit} in a period. With
+#' an aggregate 'Unlimited Layer' or 'Limited Layer', the ceded total is
+#' \code{min(max(S - aggregate deductible, 0), aggregate limit, (reinstatements + 1) * limit)},
+#' where S is the sum of the period's EEL recoveries before any capacity (the market
+#' convention for an annual aggregate deductible). For example, three claims of 100 through
+#' a layer of 100 excess of 0 with no reinstatements and an aggregate deductible of 50 cede
+#' \code{min(300 - 50, 100) = 100}. Without an aggregate structure, the capacity caps S.
+#' With an aggregate 'Exclude Layer', the capacity caps S first and the aggregate layer is
+#' then taken out of the capped amount. An unlimited EEL layer, or limited reinstatements
+#' switched off, has no capacity cap. (Before version 0.2.0 the capacity was applied before
+#' the aggregate deductible, which gave smaller ceded totals when the two were combined.)
+#'
+#' Totals are returned at full precision; round them only for display.
 #'
 #' Random numbers: each chunk of simulations uses its own L'Ecuyer-CMRG random stream,
 #' derived from one seed, so a run gives the same results whether or not it runs in
-#' parallel. With \code{seedSetBinary = TRUE} the run is reproducible from \code{seedValue}
-#' and the caller's random number stream is left unchanged; otherwise the seed is drawn
-#' from the caller's stream, so \code{set.seed()} before the call also makes it reproducible.
+#' parallel. With \code{seedSetBinary = TRUE} (the default when a \code{seedValue} is given)
+#' the run is reproducible from \code{seedValue} and the caller's random number stream is
+#' left unchanged; otherwise the seed is drawn from the caller's stream, so
+#' \code{set.seed()} before the call also makes it reproducible.
 #' The streams always use Inversion for normal draws and Rejection sampling, so a seed
 #' gives the same results whatever the caller's \code{RNGkind()}, which is restored afterwards.
 #' Results depend on the chunk size, which by default adapts to the expected number of
@@ -676,8 +739,8 @@ find_missing_simulation_settings <- function(settings) {
 #' @param numOfSimulations The number of simulations to run.
 #' @param freq_params A vector of the frequency distribution parameters.
 #' @param sev_params A vector of the severity distribution parameters.
-#' @param seedSetBinary True if there is a fixed seed, otherwise false.
-#' @param seedValue The seed value, a whole number between \code{-.Machine$integer.max} and \code{.Machine$integer.max}.
+#' @param seedSetBinary True if there is a fixed seed (\code{seedValue}), otherwise false. Defaults to TRUE when a \code{seedValue} is given and FALSE otherwise, so a \code{seedValue} on its own makes the run reproducible; an explicit FALSE ignores \code{seedValue}.
+#' @param seedValue The seed value, a whole number between \code{-.Machine$integer.max} and \code{.Machine$integer.max}, or NULL (the default) for no fixed seed.
 #' @param freqDistr The frequency distribution. Options are as per the freq_dist_options.
 #' @param sevDistr The severity distribution. Options are as per the sev_dist_options.
 #' @param paretoSlice True if there is Pareto slicing.
@@ -696,12 +759,21 @@ find_missing_simulation_settings <- function(settings) {
 #' @param reinsuranceStructureReinstatementLimit The reinstatement limit.
 #' @param multiprocessing True to run the chunks in parallel with the future package, otherwise false. A future plan with more than one worker that the caller has already set is reused and left running. Otherwise the call starts a multisession plan with one worker per available core (\code{parallelly::availableCores()}), shuts those workers down when it finishes and restores the caller's plan, so every such call pays the start-up cost again. To choose the number of workers and reuse them across calls, set a plan first, e.g. \code{future::plan(future::multisession, workers = 4)}.
 #' @param sevTruncateAtZero True to draw Normal severities from the Normal distribution truncated at zero, so that no claim is negative. Ignored for other severity distributions. Defaults to FALSE.
-#' @param chunk_size The number of simulations processed per vectorised batch. By default (NULL) it is chosen from the expected number of claims per simulation, so that a batch holds about a million claims (between 100 and 10,000 simulations).
+#' @param chunk_size The number of simulations processed per vectorised batch. By default (NULL) it is chosen from the expected number of claims per simulation, so that a batch holds about a million claims (between 100 and 10,000 simulations). Because of the floor of 100 simulations, a batch holds more than a million claims when the mean frequency exceeds 10,000 claims per simulation (about 100 million at a mean of a million), and memory use grows with it; give a smaller \code{chunk_size} to keep batches small. Results with a fixed seed depend on the chunk size.
 #' @param gross True (the default) to return the gross total claims before reinsurance. Set it to FALSE when only the totals after the structures are needed: with an each-and-every-loss layer this allows drawing only the claims that reach the layer, which is much faster.
 #' @param shortcuts True (the default) to use exact shortcuts where the settings allow: when no layer, cap, Pareto slice or truncation acts on individual claims, each simulation's total is drawn in one step for the Normal, Gamma, Exponential and fixed severities; with \code{gross = FALSE} and a layer, only the claims above the deductible are drawn. The results follow the same distribution as without shortcuts. Set it to FALSE to simulate every claim.
 #' @param progress An optional function called after each chunk of a sequential run with the fraction done and a short description, e.g. to update a progress bar.
-#' @return A data frame with one row per simulation: the claim count, the total claims after the reinsurance structures, the gross total claims before them (unless \code{gross = FALSE}), and the number of reinstatements used (when reinstatements are limited).
+#' @return A data frame with one row per simulation, at full precision: \code{claim_counts},
+#' the claim count; \code{total_claims}, the total claims after the reinsurance structures;
+#' \code{gross_claims}, the gross total claims before them (after Pareto slices and the
+#' severity cap; unless \code{gross = FALSE}); and, when reinstatements are limited,
+#' \code{number_of_reinstatements_used}: the EEL layer's recoveries in the period (after the
+#' aggregate deductible and limit, when there is an aggregate layer) divided by the EEL
+#' limit, capped at the number of reinstatements, so reinstatements are counted pro rata to
+#' the amount recovered.
 #' Stops with an error that names any required setting that is missing or invalid.
+#' @seealso \code{\link{simulate_claims}}, a simpler interface with short argument names,
+#'   and \code{\link{run_shiny_simulator}} for the same model in an app.
 #' @export
 #' @examples
 #' # 1,000 simulated years of Poisson claim counts with Normal claim sizes, no reinsurance
@@ -724,7 +796,7 @@ simulate_function <- function(
     numOfSimulations,
     freq_params,
     sev_params,
-    seedSetBinary = FALSE,
+    seedSetBinary = !is.null(seedValue),
     seedValue = NULL,
     freqDistr,
     sevDistr,
@@ -936,7 +1008,7 @@ simulate_function <- function(
       old_plan <- future::plan(future::multisession)
       on.exit(future::plan(old_plan), add = TRUE)
     }
-    chunk_results <- future.apply::future_lapply(seq_len(n_chunks), run_chunk, future.seed = chunk_seeds)
+    chunk_results <- run_chunks_in_futures(run_chunk, chunk_seeds)
   } else {
     chunk_results <- vector("list", n_chunks)
     for (i in seq_len(n_chunks)) {
@@ -951,32 +1023,82 @@ simulate_function <- function(
     ,total_claims = unlist(lapply(chunk_results, `[[`, "total_claims"), use.names = FALSE)
   )
   if (isTRUE(gross)) {
-    data$gross_claims <- round(unlist(lapply(chunk_results, `[[`, "gross_claims"), use.names = FALSE), 2)
+    data$gross_claims <- unlist(lapply(chunk_results, `[[`, "gross_claims"), use.names = FALSE)
   }
   rm(chunk_results)
 
-  #apply reinstatements: the layer pays at most (reinstatements + 1) limits in a period
-  if (identical(reinsuranceStructureEEL, 'Limited Layer') && isTRUE(reinsuranceStructureLimitedReinstatements)) {
-    eel_limit <- reinsurance_structure_eel_limit_amount
-    reinstatement_limit <- reinsuranceStructureReinstatementLimit
-    data$total_claims <- pmin(data$total_claims, (reinstatement_limit + 1) * eel_limit)
-    data$number_of_reinstatements_used <- round(pmin(data$total_claims / eel_limit, reinstatement_limit), 2)
+  #the aggregate step, on each simulation's total after the EEL structure (see Details);
+  #a limited EEL layer with limited reinstatements pays at most (reinstatements + 1) limits
+  reinstatements_limited <- identical(reinsuranceStructureEEL, 'Limited Layer') &&
+    isTRUE(reinsuranceStructureLimitedReinstatements)
+  capacity <- if (reinstatements_limited) {
+    (reinsuranceStructureReinstatementLimit + 1) * reinsurance_structure_eel_limit_amount
+  } else {
+    Inf
   }
-
-  #apply reinsurance structure AL
-  data$total_claims <- apply_deductible_limit(
-    data$total_claims
+  apply_al <- function(x) apply_deductible_limit(
+    x
     ,reinsuranceStructureAL
     ,reinsurance_structure_al_dedctible_amount
     ,reinsurance_structure_al_limit_amount
   )
-  data$total_claims <- round(data$total_claims, 2)
+  if (reinsuranceStructureAL %in% c('Unlimited Layer', 'Limited Layer')) {
+    #aggregate layer: its deductible comes off the period's EEL recoveries first, then the
+    #aggregate limit and the reinstatement capacity cap what is left
+    data$total_claims <- pmin(apply_al(data$total_claims), capacity)
+    layer_recoveries <- data$total_claims
+  } else {
+    #no aggregate layer, or an aggregate exclusion taken out of the capped recoveries
+    data$total_claims <- pmin(data$total_claims, capacity)
+    layer_recoveries <- data$total_claims
+    data$total_claims <- apply_al(data$total_claims)
+  }
+  if (reinstatements_limited) {
+    #reinstatements are used pro rata to the amount the layer recovers
+    data$number_of_reinstatements_used <- pmin(
+      layer_recoveries / reinsurance_structure_eel_limit_amount
+      ,reinsuranceStructureReinstatementLimit
+    )
+  }
   return(data)
+}
+
+#' Run the chunks of a simulation on the workers of the current future plan
+#'
+#' Splits the chunks into one contiguous group per worker and runs each group in one
+#' future, so the setup cost is paid once per worker rather than once per chunk. Each
+#' chunk starts from its own random stream, set in the worker just before it runs, so the
+#' results are identical to a sequential run. An error in a chunk is raised again here
+#' with its message.
+#' @param run_chunk Function of the chunk index that returns the chunk's results.
+#' @param chunk_seeds List of L'Ecuyer-CMRG seeds (\code{.Random.seed} values), one per chunk.
+#' @return List of the chunk results, in chunk order.
+#' @noRd
+run_chunks_in_futures <- function(run_chunk, chunk_seeds) {
+  n_chunks <- length(chunk_seeds)
+  #min() also handles backends that report an infinite number of workers
+  groups <- parallel::splitIndices(n_chunks, min(n_chunks, future::nbrOfWorkers()))
+  futures <- lapply(groups, function(chunks) {
+    seeds <- chunk_seeds[chunks]
+    #the future's own seed is the first chunk's stream; giving one tells future that the
+    #expression uses random numbers, and draws nothing from the caller's stream
+    future::future({
+      lapply(seq_along(chunks), function(k) {
+        assign(".Random.seed", seeds[[k]], envir = globalenv())
+        run_chunk(chunks[[k]])
+      })
+    }, seed = seeds[[1]])
+  })
+  unlist(future::value(futures), recursive = FALSE, use.names = FALSE)
 }
 
 #' A function to run the shiny simulator application
 #'
-#' @return Opens the shiny simulator application
+#' @return A shiny app object (class \code{shiny.appobj}). Printing it, as happens when
+#'   \code{run_shiny_simulator()} is called at the console, opens the app; pass it to
+#'   \code{shiny::runApp()} to choose options such as the port.
+#' @seealso \code{\link{simulate_claims}} and \code{\link{simulate_function}}, which run
+#'   the same model from R code.
 #' @export
 #' @examples
 #' if (interactive()) {

@@ -99,6 +99,50 @@ test_that("the app's number of simulations input has the limits that validation 
   expect_settings_error("Number of simulations.*10,000,000", numOfSimulations = max_number_of_simulations + 1)
 })
 
+test_that("infinite distribution parameters, counts and seeds are rejected", {
+  #these used to fail inside the run ("invalid arguments") or give Inf or NaN totals
+  expect_settings_error("lambda.*finite", freq_params = Inf)
+  expect_settings_error("beta.*finite", freqDistr = "Negative_Binomial", freq_params = c(2, Inf))
+  expect_settings_error("number of trials.*finite", freqDistr = "Binomial", freq_params = c(Inf, 0.5))
+  expect_settings_error("Number of claims.*finite", freqDistr = "Fixed_number_of_Counts", freq_params = Inf)
+  expect_settings_error("Standard deviation.*finite", sevDistr = "Normal", sev_params = c(1000, Inf))
+  expect_settings_error("Mean.*finite", sevDistr = "Normal", sev_params = c(-Inf, 10), sevTruncateAtZero = TRUE)
+  expect_settings_error("Scale.*finite", sevDistr = "Gamma", sev_params = c(2, Inf))
+  expect_settings_error("mu.*finite", sev_params = c(-Inf, 1))
+  expect_settings_error("Number of simulations", numOfSimulations = Inf)
+  expect_settings_error("Seed", seedValue = -Inf)
+  expect_settings_error("Chunk size.*finite", chunk_size = Inf)
+  expect_settings_error("Slice 1 alpha.*finite", paretoSlice = TRUE, pareto_slice_times = 1,
+                        slice_pareto_alphas = Inf, slice_pareto_x_ms = 1000)
+  expect_settings_error("Reinstatements.*finite", reinsuranceStructureEEL = "Limited Layer",
+                        reinsurance_structure_eel_dedctible_amount = 100, reinsurance_structure_eel_limit_amount = 1000,
+                        reinsuranceStructureLimitedReinstatements = TRUE, reinsuranceStructureReinstatementLimit = Inf)
+  expect_error(simulate_claims(100, "Poisson", Inf, "LogNormal", c(6, 1)), "lambda.*finite")
+  expect_true(all(is.na(distribution_moments(freq_dist_options, "Poisson", Inf))))
+})
+
+test_that("Inf is still allowed for the cap, deductibles, limits and slice thresholds", {
+  plain <- run_simulation(numOfSimulations = 300)
+  expect_identical(run_simulation(numOfSimulations = 300, sevCapBinary = TRUE, sev_cap_amount = Inf), plain)
+  unlimited <- run_simulation(numOfSimulations = 300, reinsuranceStructureEEL = "Unlimited Layer",
+                              reinsurance_structure_eel_dedctible_amount = 1000)
+  limited <- run_simulation(numOfSimulations = 300, reinsuranceStructureEEL = "Limited Layer",
+                            reinsurance_structure_eel_dedctible_amount = 1000, reinsurance_structure_eel_limit_amount = Inf)
+  expect_identical(limited$total_claims, unlimited$total_claims)
+  above_all <- run_simulation(numOfSimulations = 300, reinsuranceStructureEEL = "Unlimited Layer",
+                              reinsurance_structure_eel_dedctible_amount = Inf)
+  expect_equal(above_all$total_claims, rep(0, 300))
+  aggregate <- run_simulation(numOfSimulations = 300, reinsuranceStructureAL = "Limited Layer",
+                              reinsurance_structure_al_dedctible_amount = 0, reinsurance_structure_al_limit_amount = Inf)
+  expect_equal(aggregate$total_claims, aggregate$gross_claims)
+  sliced <- run_simulation(numOfSimulations = 300, paretoSlice = TRUE, pareto_slice_times = 2,
+                           slice_pareto_alphas = c(2, 1.5), slice_pareto_x_ms = c(1000, Inf))
+  expect_true(all(is.finite(sliced$total_claims)))
+  #two infinite thresholds do not increase; this used to stop with "missing value where TRUE/FALSE needed"
+  expect_settings_error("increas", paretoSlice = TRUE, pareto_slice_times = 2,
+                        slice_pareto_alphas = c(2, 1.5), slice_pareto_x_ms = c(Inf, Inf))
+})
+
 test_that("a Normal with no probability above zero cannot be truncated at zero", {
   expect_settings_error("zero|truncat", sevDistr = "Normal", sev_params = c(-1000, 1), sevTruncateAtZero = TRUE)
   #the same Normal is accepted when truncation is off

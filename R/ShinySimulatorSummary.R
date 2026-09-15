@@ -20,6 +20,48 @@ sorted_quantile <- function(sorted, probs) {
   qs
 }
 
+#' Decimal places for showing amounts of a given scale
+#'
+#' Whole numbers from 1,000 up and two decimals from 0.1; smaller amounts (e.g. results
+#' in millions) get more decimals, so they keep about three significant digits instead
+#' of showing as zero.
+#'
+#' @param x Amounts; the largest finite absolute value sets the scale.
+#' @return A whole number of decimal places, from 0 to 10.
+#' @noRd
+display_digits <- function(x) {
+  x <- abs(suppressWarnings(as.numeric(x)))
+  x <- x[is.finite(x)]
+  largest <- if (length(x) > 0) max(x) else 0
+  if (largest >= 1000) return(0)
+  if (largest >= 0.1 || largest == 0) return(2)
+  min(10, 2 - floor(log10(largest)))
+}
+
+#' Return periods marked on the x axis of the return-period charts
+#'
+#' Shared by the report and the Compare tab; each chart keeps the ticks up to its own
+#' longest return period (a tenth of the simulations, so 1 in 1,000,000 at the largest
+#' run of 10,000,000 simulations).
+#' @noRd
+return_period_axis_ticks <- c(2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000,
+                              1e5, 2e5, 5e5, 1e6)
+
+#' Labels for amount ticks on a chart axis
+#'
+#' Whole numbers with thousands separators from 100 up, and scientific notation from
+#' 1e15 up, where the fixed format would give labels too wide for the chart (e.g. the
+#' totals of a Pareto severity with a tiny alpha).
+#'
+#' @param at The tick values.
+#' @return A character vector of labels, one per tick.
+#' @noRd
+axis_amount_labels <- function(at) {
+  largest <- max(c(abs(at[is.finite(at)]), 0))
+  if (largest >= 1e15) return(format(at, scientific = TRUE, digits = 3, trim = TRUE))
+  if (largest >= 100) formatC(at, format = "f", digits = 0, big.mark = ",") else format(at, trim = TRUE)
+}
+
 #' TVaR of an already sorted vector
 #'
 #' The average of the worst (1 - p) share of simulations, which stays correct when
@@ -51,7 +93,9 @@ sorted_tvar <- function(sorted, p) {
 #'   or "mixed"), \code{modelled_label}, \code{totals}, \code{stats},
 #'   \code{percentiles}, \code{percentiles_dropped}, \code{gross}, \code{layer}
 #'   and \code{frequency}. \code{gross}, \code{layer} and \code{frequency} are
-#'   \code{NULL} when they do not apply.
+#'   \code{NULL} when they do not apply. \code{gross} holds \code{table}, \code{series}
+#'   and \code{unknown}, the number of simulations whose gross and modelled totals are
+#'   both infinite, so that their difference is unknown (NA) and its column blank.
 #' @noRd
 summarise_simulation <- function(settings, results) {
   s <- settings
@@ -69,7 +113,12 @@ summarise_simulation <- function(settings, results) {
 
   is_blank <- function(x) is.null(x) || length(x) == 0 || all(is.na(x))
   is_number <- function(x) is.numeric(x) && length(x) == 1 && !is.na(x)
-  sd_or_na <- function(x) if (n > 1) stats::sd(x) else NA_real_
+  #infinite totals give a NaN standard deviation; it is reported as missing (NA)
+  sd_or_na <- function(x) {
+    if (n < 2) return(NA_real_)
+    value <- stats::sd(x)
+    if (is.nan(value)) NA_real_ else value
+  }
 
   # ---------- what the modelled totals represent ----------
   eel <- s$reinsuranceStructureEEL
@@ -143,6 +192,10 @@ summarise_simulation <- function(settings, results) {
   gross_summary <- NULL
   if (!is.null(gross) && role != "gross") {
     difference <- gross - totals
+    #when the gross and the modelled total are both infinite, the difference is unknown
+    #(Inf - Inf is NaN); it is kept as NA, and that series gets no statistics
+    unknown <- is.infinite(gross) & is.infinite(totals)
+    difference[unknown] <- NA_real_
     series <- switch(
       role,
       ceded = list(Gross = gross, Ceded = totals, Net = difference),
@@ -151,11 +204,15 @@ summarise_simulation <- function(settings, results) {
     )
     gross_mean <- mean(gross)
     columns <- lapply(series, function(x) {
+      #sort() would drop the unknown values and give statistics of the others only
+      if (anyNA(x)) return(rep(NA_real_, 7))
       x_sorted <- sort(x)
       x_mean <- mean(x)
+      share <- if (gross_mean > 0) x_mean / gross_mean else NA_real_
       c(
         x_mean,
-        if (gross_mean > 0) x_mean / gross_mean else NA_real_,
+        #Inf / Inf, when both means are infinite
+        if (is.nan(share)) NA_real_ else share,
         sd_or_na(x),
         sorted_quantile(x_sorted, c(0.5, 0.99, 0.995)),
         sorted_tvar(x_sorted, 0.995)
@@ -167,7 +224,7 @@ summarise_simulation <- function(settings, results) {
       check.names = FALSE,
       stringsAsFactors = FALSE
     )
-    gross_summary <- list(table = table, series = series)
+    gross_summary <- list(table = table, series = series, unknown = sum(unknown))
   }
 
   # ---------- layer metrics ----------
@@ -175,19 +232,16 @@ summarise_simulation <- function(settings, results) {
   if (role == "ceded") {
     eel_limit <- s$reinsurance_structure_eel_limit_amount
     al_limit <- s$reinsurance_structure_al_limit_amount
-    al_deductible <- if (is_number(s$reinsurance_structure_al_dedctible_amount)) s$reinsurance_structure_al_dedctible_amount else 0
     reinstatements_limited <- identical(eel, "Limited Layer") && isTRUE(s$reinsuranceStructureLimitedReinstatements) &&
       is_number(s$reinsuranceStructureReinstatementLimit)
 
-    #the most the layers can pay in one period
+    #the most the layers can pay in one period: the reinstatement capacity and the aggregate
+    #limit; the aggregate deductible comes off the recoveries before either caps them
     capacity <- Inf
     if (reinstatements_limited && is_number(eel_limit)) {
       capacity <- (s$reinsuranceStructureReinstatementLimit + 1) * eel_limit
     }
-    if (structure_kind(al) == "layer") {
-      capacity <- max(capacity - al_deductible, 0)
-      if (identical(al, "Limited Layer") && is_number(al_limit)) capacity <- min(capacity, al_limit)
-    }
+    if (identical(al, "Limited Layer") && is_number(al_limit)) capacity <- min(capacity, al_limit)
 
     #loss on line uses the aggregate limit when there is one, otherwise the each-and-every-loss limit
     line_limit <- NA_real_
@@ -202,9 +256,9 @@ summarise_simulation <- function(settings, results) {
 
     hit <- totals > 0
     exhaust_prob <- NA_real_
+    #totals are unrounded; the relative tolerance only absorbs floating-point error in the sums
     if (is.finite(capacity)) {
-      tolerance <- max(capacity * 1e-9, 0.005)
-      exhaust_prob <- mean(totals >= capacity - tolerance)
+      exhaust_prob <- mean(totals >= capacity * (1 - 1e-9))
     }
 
     #reinstatement figures need the limit and the column that simulate_function adds for it
@@ -214,7 +268,8 @@ summarise_simulation <- function(settings, results) {
     if (reinstatements_limited && !is.null(reinstatements_used)) {
       reinstatement_limit <- s$reinsuranceStructureReinstatementLimit
       reinstatements_avg <- mean(reinstatements_used)
-      reinstatements_all_used_prob <- mean(reinstatements_used >= reinstatement_limit - 1e-9)
+      #every reinstatement is used once the recoveries reach reinstatements * limit
+      reinstatements_all_used_prob <- mean(reinstatements_used >= reinstatement_limit * (1 - 1e-9))
     }
 
     layer <- list(

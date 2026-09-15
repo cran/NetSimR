@@ -5,9 +5,8 @@
 #' @param session Session for the server function.
 #' @return Called by shiny for its side effects, the outputs and observers of a
 #'   session; the value is not used.
+#' @keywords internal
 #' @import shiny
-#' @importFrom plotly plot_ly add_lines layout add_bars renderPlotly
-#' @importFrom fitdistrplus fitdist
 
 distribution_fitting_tool_Server <- function(input, output, session) {
 
@@ -71,15 +70,15 @@ distribution_fitting_tool_Server <- function(input, output, session) {
     return(result$par)
   }
 
-  # empirical cdf drawn as a step line
-  add_empirical_cdf <- function(p, claims, weights = NULL, points = dft_ecdf_points(claims)) {
-    add_lines(p, x = points, y = empirical_cdf_at(points, claims, weights), name = "Empirical",
-              line = list(color = dft_plot_colours(dark())$empirical, width = 2.5, shape = "hv"))
-  }
+  # a chart, drawn as a PNG image on a transparent background; each chart reads dark(),
+  # so it is redrawn in the colours of the other theme when the theme changes
+  chart <- function(draw, alt) renderPlot(draw(), bg = "transparent", res = 96, alt = alt)
 
-  add_model_line <- function(p, x, y, name, i, shape = "linear") {
-    add_lines(p, x = x, y = y, name = name,
-              line = list(color = dft_model_palette[(i - 1) %% length(dft_model_palette) + 1], width = 2, shape = shape))
+  # the fitted cdfs of claim size models that have one, named, with the colour of each model
+  model_cdfs <- function(models) {
+    has_cdf <- !vapply(models, function(m) is.null(m$cdf), logical(1))
+    list(cdfs = stats::setNames(lapply(models[has_cdf], function(m) m$cdf), vapply(models[has_cdf], function(m) m$name, "")),
+         colours = dft_model_palette[which(has_cdf)])
   }
 
   ######################
@@ -136,7 +135,8 @@ distribution_fitting_tool_Server <- function(input, output, session) {
     }
   })
 
-  preview_rows <- 10000
+  # the preview shows the first rows; the analyses use every row
+  preview_rows <- 100
 
   output$data_overview <- renderUI({
     req(input$file1)
@@ -152,17 +152,7 @@ distribution_fitting_tool_Server <- function(input, output, session) {
     )
   })
 
-  output$data_table <- reactable::renderReactable({
-    df <- data()
-    if (nrow(df) > preview_rows) df <- df[seq_len(preview_rows), , drop = FALSE]
-    reactable::reactable(
-      df,
-      searchable = TRUE, highlight = TRUE, compact = TRUE, resizable = TRUE,
-      defaultPageSize = 15, showPageSizeOptions = TRUE, pageSizeOptions = c(15, 50, 100),
-      defaultColDef = reactable::colDef(minWidth = 100),
-      theme = dft_reactable_theme()
-    )
-  })
+  output$data_table <- renderUI(dft_data_preview(data(), preview_rows))
 
   ######################
   #Frequency analysis
@@ -186,6 +176,8 @@ distribution_fitting_tool_Server <- function(input, output, session) {
     weights <- weights[keep]
     validate(
       need(length(counts) >= 2, "The column needs at least two valid claim counts."),
+      # the Poisson mean would be 0 and there is no Negative Binomial to fit
+      need(any(counts > 0), "All the claim counts are zero, so no distribution can be fitted."),
       need(all(counts == round(counts)),
            "Claim counts must be whole numbers. For claim amounts, use the Severity tab."),
       need(!weighted || all(weights == round(weights)),
@@ -197,17 +189,22 @@ distribution_fitting_tool_Server <- function(input, output, session) {
   counts_data <- reactive(freq_input()$counts)
   weights_data <- reactive(freq_input()$weights)
 
-  fit_counts <- function(distr, label) {
+  fit_counts <- function(fit, label) {
     x <- freq_input()
-    tryCatch(
-      suppressWarnings(
-        if (x$weighted) fitdist(x$counts, distr, weights = x$weights) else fitdist(x$counts, distr)
-      ),
-      error = function(e) failed_fit(label, e)
-    )
+    tryCatch(fit(x$counts, x$weights), error = function(e) failed_fit(label, e))
   }
-  freq_po_fit <- reactive(fit_counts("pois", "Poisson fit"))
-  freq_nb_fit <- reactive(fit_counts("nbinom", "Negative Binomial fit"))
+  freq_po_fit <- reactive(fit_counts(fit_poisson_mle, "Poisson fit"))
+  freq_nb_fit <- reactive(fit_counts(fit_nbinom_mle, "Negative Binomial fit"))
+
+  # the fitted cdfs for the charts, named, with the colour of each model; a model that failed is left out
+  count_cdfs <- reactive({
+    po <- freq_po_fit()
+    nb <- freq_nb_fit()
+    cdfs <- list()
+    if (!is.null(po)) cdfs$Poisson <- function(q) ppois(q, fit_value(po, "lambda"))
+    if (!is.null(nb)) cdfs[["Negative Binomial"]] <- function(q) pnbinom(q, size = fit_value(nb, "size"), mu = fit_value(nb, "mu"))
+    list(cdfs = cdfs, colours = dft_model_palette[match(names(cdfs), c("Poisson", "Negative Binomial"))])
+  })
 
   # weighted moments; without weights they are the usual mean and sample variance
   freq_moments <- reactive({
@@ -224,16 +221,24 @@ distribution_fitting_tool_Server <- function(input, output, session) {
   output$freq_stats <- renderUI({
     m <- freq_moments()
     x <- freq_input()
-    overdispersed <- isTRUE(m$variance > m$mean)
+    # the suggestion follows the fits: the Negative Binomial when it has a size and the lower AIC
+    nb <- freq_nb_fit()
+    nb_better <- !is.null(nb) && !isTRUE(nb$capped) && isTRUE(nb$aic < fit_stat(freq_po_fit(), "aic"))
+    note <- if (nb_better) {
+      "Lower AIC: the counts are overdispersed"
+    } else if (isTRUE(m$variance > m$mean)) {
+      "Too little overdispersion for the Negative Binomial"
+    } else {
+      "The variance is not above the mean"
+    }
     div(
       class = "dft-stats",
-      dft_stat_tile(if (x$weighted) "Weighted observations" else "Observations", format(m$n, big.mark = ","),
+      dft_stat_tile(if (x$weighted) "Weighted observations" else "Observations", dft_fmt_count(m$n),
                     note = rows_left_out_note(x$dropped), icon_name = "hashtag"),
       dft_stat_tile("Mean", dft_fmt(m$mean), icon_name = "bullseye"),
       dft_stat_tile("Variance", dft_fmt(m$variance), icon_name = "arrows-left-right",
                     note = if (m$mean > 0) paste("Variance / mean:", dft_fmt(m$variance / m$mean, 3))),
-      dft_stat_tile("Suggested model", if (overdispersed) "Negative Binomial" else "Poisson",
-                    note = if (overdispersed) "The variance is above the mean" else "The variance is not above the mean",
+      dft_stat_tile("Suggested model", if (nb_better) "Negative Binomial" else "Poisson", note = note,
                     icon_name = "lightbulb", accent = TRUE)
     )
   })
@@ -254,7 +259,11 @@ distribution_fitting_tool_Server <- function(input, output, session) {
     dft_html_table(
       c("Distribution", "Parameter 1", "Parameter 2", "Log-likelihood", "AIC"), rows,
       best = if (any(is.finite(aic))) which.min(aic), best_label = "Lowest AIC",
-      note = "Negative Binomial with mean r x Beta and variance r x Beta x (1 + Beta), as in the NetSimR simulator."
+      note = paste0(
+        "Negative Binomial with mean r x Beta and variance r x Beta x (1 + Beta), as in the NetSimR simulator.",
+        if (isTRUE(nb$capped)) paste0(" The variance is not above the mean, so the Negative Binomial tends to the Poisson: ",
+                                      "r is set to ", dft_fmt_count(dft_nbinom_max_size), ".")
+      )
     )
   })
 
@@ -262,65 +271,38 @@ distribution_fitting_tool_Server <- function(input, output, session) {
     need_run("execute_freq_analysis", "claim counts")
     x <- freq_input()
     print(summary(x$counts))
-    if (x$weighted) cat("\nTotal weight:", format(sum(x$weights), big.mark = ","), "\n")
+    if (x$weighted) cat("\nTotal weight:", dft_fmt_count(sum(x$weights)), "\n")
   })
 
   output$selected_distribution_summary <- renderPrint({
     need_run("execute_freq_analysis", "claim counts")
     fit <- if (identical(input$FreqDistri, "NegativeBinomial")) freq_nb_fit() else freq_po_fit()
     validate(need(!is.null(fit), "This distribution could not be fitted to the data."))
-    summary(fit)
+    dft_print_count_fit(fit)
   })
 
   # observed share of observations in each bin of counts, against the probability of each fitted model
-  output$count_hist <- renderPlotly({
+  output$count_hist <- chart(function() {
     need_run("execute_freq_analysis", "claim counts")
     x <- freq_input()
-    counts <- x$counts
-    w <- if (is.null(x$weights)) rep(1, length(counts)) else x$weights
-    lowest <- min(counts)
-    width <- max(1, ceiling((max(counts) - lowest + 1) / max(1, or_default(input$count_hist_bins, 20))))
-    starts <- seq(lowest, max(counts), by = width)
-    ends <- starts + width - 1
-    bin <- (counts - lowest) %/% width + 1
-    observed <- vapply(seq_along(starts), function(i) sum(w[bin == i]), numeric(1)) / sum(w)
-    labels <- if (width == 1) format(starts, scientific = FALSE, trim = TRUE) else
-      paste0(format(starts, scientific = FALSE, trim = TRUE), "-", format(ends, scientific = FALSE, trim = TRUE))
-    colours <- dft_plot_colours(dark())
-
-    p <- plot_ly()
-    p <- add_bars(p, x = labels, y = observed, name = "Observed",
-                  marker = list(color = colours$bar, line = list(color = colours$bar_line, width = 1)))
-    models <- list(
-      list(name = "Poisson", fit = freq_po_fit(), cdf = function(q, fit) ppois(q, fit_value(fit, "lambda"))),
-      list(name = "Negative Binomial", fit = freq_nb_fit(),
-           cdf = function(q, fit) pnbinom(q, size = fit_value(fit, "size"), mu = fit_value(fit, "mu")))
+    models <- count_cdfs()
+    d <- dft_count_hist_data(x$counts, x$weights, or_default(input$count_hist_bins, 20), models$cdfs)
+    dft_category_chart(
+      d$labels,
+      bars = list(name = "Observed", values = d$observed, colour = "bar", border = "bar_border"),
+      lines = unname(Map(function(name, y, colour) list(name = name, values = y, colour = colour), names(d$fitted), d$fitted, models$colours)),
+      x_title = "Number of claims", y_title = "Share of observations", dark = dark(), y_percent = TRUE
     )
-    for (i in seq_along(models)) {
-      if (is.null(models[[i]]$fit)) next
-      probability <- models[[i]]$cdf(ends, models[[i]]$fit) - models[[i]]$cdf(starts - 1, models[[i]]$fit)
-      p <- plotly::add_trace(p, x = labels, y = probability, type = "scatter", mode = "lines+markers", name = models[[i]]$name,
-                             line = list(color = dft_model_palette[i], width = 2), marker = list(color = dft_model_palette[i], size = 6))
-    }
-    p <- dft_plot_layout(p, "Number of claims", "Share of observations", dark())
-    layout(p, xaxis = list(type = "category"), yaxis = list(tickformat = ".0%"), bargap = 0.08)
-  })
+  }, alt = "Histogram of the claim counts, with the probabilities of the fitted Poisson and Negative Binomial distributions")
 
-  output$freq_fit_plot <- renderPlotly({
+  output$freq_fit_plot <- chart(function() {
     need_run("execute_freq_analysis", "claim counts")
     x <- freq_input()
-    top <- max(x$counts)
-    points <- if (top <= 5000) seq(0, top) else unique(round(seq(0, top, length.out = 5000)))
-    p <- add_empirical_cdf(plot_ly(), x$counts, x$weights, points)
-    po <- freq_po_fit()
-    if (!is.null(po)) p <- add_model_line(p, points, ppois(points, fit_value(po, "lambda")), "Poisson", 1, "hv")
-    nb <- freq_nb_fit()
-    if (!is.null(nb)) {
-      p <- add_model_line(p, points, pnbinom(points, size = fit_value(nb, "size"), mu = fit_value(nb, "mu")),
-                          "Negative Binomial", 2, "hv")
-    }
-    dft_plot_layout(p, "Number of claims", "Cumulative probability", dark(), y_range = c(0, 1.02))
-  })
+    models <- count_cdfs()
+    d <- dft_count_cdf_data(x$counts, x$weights, models$cdfs)
+    dft_line_chart(dft_cdf_series(d, models$colours, step = TRUE), "Number of claims", "Cumulative probability",
+                   dark(), ylim = c(0, 1.02))
+  }, alt = "Empirical and fitted cumulative distributions of the claim counts")
 
   ######################
   #Severity analysis
@@ -382,7 +364,8 @@ distribution_fitting_tool_Server <- function(input, output, session) {
     need_run("execute_sev_analysis", "claim size")
     x <- severity_data()
     models <- sev_models()
-    ks <- vapply(models, function(m) if (is.null(m$cdf)) NA_real_ else ks_distance(x, m$cdf), numeric(1))
+    sorted <- sort(x)
+    ks <- vapply(models, function(m) if (is.null(m$cdf)) NA_real_ else ks_distance(sorted, m$cdf, sorted = TRUE), numeric(1))
     rows <- lapply(seq_along(models), function(i) {
       m <- models[[i]]
       params <- names(m$params)
@@ -402,13 +385,11 @@ distribution_fitting_tool_Server <- function(input, output, session) {
     )
   })
 
-  output$sev_hist <- renderPlotly({
+  output$sev_hist <- chart(function() {
     need_run("execute_sev_analysis", "claim size")
-    colours <- dft_plot_colours(dark())
-    p <- plot_ly(x = severity_data(), type = "histogram", nbinsx = or_default(input$severity_hist_bins, 20), name = "Claims",
-                 marker = list(color = colours$bar, line = list(color = colours$bar_line, width = 1)))
-    dft_plot_layout(p, "Claim size", "Number of claims", dark(), hovermode = "closest")
-  })
+    d <- dft_severity_hist_data(severity_data(), or_default(input$severity_hist_bins, 20))
+    dft_histogram_chart(d$breaks, d$counts, "Claim size", "Number of claims", dark())
+  }, alt = "Histogram of the claim sizes")
 
   output$sev_summary <- renderPrint({
     need_run("execute_sev_analysis", "claim size")
@@ -418,18 +399,14 @@ distribution_fitting_tool_Server <- function(input, output, session) {
     print(quantile(x, c(0.75, 0.9, 0.95, 0.99, 0.995)))
   })
 
-  output$sev_fit_plot <- renderPlotly({
+  output$sev_fit_plot <- chart(function() {
     need_run("execute_sev_analysis", "claim size")
-    x <- severity_data()
     log_scale <- isTRUE(input$sev_fit_log_scale)
-    grid <- dft_severity_grid(x, log_scale)
-    p <- add_empirical_cdf(plot_ly(), x)
-    models <- sev_models()
-    for (i in seq_along(models)) {
-      if (!is.null(models[[i]]$cdf)) p <- add_model_line(p, grid, models[[i]]$cdf(grid), models[[i]]$name, i)
-    }
-    dft_plot_layout(p, "Claim size", "Cumulative probability", dark(), x_log = log_scale, y_range = c(0, 1.02))
-  })
+    models <- model_cdfs(sev_models())
+    d <- dft_severity_cdf_data(severity_data(), models$cdfs, log_scale)
+    dft_line_chart(dft_cdf_series(d, models$colours), "Claim size", "Cumulative probability", dark(),
+                   x_log = log_scale, ylim = c(0, 1.02))
+  }, alt = "Empirical and fitted cumulative distributions of the claim sizes")
 
   ######################
   #Sliced Sev analysis
@@ -557,37 +534,28 @@ distribution_fitting_tool_Server <- function(input, output, session) {
     )
   })
 
-  output$sliced_sev_cdf_plot <- renderPlotly({
+  output$sliced_sev_cdf_plot <- chart(function() {
     need_run("execute_sliced_sev_analysis", "claim size")
-    x <- sliced_sev_data()
     points <- slicing_points()
     log_scale <- isTRUE(input$sev_cens_fit_log_scale)
-    grid <- sort(unique(c(dft_severity_grid(x, log_scale), points)))
     whole <- unname(slc_sev_lnorm_fit()$estimate)
     cdfs <- sliced_cdfs()
-    p <- add_empirical_cdf(plot_ly(), x)
-    p <- add_model_line(p, grid, plnorm(grid, whole[1], whole[2]), "LogNormal", 1)
-    p <- add_model_line(p, grid, cdfs$one(grid), "LogNormal - Pareto", 2)
-    p <- add_model_line(p, grid, cdfs$two(grid), "LogNormal - Pareto - Pareto", 3)
-    p <- dft_plot_layout(p, "Claim size", "Cumulative probability", dark(), x_log = log_scale, y_range = c(0, 1.02))
-    layout(p, shapes = dft_vlines(points, log_scale, dark()))
-  })
+    models <- list(LogNormal = function(q) plnorm(q, whole[1], whole[2]),
+                   "LogNormal - Pareto" = cdfs$one, "LogNormal - Pareto - Pareto" = cdfs$two)
+    d <- dft_severity_cdf_data(sliced_sev_data(), models, log_scale, extra_points = points)
+    dft_line_chart(dft_cdf_series(d), "Claim size", "Cumulative probability", dark(),
+                   x_log = log_scale, ylim = c(0, 1.02), vlines = points)
+  }, alt = "Empirical and fitted cumulative distributions of the claim sizes, with the slicing points")
 
-  output$mean_excess_func_plot <- renderPlotly({
+  output$mean_excess_func_plot <- chart(function() {
     need_run("execute_sliced_sev_analysis", "claim size")
-    x <- sliced_sev_data()
-    log_scale <- isTRUE(input$sev_cens_fit_log_scale)
-    points <- dft_ecdf_points(x)
-    mean_excess <- mean_excess_at(points, x)
-    # no claim exceeds the largest point, so its mean excess is undefined
-    defined <- is.finite(mean_excess)
-    p <- add_lines(plot_ly(), x = points[defined], y = mean_excess[defined], name = "Mean excess",
-                   line = list(color = dft_plot_colours(dark())$bar, width = 2))
-    p <- dft_plot_layout(p, "Threshold", "Mean excess over the threshold", dark(), x_log = log_scale, hovermode = "closest")
+    d <- dft_mean_excess_data(sliced_sev_data())
+    # the largest claim has no mean excess, so two different claims leave a single point
+    validate(need(length(d$x) >= 2, "The mean excess chart needs at least three different claim sizes."))
     points_ok <- tryCatch(slicing_points(), error = function(e) NULL)
-    if (!is.null(points_ok)) p <- layout(p, shapes = dft_vlines(points_ok, log_scale, dark()))
-    p
-  })
+    dft_line_chart(list(list(name = "Mean excess", x = d$x, y = d$y, colour = "bar")), "Threshold",
+                   "Mean excess over the threshold", dark(), x_log = isTRUE(input$sev_cens_fit_log_scale), vlines = points_ok)
+  }, alt = "Empirical mean excess function of the claim sizes, with the slicing points")
 
   ######################
   #piecewise pareto
@@ -661,7 +629,8 @@ distribution_fitting_tool_Server <- function(input, output, session) {
            format(sum(x >= mu[i] & x < upper[i]), big.mark = ","), dft_fmt(alpha[i]))
     })
     dft_html_table(c("Layer", "From", "To", "Claims", "Alpha"), rows,
-                   note = "Each alpha is the maximum likelihood estimate for the claims in its layer.")
+                   note = paste("Each layer holds the claims from its threshold up to the next one; layer 1 starts at,",
+                                "and includes, the smallest claim. Each alpha is the maximum likelihood estimate for the claims in its layer."))
   })
 
   output$piecewise_pareto_ks_test <- renderUI({
@@ -685,18 +654,16 @@ distribution_fitting_tool_Server <- function(input, output, session) {
     outputOptions(output, id, suspendWhenHidden = FALSE)
   }
 
-  output$piecewise_pareto_cdf_plot <- renderPlotly({
+  output$piecewise_pareto_cdf_plot <- chart(function() {
     need_run("execute_piecewise_sev_analysis", "claim size")
     piecewise_ready()
-    x <- piecewise_sev_data()
     mu <- piecwise_pareto_mu()
     alpha <- piecwise_pareto_alpha()
     log_scale <- isTRUE(input$piecewise_pareto_fit_log_scale)
-    grid <- sort(unique(c(dft_severity_grid(x, log_scale), mu)))
-    p <- add_empirical_cdf(plot_ly(), x)
-    p <- add_model_line(p, grid, piecewise_pareto_cdf(grid, mu, alpha), "Piecewise Pareto", 1)
-    p <- dft_plot_layout(p, "Claim size", "Cumulative probability", dark(), x_log = log_scale, y_range = c(0, 1.02))
-    layout(p, shapes = dft_vlines(mu, log_scale, dark()))
-  })
+    d <- dft_severity_cdf_data(piecewise_sev_data(), list("Piecewise Pareto" = function(q) piecewise_pareto_cdf(q, mu, alpha)),
+                               log_scale, extra_points = mu)
+    dft_line_chart(dft_cdf_series(d), "Claim size", "Cumulative probability", dark(),
+                   x_log = log_scale, ylim = c(0, 1.02), vlines = mu)
+  }, alt = "Empirical and fitted piecewise Pareto cumulative distributions of the claim sizes, with the thresholds")
 
 }

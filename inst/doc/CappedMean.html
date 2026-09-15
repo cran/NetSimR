@@ -13,7 +13,7 @@
 <meta name="author" content="Yiannis Parizas" />
 
 
-<title>Capped mean, Exposure and Increased Limit Factor curves</title>
+<title>Capped means, exposure curves and increased limit factors</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -338,8 +338,8 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 
 
-<h1 class="title toc-ignore">Capped mean, Exposure and Increased Limit
-Factor curves</h1>
+<h1 class="title toc-ignore">Capped means, exposure curves and increased
+limit factors</h1>
 <h4 class="author">Yiannis Parizas</h4>
 <h4 class="date">14-09-2026</h4>
 
@@ -349,15 +349,15 @@ Factor curves</h1>
 <h2>1.Introduction</h2>
 <p>This vignette will cover capped mean functions, exposure and
 increased limit factor curves of the NetSimR package. It will overview
-the theory behind these functions, propose posible uses and illustrate
+the theory behind these functions, propose possible uses and illustrate
 examples. The distributions covered for claim severities are LogNormal,
 Gamma, Pareto, Sliced LogNormal-Pareto, Sliced Gamma-Pareto. An
 application of the capped mean is suggested in the article “Taken to
 Excess” accessible <a href="https://www.theactuary.com/features/2019/03/2019/03/06/taken-excess">here</a>.</p>
 <div style="page-break-after: always;"></div>
 </div>
-<div id="backround-theory" class="section level2">
-<h2>2.Backround theory</h2>
+<div id="background-theory" class="section level2">
+<h2>2.Background theory</h2>
 <p>Let claim severity <span class="math inline">\(x\)</span> originate
 from a probability density function <span class="math inline">\(f(x)\)</span> and a cumulative density function
 <span class="math inline">\(F(x)\)</span>. Let claims be capped at
@@ -381,7 +381,7 @@ calculated by: <span class="math display">\[EC(c)=\frac{E(y)}{E(x)}\]</span></p>
 <p>This function provides the ratio of expected capped claims to a
 higher cap <span class="math inline">\(c_{h}\)</span> to the expected
 claims of a lower cap <span class="math inline">\(c_{l}\)</span>. Let
-the claim capped at <span class="math inline">\(c_{h}\)</span> be <span class="math inline">\(y_{h}\)</span> and the claim capped at <span class="math inline">\(c_{h}\)</span> be <span class="math inline">\(y_{h}\)</span>. Increased limit factor curve at a
+the claim capped at <span class="math inline">\(c_{h}\)</span> be <span class="math inline">\(y_{h}\)</span> and the claim capped at <span class="math inline">\(c_{l}\)</span> be <span class="math inline">\(y_{l}\)</span>. Increased limit factor curve at a
 claims caps <span class="math inline">\(c_{h}\)</span> and <span class="math inline">\(c_{l}\)</span> is calculated by: <span class="math display">\[ILF(c_{h},c_{l})=\frac{E(y_{h})}{E(y_{l})}\]</span></p>
 <div style="page-break-after: always;"></div>
 </div>
@@ -407,7 +407,7 @@ Models.</li>
 <h3>3.2 Exposure curve</h3>
 <p>For property lines/sections:</p>
 <ul>
-<li>Pricing/allocating premium of exess of loss layers.</li>
+<li>Pricing/allocating premium of excess of loss layers.</li>
 <li>Loading for large losses.</li>
 </ul>
 <p>Note: for property lines, instead of severity, we may opt to model
@@ -419,7 +419,7 @@ distribution.</p>
 <h3>3.3 Increased limit factor curve</h3>
 <p>For casualty lines/sections:</p>
 <ul>
-<li>Pricing/allocating premium of exess of loss layers.</li>
+<li>Pricing/allocating premium of excess of loss layers.</li>
 <li>Loading for large losses.</li>
 </ul>
 <div style="page-break-after: always;"></div>
@@ -429,7 +429,7 @@ distribution.</p>
 <h2>4. Examples</h2>
 <div id="capped-mean-2" class="section level3">
 <h3>4.1 Capped mean</h3>
-<p>The below code ilustrates an alternative and more accurate approach
+<p>The below code illustrates an alternative and more accurate approach
 to applying capping in regressions, for modelling attritional claims
 part. The code steps are:</p>
 <ul>
@@ -563,10 +563,10 @@ between two particular points is obtained by running the below code:</p>
 <div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a><span class="fu">ILFLNorm</span>(<span class="dv">1000</span>,<span class="dv">1500</span>,<span class="dv">5</span>,<span class="fl">1.6</span>)</span></code></pre></div>
 <pre><code>## [1] 1.155086</code></pre>
 <p>This would be interpreted as: the expected cost of the claims up to
-1,500 currency units is 1.155 times the expected cost is up to 1,000
-currency units. Other distributions follow the same logic. The challenge
-for this exercise would be fitting the severity distribution, rather
-than calculating the Increased Limit Factor curve’s value.</p>
+1,500 currency units is 1.155 times the expected cost of the claims up
+to 1,000 currency units. Other distributions follow the same logic. The
+challenge for this exercise would be fitting the severity distribution,
+rather than calculating the Increased Limit Factor curve’s value.</p>
 </div>
 </div>
 

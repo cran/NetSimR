@@ -14,3 +14,4 @@ The page is built when the package is installed;
 run_shiny_distribution_fitting_tool() pairs it with
 distribution_fitting_tool_Server.
 }
+\keyword{internal}

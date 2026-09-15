@@ -19,3 +19,4 @@ Returns server rendering for the shiny application.
 \description{
 Server function for the Shiny Simulator application
 }
+\keyword{internal}

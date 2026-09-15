@@ -13,7 +13,7 @@
 <meta name="author" content="Yiannis Parizas" />
 
 
-<title>SlicedDistribution</title>
+<title>Sliced LogNormal-Pareto and Gamma-Pareto distributions</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -338,7 +338,8 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 
 
-<h1 class="title toc-ignore">SlicedDistribution</h1>
+<h1 class="title toc-ignore">Sliced LogNormal-Pareto and Gamma-Pareto
+distributions</h1>
 <h4 class="author">Yiannis Parizas</h4>
 <h4 class="date">14-09-2026</h4>
 
@@ -348,20 +349,20 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <h2>1.Introduction</h2>
 <p>This vignette will cover the sliced distributions available in the
 NetSimR package. It will overview the theory behind these functions,
-propose posible uses and illustrate examples. Currently, Sliced
+propose possible uses and illustrate examples. Currently, Sliced
 distributions available are LogNormal and Gamma with a Pareto
 distribution for the tail.</p>
 <div style="page-break-after: always;"></div>
 </div>
-<div id="backround-theory" class="section level2">
-<h2>2.Backround theory</h2>
-<div id="sliced-distribution-backround" class="section level3">
-<h3>2.1 Sliced distribution backround</h3>
+<div id="background-theory" class="section level2">
+<h2>2.Background theory</h2>
+<div id="sliced-distribution-background" class="section level3">
+<h3>2.1 Sliced distribution background</h3>
 <p>At various insurance modelling exercises, it may be the case that a
 sliced distribution provides a significantly better fit than a
 non-sliced distribution. Tail losses may be very influential on the
 premium, as such modelling the tail more accurately would significantly
-improve the accuacy of the premium. This becomes more important when
+improve the accuracy of the premium. This becomes more important when
 modelling upper layers that will be mainly based on the severity tail.
 The analyst may opt to model attritional losses using a regression and
 have a single dimensional Pareto covering all cases. Theory suggests
@@ -375,19 +376,20 @@ fit.</p>
 <h3>2.2 Sliced distribution definition</h3>
 <p>Let claim severity <span class="math inline">\(x\)</span> have a
 probability density function <span class="math inline">\(f(x)\)</span>
-and a cumulative density funtion <span class="math inline">\(F(x)\)</span>. Let <span class="math inline">\(s\)</span> be the slice point. We define <span class="math inline">\(f(x)\)</span> as: <span class="math display">\[f(x)= \left[\begin{array}
+and a cumulative density function <span class="math inline">\(F(x)\)</span>. Let <span class="math inline">\(s\)</span> be the slice point. We define <span class="math inline">\(f(x)\)</span> as: <span class="math display">\[f(x)= \left[\begin{array}
 {rrr}
 g(x) &amp; x \le s \\
 (1-G(s))*h(x) &amp; x &gt; s
 \end{array}\right]
 \]</span> <span class="math inline">\(g(x)\)</span> is the attritional
-attritional probability density function, fitted to the full claims. As
-suggested this could be fitted to full claims as a censored distribution
-or to the claims below <span class="math inline">\(s\)</span> as a
-truncated distribution for a better fit. <span class="math inline">\(g(x)\)</span> in NetSimR package will either be
-Gamma or LogNormal. <span class="math inline">\(h(x)\)</span> is the
-large probability density function. <span class="math inline">\(h(x)\)</span> in NetSimR package will be a single
-parameter Pareto distribution. The scale paramter <span class="math inline">\(x_{m}\)</span> will be the slice point <span class="math inline">\(s\)</span>. The shape parameter will be estimated
+probability density function, fitted to the full claims. As suggested
+this could be fitted to full claims as a censored distribution or to the
+claims below <span class="math inline">\(s\)</span> as a truncated
+distribution for a better fit. <span class="math inline">\(g(x)\)</span>
+in NetSimR package will either be Gamma or LogNormal. <span class="math inline">\(h(x)\)</span> is the large probability density
+function. <span class="math inline">\(h(x)\)</span> in NetSimR package
+will be a single parameter Pareto distribution. The scale parameter
+<span class="math inline">\(x_{m}\)</span> will be the slice point <span class="math inline">\(s\)</span>. The shape parameter will be estimated
 from the claims larger than the slice point. <span class="math inline">\(H(x)\)</span> and <span class="math inline">\(G(x)\)</span> are the cumulative density functions
 of <span class="math inline">\(h(x)\)</span> and <span class="math inline">\(g(x)\)</span> respectively.</p>
 <p>We define <span class="math inline">\(F(x)\)</span> as: <span class="math display">\[F(x)= \left[\begin{array}
@@ -422,11 +424,11 @@ distribution, in cases where fitting the distributions separately is not
 appropriate.</p>
 <p>The cumulative density function provides probability of claims being
 less or more than a particular level. The distribution can be used
-alongst methods such as the Panjer recursion, in order to combine it
-with the frequency distribution and provide the aggrecate claims
+alongside methods such as the Panjer recursion, in order to combine it
+with the frequency distribution and provide the aggregate claims
 distribution.</p>
 <p>The inverse cumulative probability distribution can be used to run
-simulations over the defined distribution. Reinsurance strucutures can
+simulations over the defined distribution. Reinsurance structures can
 then be applied to use the simulation exercise for reinsurance
 pricing.</p>
 <div style="page-break-after: always;"></div>
@@ -435,10 +437,10 @@ pricing.</p>
 <h2>4. Examples</h2>
 <div id="mean-of-a-sliced-distribution" class="section level3">
 <h3>4.1 Mean of a sliced distribution</h3>
-<p>Here we calculate the expected severity from a sliced lognormal
-pareto distributions, sliced at 10,000 currency units, with a Pareto
-shape parameter <span class="math inline">\(shape = 1.2\)</span> and
-lognormal parameters <span class="math inline">\(mu = 6\)</span> and
+<p>Here we calculate the expected severity from a sliced
+LogNormal-Pareto distribution, sliced at 10,000 currency units, with a
+Pareto shape parameter <span class="math inline">\(shape = 1.2\)</span>
+and lognormal parameters <span class="math inline">\(mu = 6\)</span> and
 <span class="math inline">\(sigma = 1.6\)</span>.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;NetSimR&quot;</span>)</span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">SlicedLNormParetoMean</span>(<span class="dv">6</span>,<span class="fl">1.6</span>,<span class="dv">10000</span>,<span class="fl">1.2</span>),<span class="dv">0</span>)</span></code></pre></div>

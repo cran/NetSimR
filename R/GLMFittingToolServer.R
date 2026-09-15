@@ -5,9 +5,8 @@
 #' @param session Session for the server function.
 #' @return Called by shiny for its side effects, the outputs and observers of a
 #'   session; the value is not used.
+#' @keywords internal
 #' @import shiny
-#' @importFrom plotly plot_ly add_lines layout add_bars renderPlotly
-#' @importFrom plotly plotlyOutput
 GLMFittingToolServer <- function(input, output, session) {
 
   ######################
@@ -96,6 +95,13 @@ GLMFittingToolServer <- function(input, output, session) {
           quote = or_default(input$csv_quote, "\""),
           dec = or_default(input$csv_dec, ".")
         )
+        # numbers with thousands separators ("1,200") are read as text: text columns that are
+        # mostly numbers become numbers, as in the distribution fitting tool
+        dec <- or_default(input$csv_dec, ".")
+        text_columns <- names(df_input)[vapply(df_input, is.character, logical(1))]
+        for (column in dft_numeric_columns(df_input[text_columns], dec)) {
+          df_input[[column]] <- dft_as_numeric(df_input[[column]], dec)
+        }
       }
       if (!is.data.frame(df_input) || ncol(df_input) == 0 || nrow(df_input) == 0) {
         return(import_error("The file or query returned no rows."))
@@ -111,7 +117,8 @@ GLMFittingToolServer <- function(input, output, session) {
   data_columns <- reactive(names(selected_data()))
   numeric_columns <- reactive(names(selected_data())[vapply(selected_data(), is.numeric, logical(1))])
 
-  preview_rows <- 10000
+  # the preview shows the first rows; the model uses every row
+  preview_rows <- 100
 
   output$data_overview <- renderUI({
     df <- req(selected_data())
@@ -126,19 +133,12 @@ GLMFittingToolServer <- function(input, output, session) {
     )
   })
 
-  # Display the query result or uploaded data in a data table
-  output$selected_input_data_table <- reactable::renderReactable({
+  # Display the first rows of the query result or uploaded data in a table
+  output$selected_input_data_table <- renderUI({
     validate(need(input$submit, "Import data to see a preview here."))
     df <- selected_data()
     validate(need(!is.null(df), "No data has been imported."))
-    if (nrow(df) > preview_rows) df <- df[seq_len(preview_rows), , drop = FALSE]
-    reactable::reactable(
-      df,
-      searchable = TRUE, highlight = TRUE, compact = TRUE, resizable = TRUE,
-      defaultPageSize = 15, showPageSizeOptions = TRUE, pageSizeOptions = c(15, 50, 100),
-      defaultColDef = reactable::colDef(minWidth = 100),
-      theme = dft_reactable_theme()
-    )
+    dft_data_preview(df, preview_rows)
   })
 
   ######################
@@ -236,18 +236,72 @@ GLMFittingToolServer <- function(input, output, session) {
     if (grepl("~", spec$formula, fixed = TRUE)) {
       stop("enter only the terms after ~; the response is chosen above")
     }
-    terms_text <- if (spec$formula == "") {
-      "1"
-    } else if (spec$formula == ".") {
-      # every other column; the offset and weights columns are not predictors
-      predictors <- setdiff(columns, c(spec$response, spec$offset, spec$weights))
-      if (length(predictors) == 0) "1" else paste(vapply(predictors, term, character(1)), collapse = " + ")
-    } else {
-      spec$formula
-    }
+    terms_text <- if (spec$formula == "") "1" else spec$formula
     rhs <- paste(c(offset_term(spec$offset, spec$offset_log), terms_text), collapse = " + ")
-    model_formula <- stats::as.formula(paste(term(spec$response), "~", rhs), env = globalenv())
+    model_formula <- tryCatch(
+      stats::as.formula(paste(term(spec$response), "~", rhs), env = globalenv()),
+      error = function(e) {
+        # the parser's message starts with "<text>:2:0:" and repeats the text on more lines
+        stop("the formula could not be read: ", sub("^<text>:[0-9]+:[0-9]+: ", "", strsplit(conditionMessage(e), "\n")[[1]][1]),
+             call. = FALSE)
+      }
+    )
     warnings <- character(0)
+    left_out <- character(0)
+    if ("." %in% all.vars(model_formula)) {
+      # "." is every other column except the offset and weights columns, and the columns that
+      # cannot be predictors: no values, a single text value, or text with too many values
+      candidates <- setdiff(columns, c(spec$response, spec$offset, spec$weights))
+      left_out <- unlist(lapply(candidates, function(column) {
+        x <- model_data[[column]]
+        present <- x[!is.na(x)]
+        reason <- if (length(present) == 0) {
+          "no values"
+        } else if ((is.character(x) || is.factor(x) || is.logical(x)) && length(unique(present)) < 2) {
+          "a single value"
+        } else if (glm_many_values(x)) {
+          paste(format(length(unique(present)), big.mark = ","), "different values")
+        }
+        if (!is.null(reason)) stats::setNames(reason, column)
+      }))
+      # a column the formula names (". - id", "id + .") is not left out: terms() needs it in the data
+      left_out <- left_out[!names(left_out) %in% all.vars(model_formula)]
+      allowed <- setdiff(columns, c(spec$offset, spec$weights, names(left_out)))
+      model_formula <- stats::formula(stats::terms(model_formula, data = model_data[allowed]))
+      environment(model_formula) <- globalenv()
+    }
+    # text columns named in the formula are used, however many values they have
+    labels <- attr(stats::terms(model_formula), "term.labels")
+    predictors <- if (length(labels) > 0) all.vars(str2lang(paste(labels, collapse = " + "))) else character(0)
+    for (column in setdiff(intersect(predictors, columns), spec$response)) {
+      if (glm_many_values(model_data[[column]])) {
+        warnings <- c(warnings, paste0("'", column, "' is text with ", format(length(unique(stats::na.omit(model_data[[column]]))), big.mark = ","),
+                                       " different values, each with its own coefficient"))
+      }
+    }
+    response_values <- model_data[[spec$response]]
+    if (spec$family != "binomial" && !is.numeric(response_values) && !is.logical(response_values)) {
+      stop("the response '", spec$response, "' has text values, such as '", stats::na.omit(response_values)[1],
+           "'; the ", spec$family, " family needs numbers (only a binomial response can be text)")
+    }
+    # the rows the fit can use have every column of the model, and the weight, present
+    used_columns <- intersect(c(all.vars(model_formula), if (spec$weights != "None") spec$weights), columns)
+    complete <- stats::complete.cases(model_data[used_columns])
+    if (!any(complete)) {
+      empty <- used_columns[vapply(model_data[used_columns], function(x) all(is.na(x)), logical(1))]
+      stop("no row has a value in every column the model uses",
+           if (length(empty) > 0) paste0(": ", paste0("'", empty, "'", collapse = ", "), if (length(empty) == 1) " has" else " have", " no values"))
+    }
+    # a text predictor with a single value in those rows has no contrasts, which glm() reports as
+    # "contrasts can be applied only to factors with 2 or more levels" without naming it
+    frame <- stats::model.frame(model_formula, data = model_data[complete, used_columns, drop = FALSE])
+    for (column in names(frame)[-1]) {
+      x <- frame[[column]]
+      if ((is.character(x) || is.factor(x) || is.logical(x)) && length(unique(x)) < 2) {
+        stop("'", column, "' has a single value ('", x[1], "') in the rows the model uses, so it cannot be a predictor; ",
+             "remove it from the formula")
+      }
+    }
     # a text response of a binomial model is a factor: glm() takes its first level as failure and
     # every other level as success; a logical response is left as it is, TRUE being success
     if (spec$family == "binomial" && is.character(model_data[[spec$response]])) {
@@ -281,7 +335,7 @@ GLMFittingToolServer <- function(input, output, session) {
       }
     )
     spec$link <- link
-    list(model = model, spec = spec, data = model_data, warnings = unique(warnings), error = NULL)
+    list(model = model, spec = spec, data = model_data, warnings = unique(warnings), left_out = left_out, error = NULL)
   }
 
   fit_result <- eventReactive(input$fit_model, {
@@ -293,6 +347,10 @@ GLMFittingToolServer <- function(input, output, session) {
         list(model = NULL, spec = spec, error = conditionMessage(e))
       }
     )
+    if (length(result$left_out) > 0) {
+      showNotification(paste0("Left out of '.': ", paste0(names(result$left_out), " (", result$left_out, ")", collapse = ", "),
+                              ". Name a column in the formula to use it anyway."), type = "message", duration = 12)
+    }
     if (length(result$warnings) > 0) {
       showNotification(paste("The model was fitted with warnings:", paste(result$warnings, collapse = "; ")),
                        type = "warning", duration = 12)
@@ -525,33 +583,34 @@ GLMFittingToolServer <- function(input, output, session) {
     # the response as the model codes it, on the same scale as the prediction
     actual <- model_actuals(result)
     predicted <- model_predictions(result)
-    # the exposure: the offset column when the offset is its log, exp(offset) for a raw offset with the log link
-    exposure <- if (spec$offset == "None") {
+    # the exposure: the offset column when the offset is its log, exp(offset) for a raw offset with
+    # the log link; a raw offset with another link is not an exposure, so the rows count as 1 each
+    uses_exposure <- spec$offset != "None" && (spec$offset_log || spec$link == "log")
+    exposure <- if (!uses_exposure) {
       rep(1, nrow(df))
     } else if (spec$offset_log) {
       df[[spec$offset]]
-    } else if (spec$link == "log") {
-      exp(df[[spec$offset]])
     } else {
-      rep(1, nrow(df))
+      exp(df[[spec$offset]])
     }
     weight <- if (spec$weights == "None") rep(1, nrow(df)) else df[[spec$weights]]
     grouping <- df[[variable]]
     bands <- or_default(input$number_of_bands_input, 10)
-    if (is.numeric(grouping) && length(unique(grouping[!is.na(grouping)])) > bands) {
-      breaks <- if (identical(input$band_method, "width")) {
-        bands
-      } else {
-        # bands with about the same number of rows each
-        unique(stats::quantile(grouping, seq(0, 1, length.out = bands + 1), na.rm = TRUE, names = FALSE))
-      }
-      grouping <- cut(grouping, breaks = breaks, include.lowest = TRUE, dig.lab = 6)
+    values <- sort(unique(grouping[!is.na(grouping)]))
+    if (is.numeric(grouping) && length(values) > bands) {
+      breaks <- glm_band_breaks(grouping, bands, or_default(input$band_method, "quantile"))
+      # readable labels ("18-24"), or cut()'s own when they would not be distinct
+      grouping <- cut(grouping, breaks = breaks, labels = glm_band_labels(breaks, all(values == round(values))),
+                      include.lowest = TRUE, dig.lab = 6)
     } else {
-      grouping <- factor(grouping, levels = sort(unique(grouping[!is.na(grouping)])))
+      grouping <- factor(grouping, levels = values, labels = if (is.numeric(values)) glm_value_labels(values) else values)
     }
     keep <- !is.na(actual) & !is.na(predicted) & !is.na(grouping) & is.finite(exposure) & is.finite(weight)
     validate(need(any(keep), "No row has the response, the prediction and the variable all present."))
     band <- droplevels(grouping[keep])
+    # text is not grouped: an ID would draw hundreds of unreadable bars
+    validate(need(nlevels(band) <= 100, paste0("'", variable, "' has ", format(nlevels(band), big.mark = ","),
+                                               " different values: choose a numeric variable, or one with at most 100 values.")))
     w <- weight[keep]
     e <- exposure[keep]
     total <- function(x) as.numeric(tapply(x, band, sum))
@@ -564,7 +623,21 @@ GLMFittingToolServer <- function(input, output, session) {
       stringsAsFactors = FALSE
     )
     attr(plot_data, "dropped") <- sum(!keep)
+    attr(plot_data, "exposure") <- if (!uses_exposure) NULL else if (spec$offset_log) spec$offset else paste0("exp(", spec$offset, ")")
+    attr(plot_data, "variable") <- variable
     plot_data
+  })
+
+  # the titles of the chart follow what it shows: an exposure only when the offset was used as one
+  fitness_labels <- reactive({
+    plot_data <- fitness_data()
+    spec <- isolate(fit_result()$spec)
+    exposure <- attr(plot_data, "exposure")
+    list(
+      x = attr(plot_data, "variable"),
+      y = if (!is.null(exposure)) paste(spec$response, "per unit of exposure") else paste("Average", spec$response),
+      bars = if (!is.null(exposure)) paste0("Exposure (", exposure, ")") else if (spec$weights != "None") paste0("Weight (", spec$weights, ")") else "Rows"
+    )
   })
 
   output$fitness_note <- renderUI({
@@ -577,32 +650,23 @@ GLMFittingToolServer <- function(input, output, session) {
     }
   })
 
-  output$fitness_plot <- renderPlotly({
+  # actual and predicted on the left axis, and the exposure (or weight, or rows) of each band
+  # as bars on a secondary axis on the right; redrawn in the other theme's colours when it changes
+  output$fitness_plot <- renderPlot({
     validate(need(input$execute_visualization, "Choose a variable and click Draw chart."))
     plot_data <- fitness_data()
-    spec <- isolate(fit_result()$spec)
-    colours <- dft_plot_colours(dark())
-    exposure_label <- if (spec$offset != "None") paste0("Exposure (", spec$offset, ")") else if (spec$weights != "None") paste0("Weight (", spec$weights, ")") else "Rows"
-    p <- plot_ly(plot_data, x = ~band)
-    p <- add_bars(p, y = ~exposure, name = exposure_label, yaxis = "y2",
-                  marker = list(color = if (dark()) "rgba(20, 184, 166, 0.22)" else "rgba(13, 148, 136, 0.18)"),
-                  hovertemplate = "%{y:,.4~g}")
-    p <- plotly::add_trace(p, y = ~actual, name = "Actual", type = "scatter", mode = "lines+markers",
-                           line = list(color = colours$empirical, width = 2.5), marker = list(color = colours$empirical, size = 7))
-    p <- plotly::add_trace(p, y = ~predicted, name = "Predicted", type = "scatter", mode = "lines+markers",
-                           line = list(color = dft_model_palette[2], width = 2.5), marker = list(color = dft_model_palette[2], size = 7))
-    y_title <- if (spec$offset != "None") paste(spec$response, "per unit of exposure") else paste("Average", spec$response)
-    p <- dft_plot_layout(p, isolate(input$visualize_variable), y_title, dark())
-    layout(
-      p,
-      xaxis = list(type = "category", categoryorder = "array", categoryarray = plot_data$band),
-      yaxis = list(rangemode = "tozero"),
-      yaxis2 = list(overlaying = "y", side = "right", showgrid = FALSE, rangemode = "tozero",
-                    title = list(text = exposure_label, font = list(color = colours$muted)),
-                    tickfont = list(color = colours$muted)),
-      margin = list(r = 70),
-      bargap = 0.15
+    labels <- fitness_labels()
+    dft_category_chart(
+      plot_data$band,
+      bars = list(name = labels$bars, values = plot_data$exposure, colour = "band_bar", y2 = labels$bars),
+      lines = list(list(name = "Actual", values = plot_data$actual, colour = "empirical"),
+                   list(name = "Predicted", values = plot_data$predicted, colour = dft_model_palette[2])),
+      x_title = labels$x, y_title = labels$y, dark = dark()
     )
+  }, bg = "transparent", res = 96, alt = function() {
+    labels <- tryCatch(fitness_labels(), error = function(e) NULL)
+    if (is.null(labels)) return("Actual and predicted chart")
+    paste0("Actual and predicted by band of ", labels$x, ". Left axis: ", labels$y, ". Bars on the right axis: ", labels$bars, ".")
   })
 
   ######################

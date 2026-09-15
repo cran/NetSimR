@@ -45,8 +45,11 @@ sim_tab_open_simulator_button <- function() {
 #' @noRd
 sim_tab_fmt_amount <- function(x, digits = NULL) {
   if (is.null(x) || length(x) == 0 || is.na(x[1]) || !is.numeric(x)) return(intToUtf8(8212))
-  x <- as.numeric(x[1])
-  if (is.null(digits)) digits <- if (abs(x) >= 1000) 0 else 2
+  #adding zero turns -0 (e.g. no claims under a Normal severity with a negative mean) into 0
+  x <- as.numeric(x[1]) + 0
+  #amounts too large for a readable fixed format (a Pareto severity with a tiny alpha)
+  if (is.finite(x) && abs(x) >= 1e15) return(formatC(x, format = "e", digits = 3))
+  if (is.null(digits)) digits <- display_digits(x)
   formatC(x, format = "f", digits = digits, big.mark = ",")
 }
 
@@ -77,7 +80,7 @@ sim_tab_describe_settings <- function(s) {
   is_number <- function(x) is.numeric(x) && length(x) == 1 && !is.na(x)
   fmt <- function(x) {
     if (!is_number(x)) return("?")
-    formatC(x, format = "f", digits = if (x == round(x)) 0 else 2, big.mark = ",")
+    formatC(x, format = "f", digits = if (x == round(x)) 0 else max(2, display_digits(x)), big.mark = ",")
   }
   fmt_param <- function(x) sub("\\.?0+$", "", formatC(x, format = "f", digits = 4))
 
@@ -177,7 +180,7 @@ sim_tab_compare_entry <- function(run) {
     description = sim_tab_describe_settings(run$settings),
     modelled_label = if (is.character(summary$modelled_label)) summary$modelled_label[1] else "Total claims",
     #headline amounts of a run share one decimal style, set by the scale of its results
-    digits = if (length(totals) > 0 && max(abs(totals)) >= 1000) 0 else 2,
+    digits = display_digits(totals),
     metrics = list(
       n = n,
       mean = pick(stats, "mean"),
@@ -198,7 +201,7 @@ sim_tab_compare_entry <- function(run) {
 #'
 #' @param entries List of compare entries (see sim_tab_compare_entry) to show as columns.
 #' @param names Display names, one per entry.
-#' @return An htmltools table.
+#' @return An HTML table built with shiny tags.
 #' @noRd
 sim_tab_metrics_table <- function(entries, names) {
   amount_row <- function(label, key) {
@@ -239,76 +242,142 @@ sim_tab_metrics_table <- function(entries, names) {
   )
 }
 
+#' Tick marks of the y axis of the compare chart
+#'
+#' Span zero and every finite value, so runs with negative totals (a Normal severity with
+#' a negative mean, say) are drawn too; infinite values are left out.
+#' @param values Numeric vector of the losses drawn.
+#' @return Increasing tick values; the axis runs from the first to the last.
+#' @noRd
+sim_tab_y_ticks <- function(values) {
+  y_range <- range(c(values, 0), finite = TRUE)
+  #runs whose totals are all zero still need an axis
+  if (y_range[1] == y_range[2]) y_range[2] <- 1
+  pretty(y_range, n = 5)
+}
+
 #' Overlaid return-period chart for the compare tab
 #'
 #' @param entries List of compare entries to draw.
 #' @param names Display names, one per entry.
+#' Draws on the current graphics device with base graphics and leaves the background
+#' alone, so a transparent device lets the card show through. The legend sits above the
+#' plot and wraps onto as many rows as the width of the device needs.
 #' @param dark TRUE to use the dark theme colours.
-#' @return A plotly object.
+#' @return NULL, invisibly; called for its drawing.
 #' @noRd
 sim_tab_return_period_plot <- function(entries, names, dark = FALSE) {
   #the chart stops where the smallest run stops
   max_rp <- min(vapply(entries, function(e) e$metrics$n, numeric(1))) / 10
   colours <- if (dark) {
-    list(font = "#cbd5e1", muted = "#94a3b8", grid = "rgba(148, 163, 184, 0.18)",
-         line = "rgba(148, 163, 184, 0.35)", marker = "#f87171")
+    list(font = "#cbd5e1", muted = "#94a3b8", grid = "#94a3b82e", line = "#94a3b866", marker = "#f87171")
   } else {
-    list(font = "#334155", muted = "#64748b", grid = "rgba(148, 163, 184, 0.30)",
-         line = "rgba(100, 116, 139, 0.45)", marker = "#dc2626")
+    list(font = "#334155", muted = "#64748b", grid = "#94a3b84d", line = "#64748b80", marker = "#dc2626")
   }
   #series colours that read well on both backgrounds
   palette <- c("#3b82f6", "#f97316", "#10b981", "#a855f7", "#ef4444", "#eab308")
+  series_colours <- palette[(seq_along(entries) - 1) %% length(palette) + 1]
 
-  p <- plotly::plot_ly()
-  for (i in seq_along(entries)) {
-    curve <- entries[[i]]$curve
-    curve <- curve[curve$rp <= max_rp * (1 + 1e-9), , drop = FALSE]
-    if (nrow(curve) == 0) next
-    p <- plotly::add_lines(
-      p, x = curve$rp, y = curve$value, name = names[i],
-      line = list(color = palette[(i - 1) %% length(palette) + 1], width = 2.2),
-      text = paste0(names[i], "<br>1 in ", formatC(curve$rp, format = "f", digits = 1, big.mark = ","),
-                    ": ", vapply(curve$value, sim_tab_fmt_amount, character(1), digits = entries[[i]]$digits)),
-      hoverinfo = "text"
-    )
+  curves <- lapply(entries, function(e) e$curve[e$curve$rp <= max_rp * (1 + 1e-9), , drop = FALSE])
+  drawn <- vapply(curves, nrow, integer(1)) > 0
+  curves <- curves[drawn]
+  names <- names[drawn]
+  series_colours <- series_colours[drawn]
+
+  axis_cex <- 0.85
+  legend_cex <- 0.9
+  old_par <- graphics::par(mgp = c(2.2, 0.45, 0), tcl = -0.25, las = 1, xpd = FALSE)
+  on.exit(graphics::par(old_par), add = TRUE)
+  line_height <- graphics::par("csi")
+  inches_to_lines <- function(inches) inches / line_height
+
+  #y axis: from the lowest to the highest finite loss and zero, with whole-number labels
+  #and thousands separators, and a left margin that fits them
+  values <- unlist(lapply(curves, `[[`, "value"), use.names = FALSE)
+  y_ticks <- sim_tab_y_ticks(values)
+  y_labels <- axis_amount_labels(y_ticks)
+  label_lines <- inches_to_lines(max(graphics::strwidth(y_labels, units = "inches", cex = axis_cex)))
+  left_lines <- label_lines + 2.1
+
+  #x axis: the label of the last tick, centred on the right edge, must fit in the right margin
+  x_ticks <- return_period_axis_ticks[return_period_axis_ticks <= max_rp]
+  x_labels <- paste("1 in", formatC(x_ticks, format = "d", big.mark = ","))
+  last_label <- graphics::strwidth(x_labels[length(x_labels)], units = "inches", cex = axis_cex)
+  right_lines <- max(1, inches_to_lines(last_label / 2) + 0.3)
+
+  #legend: key line and name per run, packed into rows across the plot width
+  device_width <- graphics::par("din")[1]
+  available <- max(1, device_width - (left_lines + right_lines) * line_height)
+  key_width <- 0.3
+  key_gap <- 0.08
+  item_gap <- 0.28
+  fit_name <- function(name) {
+    room <- available - key_width - key_gap
+    if (graphics::strwidth(name, units = "inches", cex = legend_cex) <= room) return(name)
+    ellipsis <- intToUtf8(8230)
+    while (nchar(name) > 1 &&
+           graphics::strwidth(paste0(name, ellipsis), units = "inches", cex = legend_cex) > room) {
+      name <- substr(name, 1, nchar(name) - 1)
+    }
+    paste0(name, ellipsis)
   }
+  names <- vapply(names, fit_name, character(1), USE.NAMES = FALSE)
+  item_widths <- key_width + key_gap + graphics::strwidth(names, units = "inches", cex = legend_cex)
+  item_row <- integer(length(names))
+  item_offset <- numeric(length(names))
+  row <- 1
+  used <- 0
+  for (i in seq_along(names)) {
+    if (used > 0 && used + item_widths[i] > available) {
+      row <- row + 1
+      used <- 0
+    }
+    item_row[i] <- row
+    item_offset[i] <- used
+    used <- used + item_widths[i] + item_gap
+  }
+  legend_row_lines <- 1.5 * legend_cex
+  top_lines <- 0.5 + max(1, row) * legend_row_lines
 
-  ticks <- c(2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000)
-  ticks <- ticks[ticks <= max_rp]
-  shapes <- NULL
-  annotations <- NULL
+  graphics::par(mar = c(3.3, left_lines, top_lines, right_lines))
+  graphics::plot.new()
+  graphics::plot.window(xlim = c(2, max_rp * 1.02), ylim = range(y_ticks), log = "x", xaxs = "i", yaxs = "i")
+
+  graphics::abline(h = y_ticks, v = x_ticks, col = colours$grid, lwd = 1)
+  graphics::abline(h = graphics::par("usr")[3], col = colours$line, lwd = 1)
+  #with negative losses the zero line sits inside the plot
+  if (y_ticks[1] < 0) graphics::abline(h = 0, col = colours$line, lwd = 1)
+  #labels that would overlap at narrow widths are left out by axis()
+  graphics::axis(1, at = x_ticks, labels = x_labels, col = NA, col.ticks = colours$line,
+                 col.axis = colours$muted, cex.axis = axis_cex)
+  graphics::axis(2, at = y_ticks, labels = y_labels, tick = FALSE, col.axis = colours$muted, cex.axis = axis_cex)
+  graphics::mtext("Return period", side = 1, line = 2.1, col = colours$muted, cex = legend_cex)
+  graphics::mtext("Total claims", side = 2, line = label_lines + 1, col = colours$muted, cex = legend_cex, las = 0)
+
   if (200 <= max_rp) {
-    #shapes on a log axis take log10 coordinates
-    shapes <- list(list(type = "line", xref = "x", yref = "paper", x0 = log10(200), x1 = log10(200),
-                        y0 = 0, y1 = 1, line = list(color = colours$marker, width = 1.5, dash = "dash")))
-    annotations <- list(list(x = log10(200), y = 1, xref = "x", yref = "paper", text = "1 in 200",
-                             showarrow = FALSE, xanchor = "left", yanchor = "top", xshift = 4,
-                             font = list(color = colours$marker, size = 11)))
+    graphics::abline(v = 200, col = colours$marker, lty = 2, lwd = 1.5)
+    graphics::text(200, graphics::par("usr")[4], "1 in 200", adj = c(-0.12, 1.5), col = colours$marker, cex = 0.8)
+  }
+  for (i in seq_along(curves)) {
+    #a curve stops where the losses become infinite
+    finite <- is.finite(curves[[i]]$value)
+    graphics::lines(curves[[i]]$rp[finite], curves[[i]]$value[finite], col = series_colours[i], lwd = 2.5)
   }
 
-  p <- plotly::layout(
-    p,
-    paper_bgcolor = "rgba(0,0,0,0)",
-    plot_bgcolor = "rgba(0,0,0,0)",
-    font = list(color = colours$font, family = "Inter, system-ui, sans-serif"),
-    margin = list(l = 70, r = 20, t = 20, b = 60),
-    hovermode = "closest",
-    xaxis = list(
-      type = "log", title = list(text = "Return period", font = list(color = colours$muted)),
-      tickvals = ticks, ticktext = paste("1 in", formatC(ticks, format = "d", big.mark = ",")),
-      gridcolor = colours$grid, linecolor = colours$line, tickcolor = colours$line,
-      zeroline = FALSE, showline = TRUE, range = log10(c(2, max_rp * 1.02))
-    ),
-    yaxis = list(
-      title = list(text = "Total claims", font = list(color = colours$muted)),
-      tickformat = ",", gridcolor = colours$grid, linecolor = colours$line, tickcolor = colours$line,
-      zerolinecolor = colours$grid, rangemode = "tozero"
-    ),
-    legend = list(orientation = "h", x = 0, y = 1.08, xanchor = "left", font = list(color = colours$font)),
-    shapes = shapes,
-    annotations = annotations
-  )
-  plotly::config(p, displaylogo = FALSE, modeBarButtonsToRemove = list("select2d", "lasso2d", "autoScale2d"))
+  #the legend is placed in inches from the top of the device, in the top margin, and starts
+  #at the left edge of the plot region
+  if (length(names) > 0) {
+    plot_left <- graphics::par("mai")[2]
+    row_y <- graphics::par("din")[2] - (0.25 + (item_row - 0.5) * legend_row_lines) * line_height
+    key_x0 <- plot_left + item_offset
+    to_x <- function(inches) graphics::grconvertX(inches, from = "inches", to = "user")
+    to_y <- function(inches) graphics::grconvertY(inches, from = "inches", to = "user")
+    graphics::segments(to_x(key_x0), to_y(row_y), to_x(key_x0 + key_width), to_y(row_y),
+                       col = series_colours, lwd = 3, lend = 1, xpd = NA)
+    graphics::text(to_x(key_x0 + key_width + key_gap), to_y(row_y), names, adj = c(0, 0.5),
+                   col = colours$font, cex = legend_cex, xpd = NA)
+  }
+  invisible(NULL)
 }
 
 # ---------------------------------------------------------------- styles and scripts
@@ -528,10 +597,6 @@ sim_tab_css <- "
   font-size: 0.75rem;
 }
 
-.sim-compare-chart .js-plotly-plot .plotly .modebar-btn path {
-  fill: var(--sim-muted);
-}
-
 .sim-compare-chart .shiny-output-error-validation {
   color: var(--sim-muted);
   padding: 2rem 1rem;
@@ -720,7 +785,7 @@ sim_report_tab_ui <- function(id) {
     title = "Report",
     value = "report",
     icon = icon("file-lines"),
-    htmltools::singleton(tags$head(tags$style(HTML(sim_tab_css)))),
+    shiny::singleton(tags$head(tags$style(HTML(sim_tab_css)))),
     tags$script(HTML(sim_report_frame_js)),
     div(
       class = "sim-tab-header",
@@ -875,7 +940,7 @@ sim_compare_tab_ui <- function(id) {
     title = "Compare",
     value = "compare",
     icon = icon("scale-balanced"),
-    htmltools::singleton(tags$head(tags$style(HTML(sim_tab_css)))),
+    shiny::singleton(tags$head(tags$style(HTML(sim_tab_css)))),
     tags$script(HTML(sim_compare_theme_js(ns("app_theme")))),
     div(
       class = "sim-tab-header",
@@ -912,7 +977,7 @@ sim_compare_tab_ui <- function(id) {
             sim_card_header("chart-line", "Losses by return period",
                             "Loss exceeded once in the given number of periods, up to a tenth of the smallest run."),
             bslib::card_body(
-              div(class = "sim-compare-chart", plotly::plotlyOutput(ns("return_period_chart"), height = "400px"))
+              div(class = "sim-compare-chart", plotOutput(ns("return_period_chart"), height = "400px"))
             )
           ),
           div(
@@ -1141,12 +1206,14 @@ sim_compare_tab_server <- function(id, last_run, max_runs = 6, default_included 
       sim_tab_metrics_table(entries, included_names())
     })
 
-    output$return_period_chart <- plotly::renderPlotly({
+    #drawn in base graphics on a transparent background, in the colours of the app theme;
+    #the theme input (see sim_compare_theme_js) makes it redraw when the theme changes
+    output$return_period_chart <- renderPlot({
       inputs <- chart_inputs()
       validate(need(length(inputs$entries) > 0, "Include at least one run to draw the chart."))
       max_rp <- min(vapply(inputs$entries, function(e) e$metrics$n, numeric(1))) / 10
       validate(need(max_rp >= 2, "The chart needs runs of at least 20 simulations."))
       sim_tab_return_period_plot(inputs$entries, inputs$names, dark = identical(input$app_theme, "dark"))
-    })
+    }, bg = "transparent", alt = "Losses by return period for the included runs")
   })
 }

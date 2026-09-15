@@ -7,7 +7,7 @@
 ExposureCurveLNorm(x, mu, sigma)
 }
 \arguments{
-\item{x}{A positive real number -  the claim amount where the exposure curve will be evaluated.}
+\item{x}{A non-negative real number -  the claim amount where the exposure curve will be evaluated.}
 
 \item{mu}{A real number - the first parameter of the Claim Severity's LogNormal distribution.}
 
@@ -23,3 +23,11 @@ Exposure Curve from LogNormal a severity distribution
 ExposureCurveLNorm(2000,6,1.5)
 ExposureCurveLNorm(1000,5,1.6)
 }
+\seealso{
+Other exposure curve functions:
+\code{\link[=ExposureCurveGamma]{ExposureCurveGamma()}},
+\code{\link[=ExposureCurvePareto]{ExposureCurvePareto()}},
+\code{\link[=ExposureCurveSlicedGammaPareto]{ExposureCurveSlicedGammaPareto()}},
+\code{\link[=ExposureCurveSlicedLNormPareto]{ExposureCurveSlicedLNormPareto()}}
+}
+\concept{exposure curve functions}

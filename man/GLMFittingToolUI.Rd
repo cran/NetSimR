@@ -16,3 +16,4 @@ The user interface of the application, a bslib navbar page.
 A function of the request, so that it is built when the app starts, after
 every helper of the package is defined.
 }
+\keyword{internal}

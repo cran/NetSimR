@@ -946,6 +946,7 @@ sim_pareto_slices_ui <- function() {
 #' UI file for the Shiny NetSimR Simulator Tool
 #'
 #' @return Returns the UI code for the shiny application.
+#' @keywords internal
 shiny_simulator_ui <- bslib::page_navbar(
   title = div(
     class = "sim-brand",
@@ -1236,7 +1237,7 @@ shiny_simulator_ui <- bslib::page_navbar(
 
         bslib::card(
           sim_card_header("umbrella", "Aggregate layer (AL)",
-                          "Applied to the total of EEL-adjusted losses per simulation."),
+                          "Applied to each simulation's total after EEL: deductible first, then the limit and reinstatement cap."),
           bslib::card_body(
             div(class = "sim-section-label", "Structure"),
             div(

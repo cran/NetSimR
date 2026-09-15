@@ -17,3 +17,4 @@ The names are the values accepted by the \code{sevDistr} argument of
 (normal_mean, normal_sd), so that switching between the Normal and the Log-Normal in
 the app does not carry values across.
 }
+\keyword{internal}

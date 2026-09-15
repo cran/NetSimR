@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Yiannis Parizas" />
+
+
+<title>Simulating claims with simulate_claims()</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Simulating claims with
+simulate_claims()</h1>
+<h4 class="author">Yiannis Parizas</h4>
+<h4 class="date">14-09-2026</h4>
+
+
+
+<div id="introduction" class="section level2">
+<h2>1.Introduction</h2>
+<p>This vignette shows how to simulate insurance claims with
+<code>simulate_claims()</code>. For each simulated period (for example a
+year) the function draws the number of claims from a frequency
+distribution and the size of each claim from a severity distribution. It
+can replace the tail of the severity with Pareto slices, cap each claim,
+and apply an each-and-every-loss layer (with limited reinstatements) and
+an aggregate layer. It returns one row per period.</p>
+<p>The same model runs in the claims simulator app,
+<code>run_shiny_simulator()</code>, and through
+<code>simulate_function()</code>, which has the app’s long argument
+names. <code>simulate_claims()</code> has short names and defaults for
+everything optional.</p>
+<p>The runs below are kept small so that the vignette builds quickly. At
+least 10,000 simulations are recommended for figures at the 99.5%
+level.</p>
+</div>
+<div id="a-first-run" class="section level2">
+<h2>2. A first run</h2>
+<p>5,000 periods with a Poisson number of claims (3 a year on average)
+and Log-Normal claim sizes:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(<span class="st">&quot;NetSimR&quot;</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>claims <span class="ot">&lt;-</span> <span class="fu">simulate_claims</span>(</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>  <span class="dv">5000</span>, <span class="at">frequency =</span> <span class="st">&quot;Poisson&quot;</span>, <span class="at">frequency_params =</span> <span class="dv">3</span>,</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>  <span class="at">severity =</span> <span class="st">&quot;LogNormal&quot;</span>, <span class="at">severity_params =</span> <span class="fu">c</span>(<span class="dv">8</span>, <span class="fl">1.5</span>), <span class="at">seed =</span> <span class="dv">1</span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>)</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="fu">head</span>(claims)</span></code></pre></div>
+<pre><code>##   claim_counts total_claims gross_claims
+## 1            4   159368.374   159368.374
+## 2            3     2895.332     2895.332
+## 3            5     8970.495     8970.495
+## 4            6    14026.745    14026.745
+## 5            5    26582.006    26582.006
+## 6            2     6760.205     6760.205</code></pre>
+<p><code>claim_counts</code> is the number of claims in each period,
+<code>total_claims</code> the total after any layers and
+<code>gross_claims</code> the total before them. Without layers the two
+are the same.</p>
+<p>A small helper gives the usual summary statistics: the mean, the
+standard deviation, the 99.5% Value at Risk (VaR, the loss exceeded once
+in 200 periods) and the 99.5% Tail Value at Risk (TVaR, the average of
+the worst 0.5% of periods).</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>tail_stats <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>  worst <span class="ot">&lt;-</span> <span class="fu">sort</span>(x, <span class="at">decreasing =</span> <span class="cn">TRUE</span>)[<span class="fu">seq_len</span>(<span class="fu">ceiling</span>(<span class="fl">0.005</span> <span class="sc">*</span> <span class="fu">length</span>(x)))]</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="fu">c</span>(<span class="at">mean =</span> <span class="fu">mean</span>(x), <span class="at">sd =</span> <span class="fu">sd</span>(x), <span class="at">VaR99.5 =</span> <span class="fu">unname</span>(<span class="fu">quantile</span>(x, <span class="fl">0.995</span>)), <span class="at">TVaR99.5 =</span> <span class="fu">mean</span>(worst))</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>}</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">tail_stats</span>(claims<span class="sc">$</span>total_claims))</span></code></pre></div>
+<pre><code>##     mean       sd  VaR99.5 TVaR99.5 
+##    28009    52982   284160   502727</code></pre>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># the expected total is the mean number of claims times the mean claim size</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="dv">3</span> <span class="sc">*</span> <span class="fu">exp</span>(<span class="dv">8</span> <span class="sc">+</span> <span class="fl">1.5</span><span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> <span class="dv">2</span>)</span></code></pre></div>
+<pre><code>## [1] 27545.99</code></pre>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">hist</span>(claims<span class="sc">$</span>total_claims, <span class="at">breaks =</span> <span class="dv">100</span>, <span class="at">main =</span> <span class="st">&quot;Total claims per period&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;Total claims&quot;</span>)</span></code></pre></div>
+<p><img role="img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAqAAAAGACAMAAABFpiBcAAAAulBMVEUAAAAAADoAAGYAOjoAOmYAOpAAZpAAZrY6AAA6ADo6AGY6OgA6OmY6ZpA6ZrY6kLY6kNtmAABmADpmOgBmOjpmkLZmkNtmtrZmtttmtv+QOgCQZgCQZjqQkGaQkLaQtpCQttuQtv+Q2/+2ZgC2Zjq2ZpC2kDq2kGa225C227a229u22/+2/7a2/9u2///T09PbkDrbkGbbtmbbtpDb27bb29vb/9vb////tmb/25D/27b//7b//9v////jtm4qAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAOjUlEQVR4nO3da2PixgFGYeGsi9tNUpNt04WkbWrSW9JslEtreQ3//291RiMJSSBZc0G8y57nw8YBMSj4REgDK2V7QFh26RUAxhAopBEopBEopBEopBEopBEopBEopBEopBEopBEopBEopBEopBEopBEopBEopBEopBEopBEopBEopBEopBEopBEopBEopBEopBEopBEopBEopBEopBEopBEopBEopH28gW6zxrJ7z+7v7zr/usluH/uP7t94cqFzGHyibXbz7tTtHzgCPQr0/ZsbApVBoEeB9n/TkwK9PAK9QiazOs5f/pBln/zxsQrX/K5/eWP++elDr8WfX5vF3jY3dhd6XmXLX15ni7f7n+6yVw92+Z/M8ovPvq8fbir6t3miV+UNu2/NfZ/bofNs8dc32c33E5b5rlqbZn3tMubZviHQK3QINHfbUvO7rwIt3A2Lh06g1Wb3vrqxt5AJ1HldRV4P26RTb7bNI/bV0q+axapnGV/mf25tDutrn7r3LNeEQMsfnu7s7zq36bn3SnPPbx7tzfftQE2Qv398vzILlDf2F7I53e9/Nq28dWPZTeqjveG+ekITn9lO/lzuVWztj+WD7cK33+//O2UZtzbt9TUrtXy0W1oCvTpNoNX7Y/mP5r3y13++tpW0AnV35Z99d7ixvZDp0dzo/iyrMn+8+q79hCa+dTWOWcxmm9shc3fzlGXcEx+v7/OKQK9PHWidW27fV90vfPd1fQB1CLSVqvuxt5DdYJapLPfNdjVrdhWtKiz7PGaB5q28fN5py9Sb7mZ96/8G9kGvUP3LdU2V75br5i0+e/WXX1f9QJeHR5addBY6CnT//o3r62/Vw6qK7PMU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" /><!-- --></p>
+</div>
+<div id="distributions-and-their-parameters" class="section level2">
+<h2>3. Distributions and their parameters</h2>
+<p>The frequency can be Poisson, Negative Binomial, Binomial or a fixed
+number of claims; the severity Normal, Log-Normal, Gamma, Exponential,
+Pareto or a fixed amount. The table in <code>?simulate_claims</code>
+lists the parameters of each. Names ignore case, spaces and underscores,
+and the parameters can be given in order or named, in any order:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>named <span class="ot">&lt;-</span> <span class="fu">simulate_claims</span>(</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  <span class="dv">5000</span>, <span class="at">frequency =</span> <span class="st">&quot;negative binomial&quot;</span>, <span class="at">frequency_params =</span> <span class="fu">c</span>(<span class="at">beta =</span> <span class="fl">1.5</span>, <span class="at">r =</span> <span class="dv">2</span>),</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="at">severity =</span> <span class="st">&quot;gamma&quot;</span>, <span class="at">severity_params =</span> <span class="fu">c</span>(<span class="at">shape =</span> <span class="dv">2</span>, <span class="at">scale =</span> <span class="dv">5000</span>), <span class="at">seed =</span> <span class="dv">1</span></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>)</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>in_order <span class="ot">&lt;-</span> <span class="fu">simulate_claims</span>(<span class="dv">5000</span>, <span class="st">&quot;Negative_Binomial&quot;</span>, <span class="fu">c</span>(<span class="dv">2</span>, <span class="fl">1.5</span>), <span class="st">&quot;Gamma&quot;</span>, <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">5000</span>), <span class="at">seed =</span> <span class="dv">1</span>)</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="fu">identical</span>(named, in_order)</span></code></pre></div>
+<pre><code>## [1] TRUE</code></pre>
+</div>
+<div id="a-pareto-tail" class="section level2">
+<h2>4. A Pareto tail</h2>
+<p>Log-Normal tails are often too light for large claims.
+<code>pareto_thresholds</code> and <code>pareto_alphas</code> replace
+the tail above each threshold with a Pareto distribution; here claims
+above 100,000 follow a Pareto with alpha 1.5. Up to six slices can be
+given, with increasing thresholds.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>tail <span class="ot">&lt;-</span> <span class="fu">simulate_claims</span>(</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>  <span class="dv">5000</span>, <span class="st">&quot;Poisson&quot;</span>, <span class="dv">3</span>, <span class="st">&quot;LogNormal&quot;</span>, <span class="fu">c</span>(<span class="dv">8</span>, <span class="fl">1.5</span>), <span class="at">seed =</span> <span class="dv">1</span>,</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>  <span class="at">pareto_thresholds =</span> <span class="dv">100000</span>, <span class="at">pareto_alphas =</span> <span class="fl">1.5</span></span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>)</span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">rbind</span>(<span class="at">lognormal =</span> <span class="fu">tail_stats</span>(claims<span class="sc">$</span>total_claims), <span class="at">pareto_tail =</span> <span class="fu">tail_stats</span>(tail<span class="sc">$</span>total_claims)))</span></code></pre></div>
+<pre><code>##              mean     sd VaR99.5 TVaR99.5
+## lognormal   28009  52982  284160   502727
+## pareto_tail 31022 108770  410076   953869</code></pre>
+<p>The severity is then the sliced Log-Normal-Pareto distribution of the
+“Sliced LogNormal-Pareto and Gamma-Pareto distributions” vignette, so
+its mean gives the expected total. With alpha 1.5 the variance is
+infinite, so the simulated mean converges slowly.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">c</span>(<span class="at">expected =</span> <span class="dv">3</span> <span class="sc">*</span> <span class="fu">SlicedLNormParetoMean</span>(<span class="dv">8</span>, <span class="fl">1.5</span>, <span class="dv">100000</span>, <span class="fl">1.5</span>), <span class="at">simulated =</span> <span class="fu">mean</span>(tail<span class="sc">$</span>total_claims))</span></code></pre></div>
+<pre><code>##  expected simulated 
+##  30671.80  31021.78</code></pre>
+<p>A return-period chart shows where the two models differ:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>return_periods <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">data.frame</span>(<span class="at">rp =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">-</span> <span class="fu">ppoints</span>(<span class="fu">length</span>(x))), <span class="at">loss =</span> <span class="fu">sort</span>(x))</span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>lognormal_rp <span class="ot">&lt;-</span> <span class="fu">return_periods</span>(claims<span class="sc">$</span>total_claims)</span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>pareto_rp <span class="ot">&lt;-</span> <span class="fu">return_periods</span>(tail<span class="sc">$</span>total_claims)</span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a>keep <span class="ot">&lt;-</span> lognormal_rp<span class="sc">$</span>rp <span class="sc">&lt;=</span> <span class="dv">500</span></span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="fu">plot</span>(loss <span class="sc">~</span> rp, <span class="at">data =</span> pareto_rp[keep, ], <span class="at">type =</span> <span class="st">&quot;l&quot;</span>, <span class="at">log =</span> <span class="st">&quot;x&quot;</span>, <span class="at">col =</span> <span class="st">&quot;firebrick&quot;</span>, <span class="at">lwd =</span> <span class="dv">2</span>,</span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">&quot;Return period (years)&quot;</span>, <span class="at">ylab =</span> <span class="st">&quot;&quot;</span>, <span class="at">yaxt =</span> <span class="st">&quot;n&quot;</span>)</span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">2</span>, <span class="at">at =</span> <span class="fu">axTicks</span>(<span class="dv">2</span>), <span class="at">labels =</span> <span class="fu">format</span>(<span class="fu">axTicks</span>(<span class="dv">2</span>), <span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>, <span class="at">scientific =</span> <span class="cn">FALSE</span>), <span class="at">las =</span> <span class="dv">1</span>, <span class="at">cex.axis =</span> <span class="fl">0.8</span>)</span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="fu">lines</span>(loss <span class="sc">~</span> rp, <span class="at">data =</span> lognormal_rp[keep, ], <span class="at">col =</span> <span class="st">&quot;steelblue&quot;</span>, <span class="at">lwd =</span> <span class="dv">2</span>)</span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">&quot;topleft&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;Pareto tail above 100,000&quot;</span>, <span class="st">&quot;Log-Normal&quot;</span>), <span class="at">col =</span> <span class="fu">c</span>(<span class="st">&quot;firebrick&quot;</span>, <span class="st">&quot;steelblue&quot;</span>), <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">bty =</span> <span class="st">&quot;n&quot;</span>)</span></code></pre></div>
+<p><img role="img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAqAAAAGACAMAAABFpiBcAAAAllBMVEUAAAAAADoAAGYAOjoAOpAAZrY6AAA6ADo6AGY6OgA6Ojo6OpA6ZmY6ZrY6kNtGgrRmAABmADpmAGZmOpBmZmZmkJBmkNtmtrZmtv+QOgCQOjqQOmaQkGaQtpCQ27aQ2/+yIiK2ZgC2Zjq2kDq2tma225C2/7a2///bkDrbkGbbtrbb/7bb////tmb/25D//7b//9v///9UbmNKAAAACXBIWXMAAA7DAAAOwwHHb6hkAAARnklEQVR4nO2di3rjOBlA3dk23WUhkwLLpjDQCTA7Bpqkef+Xw7r4fokly/Zv+5zv2ya1JeXP7KlutuToBiCYaO4AALpAUBANgoJoEBREg6AgGgQF0SAoiAZBQTQICqJBUBANgoJoEBREg6AgGgQF0SAoiAZBQTQICqJBUBANgoJoEBREg6AgGgQF0SAoiAZBQTQICqJBUBANgoJoEBREg6AgGgQF0SAoiAZBQTQICqJBUBANgoJoEBREg6AgGgQF0SAoiAZBQTQICqJBUBANgoJoEBREg6AgGgQF0SAoiAZBQTQICqJBUBANgoJoEBREg6AgGgQF0SAoiAZBQTQICqJBUBANgoJoEBREg6AgGgQF0SAoiAZBQTQICqJBUBANgoJoEBREg6AgGgQF0SAoiAZBQTQICqJBUBANgoJoEBREg6AgmsCCRgC9mEvQsMXBWkFQEA2CgmgQFESDoCAaBAXRICiIBkFBCl+/NhxEUBDCVwQFwTT7iaAggq8tfiIoSKDVTwQFAbTqiaAggA4/lyjoydyG9dSe4nzsOHA9HPV/RS67ao42Lj9+1wVG0cNb6U3z0dJpaKbLz0UK+vh+U57plyaq+t0/0FvQ6+GTEvScWKf+y9/cGo+WTkMznX4uV9CO//HjCZpUiErQj9e9iuMpf6OoHy2dhhY6/RQj6NcOKkmtoFoq1dwnL9eXL8qcOPltn5yIoiTJWf9iUuoDadpiE2+PXXa/7Gzqsy1DJVB/A3FWjDq3PytBzdn40/fsTRZQ6WjpNDTT7acUQbv8bBFU2aMqpzh5Ne29enfZ7Y1+50h5aCovfSBPmwuaHrvsbNY028frk/mktMwUI+jzm3mbvVGn6kdLp6GR7gbeX9CPV12xJC+mzYvS/wvlI4UTnp9bJ+2DPiUV55upuK6H/c38UDoo/UzrarsB2sk8bSZodswomFR1WTZV7SUFZmWmH67fmmKTn9mb263paOk0NHHPT29BE0tU/ZBUQaoWsi/6ROlI4YTn59axo3hbq52jyApnREh8U7+Z1tX2LdMKM0tb6IPqY1mLnmVTKTLFCl1UBA3LPT99BdV1j3m5/PjdvtSPFE74fm6dUz58TzqIn77tUkHtMsCCoGlNqV6KaVNB02OmLU5+5tnUn9bje1Zm+ok08UG566evoNY69ZJIaF/qRwonbCnOq0nr5IJqnS67Ug16M37VatBSWitodqxegyZa/WYq0fKHM0gKQ9sAo4anoOfHf+mm0VVQ98+tkwtq2tu0ic/a7cY+aCmtTZods33Qx/c82/XwZ90Nrcw/nZlmCkDrALiOr6BJF1BVOPMKairEyI7b9Xj8dnp40yOb8ih+X05bqEH1MT2KVzkK2U76WlVaZvbFmagfTD8zLd416HtSPxxnFlT1IR/etJJH+6ueNDiV50HNgWLaQh9UHzPzoKZWjbIJ0VKZ6Rc37+P0EqZ9Y6alqkcLbyDFSc9BfdBE0FkGSSK5/GHuCBaCm54Dppn2ujKZY5pJJOf9/TRw6zNuLzNkol4PTHT7Z19O++oR+zLgcxfCP2nI+zGVoI1c/hL+c2FVuPoZVtD/9K9GEHSbzCvoGJ8La8LZTwSFKdmEoKfWW+k1H69mWHYnWUrtWhGMh7ufqxTULFdCUHkg6E0J+oO+iQhBxeHh57IFzS5LnqLo4Yu9pvjx+hQ/pclsCr0k5Nvu10Py28Ve1CysAIFpWLKgnzuoJM0EzW7sOCW9znOUC2qWeOjr8SaFXhKi7wiJ9dolcw0sWwECk+DjpxRBu/xsEzS7Nc7cdnnKBVU3zqlkWQp9f5O+p87+OJZWgMAkLFlQF1JBs5uL81vgFEpQZaZalFJcwJHfnpzex5yvFoEJ8PJz+YImgsU1QdWNLJmgSYoGQUurRWACNiposQbVa9jtiuF9dw1aXi0CE7A5QSt90LhYg94uzz+V+qBVQcurRWACNido+yhep4pKo/imGrSwWgRGx8/PRQqarYsvzoN++re98dQKajYbSedBG/ugxdUiMDbbEbQFlp/LZsOC6lrRbFIDYtmwoGZPEVpq0Xj66S2o3dJwjs3DYIlMLejZrNVkVSf0Y2pBT7rHx7p46Ievn76Cfvy1YR+R+pFRdhaBBTK1oNeXn9TE+Cy728ECmVpQtfPl9Y/fqUGhH1MLqmj0EEGhAW8/BwrKIAl6Mbmg6rri5ed3ppmgF9PXoHHUsEfYhjcPgy78/WTzMBgfxy1BS7B5GIzNED/XcbMISGaQnwgKIzPMTwSFUXHdkr4GgsJ4OD7RowkEhVHo/aSuOyAojEEgPREUxiCMmxoEheAE9BNBIRwOz4jtDYJCKMbwE0EhFGHFTEFQCMM4fiIoBCFww56DoDCc0B3PAggKgxlPTwSF4YyoJ4LCcMb0E0FhECP2Pg3+gurlxOxut2nCz8vX8Bf0pNdxsux4w4wtp8Jb0PMPdtcQNm7YKhPo6S/ox9++JeKxediWmcJP/40b9hcfQd0/F8QiWdDrn94RdONM4qevoKfjDUE3TgBB7zzXWuEn6PWg+5FHBkkbZrig9x68rhg4D8o002YJ4uf9RAMFZXe7zTJY0F5+srsd+BBiir6Xn+xuB86EucDZz09uFgEXwi2L69fAIyg4EHDRZl8/ERR6E/DekN5+Iij0JeS9Ib39RFDoyTx+IijcJ/h9yQgKAZnTTwSFu4S+ban/COmGoHCX4LfVufiJoHCH4As7nPxEULjDvBUogsIdwgnacddnOwgKnYTx895tye0gKHQSQlAvMy0ICl2E8tM7M4JCF2EWHg3IjqDQQYh1HYP89Bb0HEUPb2wetnKGzoEO1tNb0Mvz2+2cqMeqzlUzyE//gVGRAU389eWNdfHrZoCgYfQcJGj8+M7OIqvG188Bs0o1vAW97B7e2N1u3fgJGlLPQTVo0gelBl0tPveA+l0r6mZYHxRBV4nX4mLPS5n3YJAEVRzl9L3K3g9PQdUU0+Xnd6aZVkh/Oe9uTRcA3xo0jhr2CGPzsKXjUHmObaaFzcPA4Pi09/HVNLB5GGgch0XT2HnjZhEwuI+KRgymCIKC4/MMJ/UTQcHdzxFjqYGgm6e3nZOM2qsg6MbpWXuOPt/ZBoJumZ4j93nUNCDohunZ+ZxNTgWCbpf+c/IjB9IFgm4Wh8HRuIF0gqBbZRl+IuhmcRi8jx5LBwi6Ue77OdO8UgUE3Sj3BJUgpwJBN8ndDqgIORUIujn63FgnRU8E3R539RTStlsQdGN0yjnXBfcOEHRTdFae4uRU+Ap62UXRkd3tFkaLngIrzgxPQa+H4+388May4yXRVn0K1tN/Xfzje1I7Htm4YUE06ynWTMuQnUUORzYPWwwt1ad0P9l+cRs0TS0JbtcL+Asaq91vEHQZNNSey/DTX9BYbVGPoMug6ucy3NR4782kZ48YJC2CUvMuesxex1NQ9RAFBdNM8il1Pxclp8JT0JMeiR/Z3U44hRtDFlZzprC73Zop3BiyTD3Z3W61ZHXnQmvOFG4WWSPZVp+zbQgSDARdIWU3545mGAi6KtZSb+Yg6Iooyzl3NGFA0HVQrjrnjiYgCLp8yiOiuaMJDIIunZXWnCkIumhWNiJqAEGXygoHRE0g6ELJ9Jw7kJFB0AWSdjvnjmMKEHRprHa83gyCLouttOwZCLocVnN93QUEXQZbdFODoPLZwmxSKwgqmpXPwvfAX1C9WpPNw8Zj825qvAW9HvQyOVZ1jgFuZnivi49+bzdlYF18OD5/pk2v4Cvof/W+TGweFojPZe484WBLDOuDsvXNQCpizh2OQBB0JjCzHwg6B4jZm2GCMkhyhUrTkYHzoEwzOYCcHgwUlM3DekBvcwBsHjYuyDkQNg8bB8QMBDeLhIb5o6AgaDAQcwwQdDjUmSOCoP5wnXICENSZzzXmjmjNIKgDeDk9CHofvJwRBG2FplwCCFqhriVezgmCGvBSKNsWFC3Fs0VBG7TES6lsR1C0XCRrFxQtF84aBW2SEi0XymoEbbYSLZfOogVFyvUzsqDhNw9rkRIrV8rIgoZZ1YmU22VcQb3XxbcpiZRbY1xBXXcWQUqoMLGg3bvboSRUkVWDAlRAUBCN0EESgGER00ywXUYWlM3DYBiLvtQJ6wdBQTSzCQrQi5kEDfsZIYPzL0tE+HNEIeKfH0HHy4mgAcpC0PFyImiAshB0vJwIGqAsBB0vJ4IGKAtBx8uJoAHKQtDxciJogLIQdLycCBqgLAQdLyeCBiiLa5MgGgQF0SAoiAZBQTQICqJBUBANgoJoEBREg6AgGgQF0SAoiAZBQTQICqKZQNDmXZzu8fEaRdE+TATXg1ro2rhXTzc29HMUPTRtldZCHrpjxiby2J0Kq0beM3ND6N7foSFyj7LGF/R6aN4lp5uP1+SbxD5SNXB59rPEhn5OQjn3/4fNQ3fM2EgWu1Nh1ch7Zm4I3f871CP3KWt0QZM/Gh9BL7tj8jP2ydoQg18xNvSPV1WlNG+W1kQWumvG5iBs7E6FVSPvm7ke+oDvUIvcq6yxBT1He089dO6hDaQh9nIkDd3vbyUJPcgfWRq7S2G1yN0iKYY+4DvUIvcqa4I+6ABBT2Fq0NPvPPuz5n+zbqpcv0USul/Gajk2dsfCypG7ZS6GPuA71CL3Kku0oOcwo6Tr4fE9+ffyKEuHbqpxx8pche6VsUIWu2Nh5cidMpdC9/8O9ci9ypIs6DnQGMk/DG9Bz+lAI0w3JYljMkHLoQ/9DsXI1yZooPozxfSAHEPwbOJN6EGaeE0S+1RNfCX0od+hGPnKmvg4rJ9ec02egyQberiZiCR2x8J8B0nV0Id+h2Lk6xokxZF7hdeC+YfxbuKdZ0fS0ENMM2WxOxZWjrx35lro/t+hHrnIaaabp6CXXcD6U/+beA+SXOeX89BDTNRnsbsVVom8Z+aG0P2/Qz1ykRP1noLGZh/eMPOgt1NSlE+FbEOPnQIphO6WsZksdqfCqpH3y9wUuv93qEfuURY3i4BoEBREg6AgGgQF0SAoiAZBQTQICqJBUBANgoJoEBREg6AgGgQF0SAoiAZBQTQICqJBUBANgoJoEBREg6AgGgQF0SAoiAZBQTQICqJBUBANgoJoEBREg6AgGgRtRT+Spbp3+Nl9i6froZYn20Hr47VnedeXMLtULQ4EbeXjVW8UeC5uO9Ygmw+ZoP0f73BWG2pvEARtxQpqXwyBBXUorndduzIQtJXUzJOqu2Ld1l92UfT4P2VVotb15Uv06bfDr4d0a8fL8993tkdgkt9sEr2Ta5SfevhiBVWbJOptNFVNGqcp7LaFOvN39ZG6/HibVSiCtlKsQePEKLW7q6ryrqmg6jEW14N6NpvxLXHpaHoEeXKd5Gg6CtfDk3myzjndJVPJqSRV1WOaRx9Uv+jMep9iXWagZ0YtDQRtxQoaa7VU1ZaoVBZU1ZHqh30+g9mfOKnpCsn3ph03u19nT8g6Gdmy05fntzyPGg6pZPpIvvuvz0MgVgCCtpKO4rPaK1GkLOjxdst/ZLuyp89bscmNgfpU8jPfmvuW5ktqzETqLI86cY6i7HNSQ43BmwNBW9E16GVnH9drXO0W9Dl9IFAxeUHQ5F1cFDR7zoB63FWaR/VFP33b2c8xfyYmM4JCEdPE6+cGZf2/noIWk9+tQa8v/3gpPFxAJ71kgip0jwBBoYztg570eMW6YgTdl9vvvInXj1lRfdBC8qY+aFzogybnfpcOpRTmGXFRUVD9jj4olLGC6sG0NipRVSn18fr4njS8TYKqx6yko3iTPD2bjeJjnaYwik8fnpXmMZVntLf50se3MIqHCuk8qPZHTVKqqu0UqQoyin5tHCT9sssfvKKSF862zoNmz8BLP0I/qyW1W+fTqZkHhYG4N8LGwcvPPdQLdA1rcSBoODx6ifpafNxn9MO1eBiKh6Afr8fLro963M0EIBEEBdEgKIgGQUE0CAqiQVAQDYKCaBAURIOgIBoEBdEgKIgGQUE0CAqiQVAQDYKCaBAURIOgIBoEBdEgKIgGQUE0CAqi+T/Xye0MrDrmxwAAAABJRU5ErkJggg==" /><!-- --></p>
+</div>
+<div id="an-each-and-every-loss-layer-with-reinstatements" class="section level2">
+<h2>5. An each-and-every-loss layer with reinstatements</h2>
+<p>An each-and-every-loss (EEL) layer applies to every claim. A
+“limited” layer of 50,000 excess of 20,000 pays
+<code>min(max(claim - 20000, 0), 50000)</code> for each claim; with two
+reinstatements it pays at most <code>(2 + 1) * 50000 = 150000</code> in
+a period.</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a>layer <span class="ot">&lt;-</span> <span class="fu">simulate_claims</span>(</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>  <span class="dv">5000</span>, <span class="st">&quot;Poisson&quot;</span>, <span class="dv">3</span>, <span class="st">&quot;LogNormal&quot;</span>, <span class="fu">c</span>(<span class="dv">8</span>, <span class="fl">1.5</span>), <span class="at">seed =</span> <span class="dv">1</span>,</span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>  <span class="at">pareto_thresholds =</span> <span class="dv">100000</span>, <span class="at">pareto_alphas =</span> <span class="fl">1.5</span>,</span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a>  <span class="at">eel_layer =</span> <span class="st">&quot;limited&quot;</span>, <span class="at">eel_deductible =</span> <span class="dv">20000</span>, <span class="at">eel_limit =</span> <span class="dv">50000</span>,</span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a>  <span class="at">eel_reinstatements =</span> <span class="dv">2</span></span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a>)</span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a><span class="fu">head</span>(layer)</span></code></pre></div>
+<pre><code>##   claim_counts total_claims gross_claims number_of_reinstatements_used
+## 1            4        50000   221252.193                             1
+## 2            3            0     2895.332                             0
+## 3            5            0     8970.495                             0
+## 4            6            0    14026.745                             0
+## 5            5            0    26582.006                             0
+## 6            2            0     6760.205                             0</code></pre>
+<p><code>total_claims</code> is now the loss ceded to the layer and
+<code>gross_claims</code> the loss before it, so the net loss is their
+difference. <code>number_of_reinstatements_used</code> is the layer’s
+recoveries in the period divided by the limit, capped at the number of
+reinstatements.</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="co"># amounts ceded to the layer</span></span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">c</span>(<span class="at">largest =</span> <span class="fu">max</span>(layer<span class="sc">$</span>total_claims), <span class="at">expected_loss =</span> <span class="fu">mean</span>(layer<span class="sc">$</span>total_claims)))</span></code></pre></div>
+<pre><code>##       largest expected_loss 
+##        147460          6262</code></pre>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="co"># probabilities, and the expected loss as a share of the limit</span></span>
+<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">c</span>(</span>
+<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a>  <span class="at">chance_hit =</span> <span class="fu">mean</span>(layer<span class="sc">$</span>total_claims <span class="sc">&gt;</span> <span class="dv">0</span>),</span>
+<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a>  <span class="at">loss_on_line =</span> <span class="fu">mean</span>(layer<span class="sc">$</span>total_claims) <span class="sc">/</span> <span class="dv">50000</span>,</span>
+<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a>  <span class="at">chance_all_reinstatements_used =</span> <span class="fu">mean</span>(layer<span class="sc">$</span>number_of_reinstatements_used <span class="sc">&gt;=</span> <span class="dv">2</span>)</span>
+<span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a>), <span class="dv">4</span>)</span></code></pre></div>
+<pre><code>##                     chance_hit                   loss_on_line 
+##                         0.2652                         0.1252 
+## chance_all_reinstatements_used 
+##                         0.0012</code></pre>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a><span class="co"># the net (retained) losses</span></span>
+<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">tail_stats</span>(layer<span class="sc">$</span>gross_claims <span class="sc">-</span> layer<span class="sc">$</span>total_claims))</span></code></pre></div>
+<pre><code>##     mean       sd  VaR99.5 TVaR99.5 
+##    24759   102977   352795   894456</code></pre>
+<p>The other layer types are “unlimited” (everything above the
+deductible) and “exclude” (the claims with the layer taken out, i.e. the
+retained losses).</p>
+</div>
+<div id="an-aggregate-deductible" class="section level2">
+<h2>6. An aggregate deductible</h2>
+<p>An aggregate layer applies to each period’s total after the EEL
+layer. The order is: severity cap, EEL layer on each claim, sum over the
+period, aggregate deductible, then the aggregate limit and the
+reinstatement capacity. So the aggregate deductible comes off the
+layer’s recoveries before the reinstatement capacity caps them.</p>
+<p>For example, three claims of 100 through a layer of 100 excess of 0
+with no reinstatements, and an aggregate deductible of 50: the layer
+recovers 300, the deductible leaves 250, and the capacity of one limit
+caps that at 100.</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="fu">simulate_claims</span>(</span>
+<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a>  <span class="dv">3</span>, <span class="at">frequency =</span> <span class="st">&quot;Fixed_number_of_Counts&quot;</span>, <span class="at">frequency_params =</span> <span class="dv">3</span>,</span>
+<span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a>  <span class="at">severity =</span> <span class="st">&quot;Fixed_Severity&quot;</span>, <span class="at">severity_params =</span> <span class="dv">100</span>,</span>
+<span id="cb23-4"><a href="#cb23-4" tabindex="-1"></a>  <span class="at">eel_layer =</span> <span class="st">&quot;limited&quot;</span>, <span class="at">eel_deductible =</span> <span class="dv">0</span>, <span class="at">eel_limit =</span> <span class="dv">100</span>, <span class="at">eel_reinstatements =</span> <span class="dv">0</span>,</span>
+<span id="cb23-5"><a href="#cb23-5" tabindex="-1"></a>  <span class="at">agg_layer =</span> <span class="st">&quot;unlimited&quot;</span>, <span class="at">agg_deductible =</span> <span class="dv">50</span></span>
+<span id="cb23-6"><a href="#cb23-6" tabindex="-1"></a>)</span></code></pre></div>
+<pre><code>##   claim_counts total_claims gross_claims number_of_reinstatements_used
+## 1            3          100          300                             0
+## 2            3          100          300                             0
+## 3            3          100          300                             0</code></pre>
+<p>An annual aggregate deductible of 25,000 on the layer of section 5
+reduces its expected loss. With the same seed the claims are the same,
+so the difference comes from the deductible alone:</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a>with_deductible <span class="ot">&lt;-</span> <span class="fu">simulate_claims</span>(</span>
+<span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a>  <span class="dv">5000</span>, <span class="st">&quot;Poisson&quot;</span>, <span class="dv">3</span>, <span class="st">&quot;LogNormal&quot;</span>, <span class="fu">c</span>(<span class="dv">8</span>, <span class="fl">1.5</span>), <span class="at">seed =</span> <span class="dv">1</span>,</span>
+<span id="cb25-3"><a href="#cb25-3" tabindex="-1"></a>  <span class="at">pareto_thresholds =</span> <span class="dv">100000</span>, <span class="at">pareto_alphas =</span> <span class="fl">1.5</span>,</span>
+<span id="cb25-4"><a href="#cb25-4" tabindex="-1"></a>  <span class="at">eel_layer =</span> <span class="st">&quot;limited&quot;</span>, <span class="at">eel_deductible =</span> <span class="dv">20000</span>, <span class="at">eel_limit =</span> <span class="dv">50000</span>,</span>
+<span id="cb25-5"><a href="#cb25-5" tabindex="-1"></a>  <span class="at">eel_reinstatements =</span> <span class="dv">2</span>, <span class="at">agg_layer =</span> <span class="st">&quot;unlimited&quot;</span>, <span class="at">agg_deductible =</span> <span class="dv">25000</span></span>
+<span id="cb25-6"><a href="#cb25-6" tabindex="-1"></a>)</span>
+<span id="cb25-7"><a href="#cb25-7" tabindex="-1"></a><span class="fu">c</span>(<span class="at">without =</span> <span class="fu">mean</span>(layer<span class="sc">$</span>total_claims), <span class="at">with =</span> <span class="fu">mean</span>(with_deductible<span class="sc">$</span>total_claims))</span></code></pre></div>
+<pre><code>##  without     with 
+## 6262.340 2203.648</code></pre>
+</div>
+<div id="faster-runs-with-gross-false" class="section level2">
+<h2>7. Faster runs with gross = FALSE</h2>
+<p>When only the ceded losses of an “unlimited” or “limited” EEL layer
+are needed, <code>gross = FALSE</code> draws only the claims that reach
+the layer, which is much faster for a high deductible. Here only about
+one claim in 10 is above 20,000:</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="dv">1</span> <span class="sc">-</span> <span class="fu">pSlicedLNormPareto</span>(<span class="dv">20000</span>, <span class="dv">8</span>, <span class="fl">1.5</span>, <span class="dv">100000</span>, <span class="fl">1.5</span>)</span></code></pre></div>
+<pre><code>## [1] 0.102222</code></pre>
+<p>The results follow the same distribution, but they are not the same
+draws as with <code>gross = TRUE</code>, and there is no
+<code>gross_claims</code> column:</p>
+<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a>fast <span class="ot">&lt;-</span> <span class="fu">simulate_claims</span>(</span>
+<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a>  <span class="dv">20000</span>, <span class="st">&quot;Poisson&quot;</span>, <span class="dv">3</span>, <span class="st">&quot;LogNormal&quot;</span>, <span class="fu">c</span>(<span class="dv">8</span>, <span class="fl">1.5</span>), <span class="at">seed =</span> <span class="dv">1</span>,</span>
+<span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a>  <span class="at">pareto_thresholds =</span> <span class="dv">100000</span>, <span class="at">pareto_alphas =</span> <span class="fl">1.5</span>,</span>
+<span id="cb29-4"><a href="#cb29-4" tabindex="-1"></a>  <span class="at">eel_layer =</span> <span class="st">&quot;limited&quot;</span>, <span class="at">eel_deductible =</span> <span class="dv">20000</span>, <span class="at">eel_limit =</span> <span class="dv">50000</span>,</span>
+<span id="cb29-5"><a href="#cb29-5" tabindex="-1"></a>  <span class="at">eel_reinstatements =</span> <span class="dv">2</span>, <span class="at">gross =</span> <span class="cn">FALSE</span></span>
+<span id="cb29-6"><a href="#cb29-6" tabindex="-1"></a>)</span>
+<span id="cb29-7"><a href="#cb29-7" tabindex="-1"></a><span class="fu">names</span>(fast)</span></code></pre></div>
+<pre><code>## [1] &quot;claim_counts&quot;                  &quot;total_claims&quot;                 
+## [3] &quot;number_of_reinstatements_used&quot;</code></pre>
+<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a>full <span class="ot">&lt;-</span> <span class="fu">simulate_claims</span>(</span>
+<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a>  <span class="dv">20000</span>, <span class="st">&quot;Poisson&quot;</span>, <span class="dv">3</span>, <span class="st">&quot;LogNormal&quot;</span>, <span class="fu">c</span>(<span class="dv">8</span>, <span class="fl">1.5</span>), <span class="at">seed =</span> <span class="dv">1</span>,</span>
+<span id="cb31-3"><a href="#cb31-3" tabindex="-1"></a>  <span class="at">pareto_thresholds =</span> <span class="dv">100000</span>, <span class="at">pareto_alphas =</span> <span class="fl">1.5</span>,</span>
+<span id="cb31-4"><a href="#cb31-4" tabindex="-1"></a>  <span class="at">eel_layer =</span> <span class="st">&quot;limited&quot;</span>, <span class="at">eel_deductible =</span> <span class="dv">20000</span>, <span class="at">eel_limit =</span> <span class="dv">50000</span>,</span>
+<span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a>  <span class="at">eel_reinstatements =</span> <span class="dv">2</span></span>
+<span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a>)</span>
+<span id="cb31-7"><a href="#cb31-7" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">rbind</span>(<span class="at">gross_false =</span> <span class="fu">tail_stats</span>(fast<span class="sc">$</span>total_claims), <span class="at">gross_true =</span> <span class="fu">tail_stats</span>(full<span class="sc">$</span>total_claims)))</span></code></pre></div>
+<pre><code>##             mean    sd VaR99.5 TVaR99.5
+## gross_false 6286 14917   69711    88241
+## gross_true  6296 14898   73302    90067</code></pre>
+</div>
+<div id="reproducible-runs" class="section level2">
+<h2>8. Reproducible runs</h2>
+<p>A <code>seed</code> makes a run reproducible, and leaves the random
+number stream of the session unchanged. Without a seed,
+<code>set.seed()</code> before the call has the same effect:</p>
+<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a>a <span class="ot">&lt;-</span> <span class="fu">simulate_claims</span>(<span class="dv">2000</span>, <span class="st">&quot;Poisson&quot;</span>, <span class="dv">3</span>, <span class="st">&quot;Gamma&quot;</span>, <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">5000</span>), <span class="at">seed =</span> <span class="dv">42</span>)</span>
+<span id="cb33-2"><a href="#cb33-2" tabindex="-1"></a>b <span class="ot">&lt;-</span> <span class="fu">simulate_claims</span>(<span class="dv">2000</span>, <span class="st">&quot;Poisson&quot;</span>, <span class="dv">3</span>, <span class="st">&quot;Gamma&quot;</span>, <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">5000</span>), <span class="at">seed =</span> <span class="dv">42</span>)</span>
+<span id="cb33-3"><a href="#cb33-3" tabindex="-1"></a><span class="fu">identical</span>(a, b)</span></code></pre></div>
+<pre><code>## [1] TRUE</code></pre>
+<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb35-2"><a href="#cb35-2" tabindex="-1"></a>c1 <span class="ot">&lt;-</span> <span class="fu">simulate_claims</span>(<span class="dv">2000</span>, <span class="st">&quot;Poisson&quot;</span>, <span class="dv">3</span>, <span class="st">&quot;Gamma&quot;</span>, <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">5000</span>))</span>
+<span id="cb35-3"><a href="#cb35-3" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb35-4"><a href="#cb35-4" tabindex="-1"></a>c2 <span class="ot">&lt;-</span> <span class="fu">simulate_claims</span>(<span class="dv">2000</span>, <span class="st">&quot;Poisson&quot;</span>, <span class="dv">3</span>, <span class="st">&quot;Gamma&quot;</span>, <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">5000</span>))</span>
+<span id="cb35-5"><a href="#cb35-5" tabindex="-1"></a><span class="fu">identical</span>(c1, c2)</span></code></pre></div>
+<pre><code>## [1] TRUE</code></pre>
+<p>The simulations run in chunks, and each chunk draws from its own
+random stream derived from the seed. So <code>parallel = TRUE</code>,
+which runs the chunks on the workers of a <code>future</code> plan,
+gives exactly the same results as a sequential run. The chunk is not run
+here, as it starts worker processes:</p>
+<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" tabindex="-1"></a>future<span class="sc">::</span><span class="fu">plan</span>(future<span class="sc">::</span>multisession, <span class="at">workers =</span> <span class="dv">2</span>)</span>
+<span id="cb37-2"><a href="#cb37-2" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="fu">simulate_claims</span>(<span class="dv">2000</span>, <span class="st">&quot;Poisson&quot;</span>, <span class="dv">3</span>, <span class="st">&quot;Gamma&quot;</span>, <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">5000</span>), <span class="at">seed =</span> <span class="dv">42</span>, <span class="at">parallel =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb37-3"><a href="#cb37-3" tabindex="-1"></a><span class="fu">identical</span>(p, a)  <span class="co"># TRUE</span></span>
+<span id="cb37-4"><a href="#cb37-4" tabindex="-1"></a>future<span class="sc">::</span><span class="fu">plan</span>(future<span class="sc">::</span>sequential)</span></code></pre></div>
+<p>Results with a seed depend on <code>chunk_size</code>, which by
+default is chosen from the expected number of claims (about a million
+claims per chunk). Keep it the same to reproduce a run exactly.</p>
+</div>
+<div id="further-options" class="section level2">
+<h2>9. Further options</h2>
+<p><code>severity_cap</code> caps each claim before the layers;
+<code>truncate_at_zero = TRUE</code> draws Normal claim sizes from the
+Normal distribution truncated at zero; <code>progress</code> takes a
+function that is called after each chunk. <code>?simulate_claims</code>
+and <code>?simulate_function</code> describe every argument, and
+<code>run_shiny_simulator()</code> runs the same model in an app with a
+full report of each run.</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

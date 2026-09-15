@@ -77,6 +77,14 @@ The NetSimR package provides five categories of functions:
 \code{\link{run_shiny_glm_fitting_tool}}
 }
 
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/NetSimAnalytics/NetSimR}
+  \item Report bugs at \url{https://github.com/NetSimAnalytics/NetSimR/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Yiannis Parizas \email{yiannis.parizas@gmail.com}
 

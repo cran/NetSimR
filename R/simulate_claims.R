@@ -24,7 +24,15 @@
 #' Layers are "none", "unlimited" (everything above the deductible), "limited" (the
 #' limit excess of the deductible) or "exclude" (the claims with that layer removed).
 #' The each-and-every-loss layer applies to every claim; the aggregate layer applies to
-#' each simulation's total after the each-and-every-loss layer.
+#' each simulation's total after the each-and-every-loss layer. The order is: severity cap
+#' -> each-and-every-loss layer per claim -> sum over the simulation -> aggregate
+#' deductible -> aggregate limit and reinstatement capacity. So with a "limited"
+#' each-and-every-loss layer and an "unlimited" or "limited" aggregate layer, the ceded
+#' total is \code{min(max(S - agg_deductible, 0), agg_limit, (eel_reinstatements + 1) * eel_limit)},
+#' where S is the sum of the layer's recoveries; three claims of 100 through a layer of
+#' 100 excess of 0 with no reinstatements and an aggregate deductible of 50 cede 100. An
+#' "exclude" aggregate layer is taken out of the recoveries after the reinstatement
+#' capacity has capped them. See \code{\link{simulate_function}} for the details.
 #'
 #' @param n_sims Number of simulations (e.g. years).
 #' @param frequency Name of the claim count distribution; see Details.
@@ -44,11 +52,11 @@
 #' @param agg_deductible The deductible of the aggregate layer.
 #' @param agg_limit The limit of a "limited" or "exclude" aggregate layer.
 #' @param parallel TRUE to run the chunks of simulations on parallel workers. Results are the same as a sequential run.
-#' @param chunk_size The number of simulations per vectorised batch; NULL (the default) chooses it from the expected number of claims.
+#' @param chunk_size The number of simulations per vectorised batch; NULL (the default) chooses it from the expected number of claims, aiming at about a million claims per batch but never fewer than 100 simulations, so batches are larger when the mean frequency exceeds 10,000. Results with a fixed seed depend on it.
 #' @param gross TRUE (the default) to return the gross totals before the layers. FALSE allows a much faster run with an "unlimited" or "limited" each-and-every-loss layer, by drawing only the claims that reach it.
 #' @param shortcuts TRUE (the default) to use exact shortcuts where the settings allow; see \code{\link{simulate_function}}.
 #' @param progress An optional function called after each chunk of a sequential run with the fraction done and a short description.
-#' @return A data frame with one row per simulation: \code{claim_counts}, \code{total_claims} (after the layers), \code{gross_claims} (before them, unless \code{gross = FALSE}) and, with limited reinstatements, \code{number_of_reinstatements_used}.
+#' @return A data frame with one row per simulation, at full precision: \code{claim_counts}, \code{total_claims} (after the layers), \code{gross_claims} (before them, unless \code{gross = FALSE}) and, with limited reinstatements, \code{number_of_reinstatements_used}: the layer's recoveries in the simulation (after the aggregate deductible and limit, if any) divided by \code{eel_limit}, capped at \code{eel_reinstatements}.
 #' @seealso \code{\link{simulate_function}}, which this calls, and \code{\link{run_shiny_simulator}} for the same model in an app.
 #' @export
 #' @examples

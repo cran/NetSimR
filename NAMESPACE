@@ -34,22 +34,12 @@ export(run_shiny_glm_fitting_tool)
 export(run_shiny_simulator)
 export(simulate_claims)
 export(simulate_function)
-import(future.apply)
 import(methods)
 import(shiny)
 import(stats)
 import(utils)
-importFrom(fitdistrplus,fitdist)
 importFrom(future,
   multisession,
   plan,
   sequential
-)
-importFrom(plotly,
-  add_bars,
-  add_lines,
-  layout,
-  plot_ly,
-  plotlyOutput,
-  renderPlotly
 )

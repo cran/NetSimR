@@ -20,3 +20,4 @@ Called by shiny for its side effects, the outputs and observers of a
 \description{
 Server function for the GLM Fitting tool application
 }
+\keyword{internal}

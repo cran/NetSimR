@@ -11,12 +11,12 @@ SlicedGammaParetoMean(GShape, GRate, SlicePoint, PShape)
 
 \item{GRate}{A positive real number -  the rate parameter of the attritional Claim Severity's Gamma distribution.}
 
-\item{SlicePoint}{A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution.}
+\item{SlicePoint}{A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution. An infinite slice point gives the Gamma distribution.}
 
 \item{PShape}{A positive real number - the Shape parameter of the tail Claim Severity's Pareto distribution.}
 }
 \value{
-The mean of the claim severity with an attritional claim Gamma distribution with parameters \code{GShape} and \code{GRate} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{PShape}.
+The mean of the claim severity with an attritional claim Gamma distribution with parameters \code{GShape} and \code{GRate} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{PShape}. A non-numeric or non-positive parameter is an error; \code{NA} values give \code{NA}.
 }
 \description{
 Sliced Gamma Pareto mean
@@ -26,3 +26,14 @@ SlicedGammaParetoMean(1,0.0005,1000,1.2)
 SlicedGammaParetoMean(1.1,0.0006,2000,1.6)
 SlicedGammaParetoMean(1.2,0.0004,3000,1.4)
 }
+\seealso{
+Other sliced distribution functions:
+\code{\link[=SlicedLNormParetoMean]{SlicedLNormParetoMean()}},
+\code{\link[=dSlicedGammaPareto]{dSlicedGammaPareto()}},
+\code{\link[=dSlicedLNormPareto]{dSlicedLNormPareto()}},
+\code{\link[=pSlicedGammaPareto]{pSlicedGammaPareto()}},
+\code{\link[=pSlicedLNormPareto]{pSlicedLNormPareto()}},
+\code{\link[=qSlicedGammaPareto]{qSlicedGammaPareto()}},
+\code{\link[=qSlicedLNormPareto]{qSlicedLNormPareto()}}
+}
+\concept{sliced distribution functions}

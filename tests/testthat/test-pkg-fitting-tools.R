@@ -1,10 +1,7 @@
 #the distribution fitting and GLM fitting tools, driven through shiny::testServer()
 
-#the servers call functions the package imports with importFrom(): run on the installed package they are
-#found in its namespace, but run on the R/ files sourced into an environment they are not, so attach them
-if (!exists("renderPlotly", mode = "function")) {
-  for (pkg in c("plotly", "fitdistrplus")) suppressPackageStartupMessages(library(pkg, character.only = TRUE))
-}
+#a chart output is a PNG image in a data URI
+expect_chart <- function(x) expect_match(x$src, "^data:image/png;base64,")
 
 write_claims_csv <- function() {
   set.seed(10)
@@ -39,8 +36,17 @@ test_that("distribution fitting tool fits frequency and severity distributions",
     expect_match(output$selected_freq_params$html, "Beta")
     expect_match(output$freq_stats$html, "Poisson|Negative Binomial")
     expect_equal(freq_moments()$variance, var(csv$data$counts))
-    expect_true(is.character(output$freq_fit_plot) || is.list(output$freq_fit_plot))
-    expect_true(is.character(output$count_hist) || is.list(output$count_hist))
+    expect_chart(output$freq_fit_plot)
+    expect_chart(output$count_hist)
+    expect_match(output$selected_distribution_summary, "Poisson distribution fitted by maximum likelihood")
+    #the counts are not overdispersed: the Negative Binomial tends to the Poisson, which has the lower AIC
+    expect_true(freq_nb_fit()$capped)
+    expect_match(output$selected_freq_params$html, "tends to the Poisson")
+    #the charts are drawn again in the dark theme
+    session$setInputs(app_theme = "dark", FreqDistri = "NegativeBinomial")
+    expect_chart(output$freq_fit_plot)
+    expect_chart(output$count_hist)
+    expect_match(output$selected_distribution_summary, "Negative Binomial distribution")
     #severity: negative, zero and missing values are dropped and the fits use the cleaned data
     session$setInputs(severity_var = "sev", severity_hist_bins = 20, sev_fit_log_scale = FALSE, execute_sev_analysis = 1)
     cleaned <- csv$data$sev[!is.na(csv$data$sev) & csv$data$sev > 0]
@@ -48,13 +54,14 @@ test_that("distribution fitting tool fits frequency and severity distributions",
     expect_equal(sev_input()$dropped, 3)
     expect_equal(sev_gamma_fit()$estimate, fit_gamma_mle(cleaned)$estimate)
     expect_equal(sev_pareto_alpha(), length(cleaned) / sum(log(cleaned / min(cleaned))))
-    #the lognormal fit is the maximum likelihood fit fitdistrplus gives
-    expect_equal(unname(sev_lnorm_fit()$estimate), unname(fitdistrplus::fitdist(cleaned, "lnorm")$estimate))
+    #the lognormal fit is the maximum likelihood fit (fitdistrplus::fitdist(x, "lnorm") uses the same closed formula)
+    expect_equal(unname(sev_lnorm_fit()$estimate), c(mean(log(cleaned)), sqrt(mean((log(cleaned) - mean(log(cleaned)))^2))))
     expect_match(output$sev_param_summary$html, "LogNormal")
     expect_match(output$sev_param_summary$html, "Gamma")
-    expect_true(is.character(output$sev_fit_plot) || is.list(output$sev_fit_plot))
+    expect_chart(output$sev_fit_plot)
+    expect_chart(output$sev_hist)
     session$setInputs(sev_fit_log_scale = TRUE)
-    expect_true(is.character(output$sev_fit_plot) || is.list(output$sev_fit_plot))
+    expect_chart(output$sev_fit_plot)
     #the fitted Pareto cdf is zero below the smallest claim, never negative
     pareto <- sev_models()[[5]]
     expect_equal(pareto$cdf(c(0, min(cleaned) / 2)), c(0, 0))
@@ -70,8 +77,9 @@ test_that("distribution fitting tool pairs each count with the weight of its own
     expect_equal(counts_data(), c(1, 4, 2))
     expect_equal(weights_data(), c(2, 1, 3))
     expect_equal(freq_input()$dropped, 3)
-    #with weights fitdistrplus optimises numerically, so the weighted mean is matched closely, not exactly
-    expect_equal(unname(freq_po_fit()$estimate), sum(c(1, 4, 2) * c(2, 1, 3)) / 6, tolerance = 1e-6)
+    #the weighted Poisson fit is the weighted mean
+    expect_equal(unname(freq_po_fit()$estimate), sum(c(1, 4, 2) * c(2, 1, 3)) / 6)
+    expect_chart(output$freq_fit_plot)
     #the weighted fit is fixed when the analysis runs, not when the switch changes
     session$setInputs(counts_weighted_var = FALSE)
     expect_equal(weights_data(), c(2, 1, 3))
@@ -88,7 +96,7 @@ test_that("distribution fitting tool explains unusable columns instead of failin
     expect_error(counts_data(), "at least two")
     session$setInputs(severity_var = "same", execute_sev_analysis = 1)
     expect_error(severity_data(), "are the same")
-    #claims below 1: the gamma fit falls back to rescaled claims and still fits
+    #claims below 1: the gamma fit still fits
     session$setInputs(severity_var = "small", execute_sev_analysis = 2)
     expect_true(all(is.finite(sev_gamma_fit()$estimate)))
     expect_match(output$sev_param_summary$html, "Gamma")
@@ -106,8 +114,11 @@ test_that("distribution fitting tool sliced and piecewise Pareto analyses run", 
     above <- cleaned[cleaned > 2000]
     expect_equal(paretoX1Alpha(), length(above) / sum(log(above / 2000)))
     expect_true(is.numeric(paretoX2AlphaMod()) && is.finite(paretoX2AlphaMod()))
-    expect_true(is.character(output$mean_excess_func_plot) || is.list(output$mean_excess_func_plot))
-    expect_true(is.character(output$sliced_sev_cdf_plot) || is.list(output$sliced_sev_cdf_plot))
+    expect_chart(output$mean_excess_func_plot)
+    expect_chart(output$sliced_sev_cdf_plot)
+    session$setInputs(sev_cens_fit_log_scale = TRUE)
+    expect_chart(output$mean_excess_func_plot)
+    expect_chart(output$sliced_sev_cdf_plot)
     expect_match(output$slc_sev_fitted_param_summary$html, "Tail above the second point")
     #the spliced cdfs are continuous at the slicing points
     cdfs <- sliced_cdfs()
@@ -126,7 +137,7 @@ test_that("distribution fitting tool sliced and piecewise Pareto analyses run", 
     expect_equal(piecwise_pareto_alpha(), piecewise_pareto_alpha(sort(cleaned), c(min(cleaned), 1500, 4000, 12000)))
     expect_equal(predicted_piecwise_cdf(), piecewise_pareto_cdf(sort(cleaned), piecwise_pareto_mu(), piecwise_pareto_alpha()))
     expect_match(output$piecewise_pareto_ks_test$html, "K-S distance")
-    expect_true(is.character(output$piecewise_pareto_cdf_plot) || is.list(output$piecewise_pareto_cdf_plot))
+    expect_chart(output$piecewise_pareto_cdf_plot)
     #a threshold already set is kept when the number of thresholds changes
     session$setInputs(num_pareto_slices = 4)
     expect_match(as.character(dynamic_sliders()), "data-from=\"1500\"")
@@ -181,7 +192,11 @@ test_that("GLM fitting tool fits the same model as glm()", {
     session$setInputs(save_formula_1 = 1)
     expect_match(output$aic_output_1$html, dft_fmt(AIC(reference), 7), fixed = TRUE)
     session$setInputs(visualize_variable = "x1", number_of_bands_input = 10, execute_visualization = 1)
-    expect_true(is.character(output$fitness_plot) || is.list(output$fitness_plot))
+    expect_chart(output$fitness_plot)
+    session$setInputs(app_theme = "dark")
+    expect_chart(output$fitness_plot)
+    #the preview shows the first 100 rows
+    expect_match(output$selected_input_data_table$html, "Showing the first 100 of 200 rows.", fixed = TRUE)
     #the offset as the log of an exposure column
     session$setInputs(offset_log = TRUE, fit_model = 2)
     expect_equal(coef(fitted_model()), coef(glm(y ~ offset(log(e)) + x1 + x2, data = csv$data, weights = csv$data$w, family = poisson)))

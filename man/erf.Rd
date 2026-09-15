@@ -10,7 +10,7 @@ erf(x)
 \item{x}{A real number.}
 }
 \value{
-The value of the error function at \code{x}.
+The value of the error function at \code{x}. A non-numeric \code{x} is an error.
 }
 \description{
 Error function
@@ -18,4 +18,7 @@ Error function
 \examples{
 erf(0.1)
 erf(0.5)
+}
+\seealso{
+\code{\link{LNormCappedMean}}
 }

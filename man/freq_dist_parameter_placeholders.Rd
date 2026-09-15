@@ -12,3 +12,4 @@ The frequency distribution parameter placeholders.
 \description{
 A data frame with the frequency distribution parameter placeholders
 }
+\keyword{internal}

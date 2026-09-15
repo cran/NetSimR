@@ -141,6 +141,40 @@ test_that("sliced quantile functions keep their precision as q approaches 1", {
   expect_equal(qSlicedGammaPareto(1, 1, 5e-4, 1000, 1.2), Inf)
 })
 
+test_that("sliced pdfs do not overflow for large slice points or shapes", {
+  #SlicePoint^PShape overflowed, so these used to be NaN
+  expect_equal(dSlicedGammaPareto(2e10, 2, 1e-10, 1e10, 40),
+               pgamma(1e10, 2, 1e-10, lower.tail = FALSE) * 40 / 2e10 * 0.5^40, tolerance = 1e-12)
+  expect_equal(dSlicedGammaPareto(2e10, 2, 1e-10, 1e10, 40), 1.338338e-21, tolerance = 1e-6)
+  expect_equal(dSlicedLNormPareto(2e10, 20, 1, 1e10, 40),
+               plnorm(1e10, 20, 1, lower.tail = FALSE) * 40 / 2e10 * 0.5^40, tolerance = 1e-12)
+  expect_equal(dSlicedGammaPareto(Inf, 1, 5e-4, 1000, 1.2), 0)
+})
+
+test_that("an infinite slice point gives the attritional distribution", {
+  x <- c(0, 500, 5000, 1e6, Inf)
+  u <- c(0, 0.5, 0.99, 1)
+  for (tailShape in c(1.5, 0.8)) {
+    #the means used to be NaN (0 * Inf) for PShape > 1 and Inf for PShape <= 1
+    expect_equal(SlicedGammaParetoMean(2, 0.001, Inf, tailShape), 2000)
+    expect_equal(SlicedLNormParetoMean(6, 1.5, Inf, tailShape), exp(6 + 1.5^2 / 2))
+    expect_equal(ExposureCurveSlicedGammaPareto(x, 2, 0.001, Inf, tailShape), ExposureCurveGamma(x, 2, 0.001))
+    expect_equal(ExposureCurveSlicedLNormPareto(x, 6, 1.5, Inf, tailShape), ExposureCurveLNorm(x, 6, 1.5))
+    expect_equal(SlicedGammaParetoCappedMean(x, 2, 0.001, Inf, tailShape), GammaCappedMean(x, 2, 0.001))
+    expect_equal(SlicedLNormParetoCappedMean(x, 6, 1.5, Inf, tailShape), LNormCappedMean(x, 6, 1.5))
+    expect_equal(ILFSlicedGammaPareto(500, 5000, 2, 0.001, Inf, tailShape), ILFGamma(500, 5000, 2, 0.001))
+    expect_equal(ILFSlicedLNormPareto(500, 5000, 6, 1.5, Inf, tailShape), ILFLNorm(500, 5000, 6, 1.5))
+    expect_equal(pSlicedGammaPareto(x, 2, 0.001, Inf, tailShape), pgamma(x, 2, 0.001))
+    expect_equal(pSlicedLNormPareto(x, 6, 1.5, Inf, tailShape), plnorm(x, 6, 1.5))
+    expect_equal(dSlicedGammaPareto(x, 2, 0.001, Inf, tailShape), dgamma(x, 2, 0.001))
+    expect_equal(dSlicedLNormPareto(x, 6, 1.5, Inf, tailShape), dlnorm(x, 6, 1.5))
+    expect_equal(qSlicedGammaPareto(u, 2, 0.001, Inf, tailShape), qgamma(u, 2, 0.001))
+    expect_equal(qSlicedLNormPareto(u, 6, 1.5, Inf, tailShape), qlnorm(u, 6, 1.5))
+  }
+  #a finite slice point with PShape <= 1 still has no finite mean
+  expect_equal(SlicedGammaParetoMean(2, 0.001, c(1000, Inf), 0.8), c(Inf, 2000))
+})
+
 test_that("sliced LogNormal-Pareto documented examples give the same values as before", {
   expect_equal(SlicedLNormParetoMean(6, 1.5, 1000, 1.2), 1865.63324717588, tolerance = 1e-9)
   expect_equal(SlicedLNormParetoMean(c(5, 5.5, 6), 1.5, 1000, 1.1), c(1306.190, 2130.408, 3228.298), tolerance = 1e-6)

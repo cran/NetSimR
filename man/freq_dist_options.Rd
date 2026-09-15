@@ -12,3 +12,4 @@ The frequency distribution objects.
 \description{
 A vector with the frequency distribution objects
 }
+\keyword{internal}

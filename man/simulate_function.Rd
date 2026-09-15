@@ -8,7 +8,7 @@ simulate_function(
   numOfSimulations,
   freq_params,
   sev_params,
-  seedSetBinary = FALSE,
+  seedSetBinary = !is.null(seedValue),
   seedValue = NULL,
   freqDistr,
   sevDistr,
@@ -41,9 +41,9 @@ simulate_function(
 
 \item{sev_params}{A vector of the severity distribution parameters.}
 
-\item{seedSetBinary}{True if there is a fixed seed, otherwise false.}
+\item{seedSetBinary}{True if there is a fixed seed (\code{seedValue}), otherwise false. Defaults to TRUE when a \code{seedValue} is given and FALSE otherwise, so a \code{seedValue} on its own makes the run reproducible; an explicit FALSE ignores \code{seedValue}.}
 
-\item{seedValue}{The seed value, a whole number between \code{-.Machine$integer.max} and \code{.Machine$integer.max}.}
+\item{seedValue}{The seed value, a whole number between \code{-.Machine$integer.max} and \code{.Machine$integer.max}, or NULL (the default) for no fixed seed.}
 
 \item{freqDistr}{The frequency distribution. Options are as per the freq_dist_options.}
 
@@ -81,7 +81,7 @@ simulate_function(
 
 \item{sevTruncateAtZero}{True to draw Normal severities from the Normal distribution truncated at zero, so that no claim is negative. Ignored for other severity distributions. Defaults to FALSE.}
 
-\item{chunk_size}{The number of simulations processed per vectorised batch. By default (NULL) it is chosen from the expected number of claims per simulation, so that a batch holds about a million claims (between 100 and 10,000 simulations).}
+\item{chunk_size}{The number of simulations processed per vectorised batch. By default (NULL) it is chosen from the expected number of claims per simulation, so that a batch holds about a million claims (between 100 and 10,000 simulations). Because of the floor of 100 simulations, a batch holds more than a million claims when the mean frequency exceeds 10,000 claims per simulation (about 100 million at a mean of a million), and memory use grows with it; give a smaller \code{chunk_size} to keep batches small. Results with a fixed seed depend on the chunk size.}
 
 \item{gross}{True (the default) to return the gross total claims before reinsurance. Set it to FALSE when only the totals after the structures are needed: with an each-and-every-loss layer this allows drawing only the claims that reach the layer, which is much faster.}
 
@@ -90,20 +90,51 @@ simulate_function(
 \item{progress}{An optional function called after each chunk of a sequential run with the fraction done and a short description, e.g. to update a progress bar.}
 }
 \value{
-A data frame with one row per simulation: the claim count, the total claims after the reinsurance structures, the gross total claims before them (unless \code{gross = FALSE}), and the number of reinstatements used (when reinstatements are limited).
+A data frame with one row per simulation, at full precision: \code{claim_counts},
+the claim count; \code{total_claims}, the total claims after the reinsurance structures;
+\code{gross_claims}, the gross total claims before them (after Pareto slices and the
+severity cap; unless \code{gross = FALSE}); and, when reinstatements are limited,
+\code{number_of_reinstatements_used}: the EEL layer's recoveries in the period (after the
+aggregate deductible and limit, when there is an aggregate layer) divided by the EEL
+limit, capped at the number of reinstatements, so reinstatements are counted pro rata to
+the amount recovered.
 Stops with an error that names any required setting that is missing or invalid.
 }
 \description{
 A function to simulate frequency - severity of insurance claims using chunked vectorisation.
 The function applies severity cap, reinsurance structure for each and every loss claim,
-reinsurance structure for aggregate claims, and allows for piecewise pareto slices
+reinsurance structure for aggregate claims, and allows for piecewise Pareto slices
 }
 \details{
+Order of the calculations, for each simulation (a period, e.g. a year): claims are drawn
+from the severity distribution (with its Pareto slices) and capped at the severity cap;
+the each-and-every-loss (EEL) structure applies to each claim; the results are summed
+over the period; then the aggregate deductible comes off that sum, and finally the
+aggregate limit and the reinstatement capacity cap what is left. In short: cap -> EEL
+layer per claim -> annual sum -> aggregate deductible -> aggregate limit and
+reinstatement capacity.
+
+The reinstatement capacity applies to a 'Limited Layer' EEL structure with limited
+reinstatements, which pays at most \code{(reinstatements + 1) * limit} in a period. With
+an aggregate 'Unlimited Layer' or 'Limited Layer', the ceded total is
+\code{min(max(S - aggregate deductible, 0), aggregate limit, (reinstatements + 1) * limit)},
+where S is the sum of the period's EEL recoveries before any capacity (the market
+convention for an annual aggregate deductible). For example, three claims of 100 through
+a layer of 100 excess of 0 with no reinstatements and an aggregate deductible of 50 cede
+\code{min(300 - 50, 100) = 100}. Without an aggregate structure, the capacity caps S.
+With an aggregate 'Exclude Layer', the capacity caps S first and the aggregate layer is
+then taken out of the capped amount. An unlimited EEL layer, or limited reinstatements
+switched off, has no capacity cap. (Before version 0.2.0 the capacity was applied before
+the aggregate deductible, which gave smaller ceded totals when the two were combined.)
+
+Totals are returned at full precision; round them only for display.
+
 Random numbers: each chunk of simulations uses its own L'Ecuyer-CMRG random stream,
 derived from one seed, so a run gives the same results whether or not it runs in
-parallel. With \code{seedSetBinary = TRUE} the run is reproducible from \code{seedValue}
-and the caller's random number stream is left unchanged; otherwise the seed is drawn
-from the caller's stream, so \code{set.seed()} before the call also makes it reproducible.
+parallel. With \code{seedSetBinary = TRUE} (the default when a \code{seedValue} is given)
+the run is reproducible from \code{seedValue} and the caller's random number stream is
+left unchanged; otherwise the seed is drawn from the caller's stream, so
+\code{set.seed()} before the call also makes it reproducible.
 The streams always use Inversion for normal draws and Rejection sampling, so a seed
 gives the same results whatever the caller's \code{RNGkind()}, which is restored afterwards.
 Results depend on the chunk size, which by default adapts to the expected number of
@@ -126,4 +157,8 @@ layer <- simulate_function(
   reinsurance_structure_eel_limit_amount = 1500
 )
 mean(layer$total_claims)
+}
+\seealso{
+\code{\link{simulate_claims}}, a simpler interface with short argument names,
+  and \code{\link{run_shiny_simulator}} for the same model in an app.
 }

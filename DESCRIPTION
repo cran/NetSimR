@@ -1,7 +1,7 @@
 Package: NetSimR
 Type: Package
 Title: Actuarial Functions for Non-Life Insurance Modelling
-Version: 0.2.0
+Version: 0.3.0
 Authors@R: person("Yiannis", "Parizas", email = "yiannis.parizas@gmail.com", role = c("aut", "cre"))
 Description: Assists actuaries and other insurance modellers in pricing,
     reserving and capital modelling for non-life insurance and
@@ -25,18 +25,20 @@ Description: Assists actuaries and other insurance modellers in pricing,
     Escaping the triangle by Yiannis Parizas (2019) <https://www.theactuary.com/features/2019/06/2019/06/05/escaping-triangle>;
     Take to excess by Yiannis Parizas (2019) <https://www.theactuary.com/features/2019/03/2019/03/06/taken-excess>.
 License: GPL-3
+URL: https://github.com/NetSimAnalytics/NetSimR
+BugReports: https://github.com/NetSimAnalytics/NetSimR/issues
 Encoding: UTF-8
-Imports: shiny (>= 1.8.1), htmltools, base64enc, bslib (>= 0.9.0),
-        future, future.apply, parallel, methods, stats, utils,
-        graphics, grDevices, plotly, reactable, fitdistrplus
+Language: en-GB
+Imports: shiny (>= 1.8.1), base64enc, bslib (>= 0.9.0), future (>=
+        1.17.0), parallel, methods, stats, utils, graphics, grDevices
 Suggests: knitr, rmarkdown, crch, testthat, DBI, RMySQL, RODBC,
         RPostgreSQL, RSQLite
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.1.0
 NeedsCompilation: no
-Packaged: 2026-09-13 22:23:57 UTC; yiann
+Packaged: 2026-09-14 16:41:35 UTC; yiann
 Author: Yiannis Parizas [aut, cre]
 Maintainer: Yiannis Parizas <yiannis.parizas@gmail.com>
 Repository: CRAN
-Date/Publication: 2026-09-13 22:50:02 UTC
+Date/Publication: 2026-09-15 11:30:13 UTC

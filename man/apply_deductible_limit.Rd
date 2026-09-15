@@ -14,14 +14,18 @@ apply_deductible_limit(
 \arguments{
 \item{gross_claims_data}{A vector of Claims.}
 
-\item{reinsurance_structure}{The chosen reinsurance structure. Options are: 'No Reinsurance Structure', 'Unlimited Layer', 'Limited Layer', 'Exclude Layer'.}
+\item{reinsurance_structure}{The chosen reinsurance structure, a single string. Options are: 'No Reinsurance Structure', 'Unlimited Layer', 'Limited Layer', 'Exclude Layer'; anything else is an error.}
 
-\item{deductible}{The deductible of the reinsurance structure.}
+\item{deductible}{The deductible of the reinsurance structure, zero or more. Not used by 'No Reinsurance Structure'.}
 
-\item{limit}{The limit of the reinsurance structure.}
+\item{limit}{The limit of the reinsurance structure, zero or more. Used only by 'Limited Layer' and 'Exclude Layer'.}
 }
 \value{
-The ceded claims for the structure, with the chosen deductible and limit.
+A vector with one value per claim: for 'Unlimited Layer' and 'Limited Layer', the
+amount ceded to the layer; for 'Exclude Layer', the claims with the layer taken out (the
+claims less what a 'Limited Layer' with the same deductible and limit would cede); for
+'No Reinsurance Structure', the claims unchanged. Stops with an error when a deductible
+or limit the structure uses is negative.
 }
 \description{
 Apply a deductible and limit to claims
@@ -29,4 +33,5 @@ Apply a deductible and limit to claims
 \examples{
 apply_deductible_limit(c(100, 50, 20), 'Limited Layer', 40, 20)
 apply_deductible_limit(c(100, 50, 20), 'Limited Layer', 10, 30)
+apply_deductible_limit(c(100, 50, 20), 'Exclude Layer', 40, 20)
 }

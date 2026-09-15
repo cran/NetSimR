@@ -2,7 +2,7 @@
 % Please edit documentation in R/ShinySimulatorGlobal.R
 \name{max_number_of_pareto_slices}
 \alias{max_number_of_pareto_slices}
-\title{Parameter to set the maximum number of pareto slices}
+\title{Parameter to set the maximum number of Pareto slices}
 \usage{
 max_number_of_pareto_slices
 }
@@ -10,5 +10,6 @@ max_number_of_pareto_slices
 The maximum number of Pareto Slices.
 }
 \description{
-Parameter to set the maximum number of pareto slices
+Parameter to set the maximum number of Pareto slices
 }
+\keyword{internal}

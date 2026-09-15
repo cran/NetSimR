@@ -7,7 +7,7 @@
 ExposureCurveGamma(x, shape, rate)
 }
 \arguments{
-\item{x}{A positive real number -  the claim amount where the exposure curve will be evaluated.}
+\item{x}{A non-negative real number -  the claim amount where the exposure curve will be evaluated.}
 
 \item{shape}{A positive real number - the shape parameter of the Claim Severity's Gamma distribution.}
 
@@ -23,3 +23,11 @@ Exposure Curve from a Gamma severity distribution
 ExposureCurveGamma(700,1,0.0005)
 ExposureCurveGamma(1000,1.5,0.0006)
 }
+\seealso{
+Other exposure curve functions:
+\code{\link[=ExposureCurveLNorm]{ExposureCurveLNorm()}},
+\code{\link[=ExposureCurvePareto]{ExposureCurvePareto()}},
+\code{\link[=ExposureCurveSlicedGammaPareto]{ExposureCurveSlicedGammaPareto()}},
+\code{\link[=ExposureCurveSlicedLNormPareto]{ExposureCurveSlicedLNormPareto()}}
+}
+\concept{exposure curve functions}

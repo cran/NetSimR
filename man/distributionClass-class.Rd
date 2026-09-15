@@ -19,3 +19,4 @@ Allowed ranges are \code{param_min_values} and \code{param_max_values} (NA for n
 bound), with \code{param_min_strict} and \code{param_max_strict} marking bounds the
 value may not equal.
 }
+\keyword{internal}

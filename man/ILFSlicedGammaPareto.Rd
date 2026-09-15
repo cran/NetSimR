@@ -7,15 +7,15 @@
 ILFSlicedGammaPareto(xLow, xHigh, GShape, GRate, SlicePoint, PShape)
 }
 \arguments{
-\item{xLow}{A positive real number -  the claim amount where the Limit Factor Curve will be evaluated from.}
+\item{xLow}{A non-negative real number -  the claim amount where the Limit Factor Curve will be evaluated from.}
 
-\item{xHigh}{A positive real number -  the claim amount where the Limit Factor Curve will be evaluated to.}
+\item{xHigh}{A non-negative real number -  the claim amount where the Limit Factor Curve will be evaluated to.}
 
 \item{GShape}{A positive real number -  the shape parameter of the attritional Claim Severity's Gamma distribution.}
 
 \item{GRate}{A positive real number -  the rate parameter of the attritional Claim Severity's Gamma distribution.}
 
-\item{SlicePoint}{A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution.}
+\item{SlicePoint}{A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution. An infinite slice point gives the Gamma distribution.}
 
 \item{PShape}{A positive real number - the shape parameter of the tail Claim Severity's Pareto distribution.}
 }
@@ -30,3 +30,11 @@ ILFSlicedGammaPareto(2000,3000,1,0.0005,1000,1.2)
 ILFSlicedGammaPareto(800,1000,1.1,0.0006,2000,1.6)
 ILFSlicedGammaPareto(1200,2000,1.2,0.0004,3000,1.4)
 }
+\seealso{
+Other ILF functions:
+\code{\link[=ILFGamma]{ILFGamma()}},
+\code{\link[=ILFLNorm]{ILFLNorm()}},
+\code{\link[=ILFPareto]{ILFPareto()}},
+\code{\link[=ILFSlicedLNormPareto]{ILFSlicedLNormPareto()}}
+}
+\concept{ILF functions}

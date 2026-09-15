@@ -7,7 +7,9 @@
 run_shiny_simulator()
 }
 \value{
-Opens the shiny simulator application
+A shiny app object (class \code{shiny.appobj}). Printing it, as happens when
+  \code{run_shiny_simulator()} is called at the console, opens the app; pass it to
+  \code{shiny::runApp()} to choose options such as the port.
 }
 \description{
 A function to run the shiny simulator application
@@ -16,4 +18,8 @@ A function to run the shiny simulator application
 if (interactive()) {
   run_shiny_simulator()
 }
+}
+\seealso{
+\code{\link{simulate_claims}} and \code{\link{simulate_function}}, which run
+  the same model from R code.
 }

@@ -37,6 +37,27 @@ test_that("a fixed seed makes a run reproducible", {
   expect_false(identical(first$total_claims, other$total_claims))
 })
 
+test_that("a seedValue on its own fixes the seed", {
+  args <- list(numOfSimulations = 300, freq_params = 3, sev_params = c(6, 1.5), freqDistr = "Poisson", sevDistr = "LogNormal")
+  run <- function(...) do.call(simulate_function, c(args, list(...)))
+  #the seed value used to be ignored unless seedSetBinary = TRUE was given as well
+  first <- run(seedValue = 5)
+  expect_identical(run(seedValue = 5), first)
+  expect_identical(run(seedValue = 5, seedSetBinary = TRUE), first)
+  expect_false(identical(run(seedValue = 6)$total_claims, first$total_claims))
+  #as with seedSetBinary = TRUE, the caller's random number stream is left unchanged
+  set.seed(1)
+  before <- .Random.seed
+  run(seedValue = 5)
+  expect_identical(.Random.seed, before)
+  #an explicit FALSE still ignores the seed value and draws the seed from the caller's stream
+  set.seed(2)
+  unseeded <- run(seedValue = 5, seedSetBinary = FALSE)
+  expect_false(identical(unseeded$total_claims, first$total_claims))
+  set.seed(2)
+  expect_identical(run(seedValue = 5, seedSetBinary = FALSE), unseeded)
+})
+
 test_that("optional arguments may be omitted", {
   res <- simulate_function(
     numOfSimulations = 500,
@@ -74,7 +95,8 @@ test_that("reinstatements used lie between zero and the reinstatement limit", {
   used <- res$number_of_reinstatements_used
   expect_true(all(used >= 0 & used <= 2))
   expect_true(all(res$total_claims <= 3 * 5000 + 1e-6))
-  expect_equal(used, pmin(res$total_claims / 5000, 2), tolerance = 0.01)
+  #the column is unrounded: the ceded total over the limit, capped at the reinstatements
+  expect_identical(used, pmin(res$total_claims / 5000, 2))
 })
 
 test_that("unlimited reinstatements do not add the reinstatements column", {

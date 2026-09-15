@@ -41,14 +41,114 @@ test_that("without a fixed seed, set.seed() before the call makes the run reprod
   expect_identical(first, second)
 })
 
+#the parallel tests of this file share one 2-worker multisession plan, so its workers start
+#once rather than once per test; the plan in place before this file is restored at its end
+shared_workers <- new.env()
+use_shared_workers <- function() {
+  if (is.null(shared_workers$previous_plan)) {
+    shared_workers$previous_plan <- future::plan(future::multisession, workers = 2)
+  } else if (!(inherits(future::plan(), "multisession") && future::nbrOfWorkers() == 2)) {
+    future::plan(future::multisession, workers = 2)
+  }
+  invisible(NULL)
+}
+
 test_that("parallel runs give the same results as sequential runs", {
   skip_on_cran()
-  old_plan <- future::plan(future::multisession, workers = 2)
-  on.exit(future::plan(old_plan), add = TRUE)
+  use_shared_workers()
   settings <- layered_settings(numOfSimulations = 3000, chunk_size = 700)
   sequential <- do.call(simulate_function, utils::modifyList(settings, list(multiprocessing = FALSE)))
   parallel_run <- do.call(simulate_function, utils::modifyList(settings, list(multiprocessing = TRUE)))
   expect_identical(parallel_run, sequential)
+})
+
+test_that("an error in a parallel chunk is raised with its message", {
+  skip_on_cran()
+  use_shared_workers()
+  #a huge (finite) Poisson mean passes the settings checks but makes the chunks fail
+  sequential_error <- tryCatch(suppressWarnings(run_simulation(freq_params = 1e300)), error = identity)
+  parallel_error <- tryCatch(suppressWarnings(run_simulation(freq_params = 1e300, multiprocessing = TRUE)),
+                             error = identity)
+  expect_s3_class(sequential_error, "error")
+  expect_s3_class(parallel_error, "error")
+  expect_identical(conditionMessage(parallel_error), conditionMessage(sequential_error))
+})
+
+#values captured from version 0.2.1 (chunks run with future.apply) before the parallel runs
+#moved to plain futures; a seed must keep giving these exact results, sequential and parallel
+captured_runs <- list(
+  lognormal = list(
+    settings = base_settings(numOfSimulations = 3000, chunk_size = 700),
+    rows = c(1, 700, 701, 3000),
+    total_claims = c(1187.7193703133978, 3893.6430360833383, 6946.0622400559878, 3316.9041544597885),
+    sum_total = 11301734.919914259, sum_counts = 9074L
+  ),
+  layered = list(
+    settings = layered_settings(numOfSimulations = 2500, seedValue = 7, chunk_size = 600),
+    rows = c(1, 600, 601, 2500),
+    total_claims = c(0, 0, 0, 5250.1031907718243),
+    sum_total = 3000510.9040053124, sum_counts = 7370L
+  ),
+  sliced = list(
+    settings = base_settings(numOfSimulations = 2000, freq_params = c(2, 1.5), sev_params = c(2, 500),
+                             seedValue = -123, freqDistr = "Negative_Binomial", sevDistr = "Gamma",
+                             chunk_size = 450, paretoSlice = TRUE, pareto_slice_times = 2,
+                             slice_pareto_alphas = c(2, 1.5), slice_pareto_x_ms = c(800, 3000),
+                             sevCapBinary = TRUE, sev_cap_amount = 20000),
+    rows = c(1, 450, 451, 2000),
+    total_claims = c(0, 1092.4702047802709, 1258.2885751184531, 0),
+    sum_total = 6403422.2416602327, sum_counts = 5969L
+  ),
+  layer_only = list(
+    settings = base_settings(numOfSimulations = 2000, freq_params = 4, sev_params = c(7, 1.2), seedValue = 2024,
+                             chunk_size = 500, gross = FALSE, reinsuranceStructureEEL = "Unlimited Layer",
+                             reinsurance_structure_eel_dedctible_amount = 2000),
+    rows = c(1, 500, 501, 2000),
+    total_claims = c(9365.3522021841109, 18682.392983290858, 21316.137577761365, 10301.807862973266),
+    sum_total = 9447174.21068554, sum_counts = 8133L
+  ),
+  one_step = list(
+    settings = base_settings(numOfSimulations = 1800, freq_params = 5, sev_params = c(2, 400), seedValue = 99,
+                             sevDistr = "Gamma", chunk_size = 400),
+    rows = c(1, 400, 401, 1800),
+    total_claims = c(2166.2649671083527, 3232.8910058146676, 3533.7957860159777, 3322.5562143139823),
+    sum_total = 7226656.7484657066, sum_counts = 9141L
+  )
+)
+
+expect_captured_run <- function(res, case, label) {
+  #the random streams are the same on every platform, but exp(), log() and the quantile
+  #functions can differ in the last bits (e.g. on macOS arm64), so the amounts are compared
+  #to a tight relative tolerance; the claim counts must match exactly
+  expect_equal(res$total_claims[case$rows], case$total_claims, tolerance = 1e-10, label = label)
+  expect_equal(sum(res$total_claims), case$sum_total, tolerance = 1e-10, label = label)
+  expect_identical(sum(res$claim_counts), case$sum_counts, label = label)
+}
+
+test_that("seeded runs give the results captured from earlier versions", {
+  for (name in names(captured_runs)) {
+    case <- captured_runs[[name]]
+    expect_captured_run(do.call(simulate_function, case$settings), case, name)
+  }
+})
+
+test_that("seeded parallel runs give the captured results, on the caller's plan or their own", {
+  skip_on_cran()
+  use_shared_workers()
+  for (name in names(captured_runs)) {
+    case <- captured_runs[[name]]
+    settings <- utils::modifyList(case$settings, list(multiprocessing = TRUE))
+    expect_captured_run(do.call(simulate_function, settings), case, paste(name, "(caller's plan)"))
+  }
+  #with a one-worker plan the call starts its own workers and restores the plan afterwards
+  future::plan(future::sequential)
+  sequential_plan <- future::plan()
+  old_options <- options(mc.cores = 2, parallelly.availableCores.methods = "mc.cores")
+  on.exit(options(old_options), add = TRUE)
+  case <- captured_runs$layered
+  settings <- utils::modifyList(case$settings, list(multiprocessing = TRUE))
+  expect_captured_run(do.call(simulate_function, settings), case, "layered (own plan)")
+  expect_identical(future::plan(), sequential_plan)
 })
 
 test_that("the progress callback is called once per chunk", {
@@ -63,6 +163,17 @@ test_that("the default chunk size handles high claim frequencies", {
                         reinsuranceStructureEEL = "Unlimited Layer", reinsurance_structure_eel_dedctible_amount = 0)
   expect_equal(nrow(res), 1500)
   expect_lt(abs(mean(res$claim_counts) - 1000), 5)
+})
+
+test_that("the default chunk size keeps at least 100 simulations per chunk", {
+  #20,000 claims per simulation would give chunks of 50 for a million claims; the floor of
+  #100 simulations (documented under chunk_size) gives 3 chunks for 250 simulations
+  calls <- 0
+  res <- run_simulation(numOfSimulations = 250, freqDistr = "Fixed_number_of_Counts", freq_params = 20000,
+                        sevDistr = "Fixed_Severity", sev_params = 1,
+                        progress = function(value, detail) calls <<- calls + 1)
+  expect_equal(calls, 3)
+  expect_equal(res$total_claims, rep(20000, 250))
 })
 
 test_that("out-of-range distribution parameters are named in the error", {
@@ -231,3 +342,7 @@ test_that("old settings files with the Normal under mu and sigma still load", {
   expect_identical(sim_settings_migrate(lognormal, version = 1), lognormal)
   expect_identical(sim_settings_migrate(old, version = 2), old)
 })
+
+#put back the plan in place before this file (on CRAN the parallel tests are skipped and
+#never start the shared workers)
+if (!is.null(shared_workers$previous_plan)) future::plan(shared_workers$previous_plan)

@@ -12,3 +12,4 @@ The reinsurance structure options
 \description{
 A vector with the reinsurance structure options
 }
+\keyword{internal}
