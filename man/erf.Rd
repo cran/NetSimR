@@ -13,7 +13,7 @@ erf(x)
 The value of the error function at \code{x}. A non-numeric \code{x} is an error.
 }
 \description{
-Error function
+Evaluates the Gauss error function, \code{2 * pnorm(sqrt(2) * x) - 1}, which appears in the closed form of the LogNormal capped mean.
 }
 \examples{
 erf(0.1)

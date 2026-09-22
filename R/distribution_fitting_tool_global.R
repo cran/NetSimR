@@ -1,8 +1,17 @@
-#' A function to run the distribution fitting tool application
+#' Run the distribution fitting application
 #'
+#' @description Opens NetDisFit, a shiny application that fits frequency and
+#'   severity distributions to an uploaded claims file, compares them with the
+#'   data, and splices Pareto tails onto a LogNormal body or fits a piecewise
+#'   Pareto at chosen slicing points, ready for the NetSimR simulator.
 #' @return A shiny app object. Printing it, as happens when the function is
 #'   called at the console, opens the application; it can also be passed to
-#'   shiny::runApp().
+#'   \code{shiny::runApp()}.
+#' @seealso \code{\link{run_shiny_simulator}} and
+#'   \code{\link{run_shiny_glm_fitting_tool}}, the other two applications;
+#'   \code{\link{SlicedLNormParetoMean}}, \code{\link{SlicedLNormParetoCappedMean}},
+#'   \code{\link{SlicedGammaParetoMean}} and \code{\link{SlicedGammaParetoCappedMean}}
+#'   for the moments of the sliced distributions the tool fits.
 #' @export
 #' @examples
 #' if (interactive()) {
@@ -307,6 +316,21 @@ dft_nice_bound <- function(x, up = FALSE) {
   if (up) ceiling(x / step) * step else floor(x / step) * step
 }
 
+# The top of a slider that places a slicing point or threshold among the
+# claims: the largest claim once the top half a percent are left out, rounded
+# up, rather than the largest claim itself. Claims are heavy tailed, and with
+# the largest claim as the top the body of the distribution took less than a
+# pixel of the bar (3,000 claims around 1,000 and one of 5,000,000: the first
+# user click snapped to 380,000 or to the bottom). Leaving out whole claims
+# rather than taking the 99.5th percentile keeps the largest claim as the top
+# of fewer than two hundred claims, where half a percent is not a claim at
+# all; a point above the top can still be typed.
+dft_slider_top <- function(x) {
+  sorted <- sort(x)
+  if (!length(sorted)) return(NA_real_)
+  dft_nice_bound(sorted[length(sorted) - floor(length(sorted) * 0.005)], up = TRUE)
+}
+
 # Formats numbers for the result tables and tiles: `digits` significant digits
 # with thousands separators, and a dash for missing or infinite values. Values
 # from 1e15 up, or below 1e-6 (but not zero), are written as 1.234e+20: in full
@@ -468,7 +492,11 @@ ks_distance <- function(claims, cdf_fun, sorted = FALSE) {
 # becomes a point. Anything else that is not a number becomes NA.
 dft_as_numeric <- function(x, dec = ".") {
   if (is.numeric(x) || is.logical(x)) return(as.numeric(x))
-  x <- trimws(as.character(x))
+  x <- as.character(x)
+  # text that is not valid in the session's encoding is not a number, and would
+  # stop the text functions below (an error in an observer ends the session)
+  x[!validUTF8(x)] <- NA
+  x <- trimws(x)
   if (identical(dec, ",")) {
     grouped <- grepl("^[-+]?[0-9]{1,3}([.][0-9]{3})+(,[0-9]*)?$", x)
     x[grouped] <- gsub(".", "", x[grouped], fixed = TRUE)
@@ -485,49 +513,61 @@ dft_as_numeric <- function(x, dec = ".") {
 dft_numeric_columns <- function(df, dec = ".") {
   is_numeric <- vapply(df, function(column) {
     values <- dft_as_numeric(column, dec)
-    present <- !is.na(column) & trimws(as.character(column)) != ""
+    # (bytes, not characters: a value need not be valid text)
+    present <- !is.na(column) & !grepl("^[[:space:]]*$", as.character(column), useBytes = TRUE)
     any(present) && mean(!is.na(values[present])) >= 0.9
   }, logical(1))
   names(df)[is_numeric]
 }
 
 # Reads an uploaded delimited text file. A UTF-8 byte order mark is skipped, so
-# it does not end up in the first column name; column names are kept as they
-# are (spaces allowed), with blanks and duplicates made unique. The header line
-# is read on its own: given one, read.csv() takes the first column as row names
-# when the data rows have one more field than the header (a separator at the
-# end of each row), which shifts every column onto the next one's values.
+# it does not end up in the first column name, and a file that is not UTF-8 is
+# read as Latin-1 (Excel on a German or French Windows writes CSV files in the
+# Windows-1252 code page): read as UTF-8, an accented character makes a string
+# that is not valid text, on which the text functions stop. Column names are
+# kept as they are (spaces allowed), with blanks and duplicates made unique.
+# The header line is read on its own: given one, read.csv() takes the first
+# column as row names when the data rows have one more field than the header
+# (a separator at the end of each row), which shifts every column onto the
+# next one's values. The columns are sized by the widest line, not by the first
+# five as read.table() sizes them without a header: a later row with an extra
+# field then keeps it in its own column, where its surplus started a new row
+# in the first column, a claim that was never in the file.
 dft_read_data <- function(path, header = TRUE, sep = ",", quote = "\"", dec = ".") {
   has_bom <- identical(readBin(path, "raw", 3L), as.raw(c(0xef, 0xbb, 0xbf)))
-  read <- function(...) {
+  lines <- readLines(path, warn = FALSE)
+  encoding <- if (has_bom) "UTF-8-BOM" else if (all(validUTF8(lines))) "" else "latin1"
+  # the number of fields in the widest line from `skip` lines on (NA for a line
+  # that ends inside a quoted field)
+  widest <- function(skip) {
+    fields <- utils::count.fields(path, sep = sep, quote = quote, skip = skip, comment.char = "")
+    max(0L, fields, na.rm = TRUE)
+  }
+  read <- function(skip = 0L, columns, ...) {
     utils::read.csv(
-      path, header = FALSE, sep = sep, quote = quote, dec = dec,
+      path, header = FALSE, sep = sep, quote = quote, dec = dec, skip = skip,
+      col.names = paste0("V", seq_len(columns)), fill = TRUE,
       check.names = FALSE, stringsAsFactors = FALSE, strip.white = TRUE,
-      fileEncoding = if (has_bom) "UTF-8-BOM" else "", ...
+      fileEncoding = encoding, ...
     )
   }
   if (header) {
     # blank lines before the header are skipped, as read.csv() skips them
-    first_lines <- readLines(path, n = 100L, warn = FALSE)
     # (bytes, not characters: the file need not be UTF-8)
-    not_blank <- grepl("[^[:space:]]", first_lines, useBytes = TRUE)
+    not_blank <- grepl("[^[:space:]]", lines, useBytes = TRUE)
     blank_lines <- match(TRUE, not_blank, nomatch = 1L) - 1L
-    column_names <- unlist(read(nrows = 1, skip = blank_lines, colClasses = "character", na.strings = character(0)),
+    # a header shorter than the data rows leaves blank names, which get a V
+    # name below; a header longer than them gives empty columns
+    columns <- widest(blank_lines)
+    column_names <- unlist(read(blank_lines, columns, nrows = 1, colClasses = "character", na.strings = character(0)),
                            use.names = FALSE)
-    df <- tryCatch(read(skip = blank_lines + 1), error = function(e) {
+    df <- tryCatch(read(blank_lines + 1L, columns), error = function(e) {
       # a file with only the header has no data rows, which the tools report
-      if (any(nzchar(trimws(first_lines[-seq_len(blank_lines + 1)])))) stop(e)
-      as.data.frame(matrix(logical(0), 0, length(column_names)))
+      if (any(not_blank[-seq_len(blank_lines + 1L)])) stop(e)
+      as.data.frame(matrix(logical(0), 0, columns))
     })
-    # a header shorter or longer than the data rows: extra data columns get a
-    # V name below, extra names an empty column
-    missing_columns <- length(column_names) - ncol(df)
-    if (missing_columns > 0) {
-      df[paste0("V", ncol(df) + seq_len(missing_columns))] <- rep(list(rep(NA, nrow(df))), missing_columns)
-    }
-    length(column_names) <- ncol(df)
   } else {
-    df <- read()
+    df <- read(columns = widest(0L))
     column_names <- names(df)
   }
   blank <- is.na(column_names) | column_names == ""
@@ -663,41 +703,93 @@ fit_poisson_mle <- function(x, weights = NULL) {
 # Binomial is the Poisson for every practical purpose.
 dft_nbinom_max_size <- 1e8
 
+# t - log(1 + t) for t >= 0, without the cancellation of the direct formula
+# for small t (its series t^2/2 - t^3/3 + ... converges fast below 0.1).
+dft_log1p_excess <- function(t) {
+  if (t >= 0.1) return(t - log1p(t))
+  m <- 2:30
+  sum((-1)^m * t^m / m)
+}
+
+# Sums over the rows of w * sum(f(j) for j = 0, ..., x - 1), for the integer
+# counts x, as sums over j of f(j) times the weight of the counts above j.
+# Counts above `limit` use the closed forms of the two sums the fit needs,
+# from j = limit up: sum(j / (size + j)) = (x - limit) - size * (digamma(size
+# + x) - digamma(size + limit)) and sum(1 / (size + j)^2) = trigamma(size +
+# limit) - trigamma(size + x).
+dft_nbinom_count_sums <- function(x, w, limit = 1e6) {
+  top <- min(max(x), limit)
+  # weight of the counts above j, for j = 0, ..., top - 1
+  by_value <- numeric(top + 1)
+  summed <- rowsum(w, pmin(x, top))
+  by_value[as.numeric(rownames(summed)) + 1] <- summed
+  above <- rev(cumsum(rev(by_value)))[-1]
+  j <- seq_len(top) - 1
+  big <- x > limit
+  list(
+    # sum over the rows of w * sum(j / (size + j), j < x)
+    ratio = function(size) {
+      s <- sum(above * j / (size + j))
+      if (any(big)) s <- s + sum(w[big] * ((x[big] - limit) - size * (digamma(size + x[big]) - digamma(size + limit))))
+      s
+    },
+    # sum over the rows of w * sum(1 / (size + j)^2, j < x)
+    square = function(size) {
+      s <- sum(above / (size + j)^2)
+      if (any(big)) s <- s + sum(w[big] * (trigamma(size + limit) - trigamma(size + x[big])))
+      s
+    }
+  )
+}
+
 # Negative Binomial in fitdist()'s parameters, size and mu. The MLE of mu is
 # the (weighted) mean whatever the size, so the size solves the likelihood
-# equation for it with mu at the mean; it exists when the variance of the
-# counts (divided by the total weight) is above the mean. The standard errors
-# come from the observed information, whose off-diagonal term is zero at the
-# maximum. fitdist() optimises both parameters with Nelder-Mead, which stops
-# about 1e-4 (relative) from the maximum.
+# equation for it with mu at the mean. That equation has a root, and only one,
+# exactly when the variance of the counts (divided by the total weight) is
+# above the mean (Levin and Reeds 1977); otherwise the likelihood rises
+# towards the Poisson as the size grows. The standard errors come from the
+# observed information, whose off-diagonal term is zero at the maximum.
+# fitdist() optimises both parameters with Nelder-Mead, which stops about 1e-4
+# (relative) from the maximum.
 fit_nbinom_mle <- function(x, weights = NULL) {
   w <- if (is.null(weights)) rep(1, length(x)) else weights
   total <- sum(w)
   mu <- sum(w * x) / total
   if (!(mu > 0)) stop("the claim counts are all zero")
   spread <- sum(w * (x - mu)^2) / total
+  sums <- dft_nbinom_count_sums(x, w)
   # the derivative of the log-likelihood in the size, times the size, with mu at the mean:
-  # positive below the MLE and negative above it
+  # positive below the MLE and negative above it. As digamma(x + size) - digamma(size)
+  # - log(1 + mu / size) it is a difference of nearly equal numbers when the size is
+  # large (its sign at 1e8 was rounding error); since sum(w * x) = total * mu it is
+  # also the difference of these two positive sums, which keep their precision
   score <- function(log_size) {
     size <- exp(log_size)
-    sum(w * (digamma(x + size) - digamma(size))) - total * log1p(mu / size)
+    total * size * dft_log1p_excess(mu / size) - sums$ratio(size)
   }
-  top <- log(dft_nbinom_max_size)
-  capped <- !(spread > mu) || score(top) > 0
+  capped <- !(spread > mu)
+  if (!capped) {
+    # a bracket around the root, from the moment estimate mu^2 / (variance - mu): the
+    # score is positive as the size tends to 0 and negative for large sizes
+    start <- min(2 * log(mu) - log(spread - mu), 600)
+    lower <- start
+    while (isTRUE(score(lower) <= 0) && lower > start - 60) lower <- lower - 1
+    upper <- lower + 1
+    while (isTRUE(score(upper) >= 0) && upper < start + 60) upper <- upper + 1
+    # the variance above the mean only by rounding: no sign change within e^60 of the start
+    capped <- !isTRUE(score(lower) > 0 && score(upper) < 0)
+  }
   size <- if (capped) {
     dft_nbinom_max_size
   } else {
-    # a bracket around the root, from the moment estimate mu^2 / (variance - mu)
-    lower <- min(log(mu^2 / (spread - mu)), top)
-    while (score(lower) < 0) lower <- lower - 1
-    upper <- min(lower + 1, top)
-    while (score(upper) > 0 && upper < top) upper <- min(upper + 1, top)
-    if (upper > lower) exp(stats::uniroot(score, c(lower, upper), tol = 1e-12)$root) else exp(lower)
+    exp(stats::uniroot(score, c(lower, upper), tol = 1e-12)$root)
   }
   loglik <- sum(w * stats::dnbinom(x, size = size, mu = mu, log = TRUE))
-  # observed information, minus the second derivatives of the log-likelihood
+  # observed information, minus the second derivatives of the log-likelihood; in the
+  # size, with mu at the mean, it is sum(w * sum(1 / (size + j)^2, j < x)) - total * mu /
+  # (size * (size + mu)) (trigamma(x + size) - trigamma(size) = -sum(1 / (size + j)^2, j < x))
   info <- matrix(c(
-    -sum(w * (trigamma(x + size) - trigamma(size) + 1 / size - 2 / (size + mu) + (x + size) / (size + mu)^2)),
+    sums$square(size) - total * mu / (size * (size + mu)),
     -sum(w * (x - mu) / (size + mu)^2),
     -sum(w * (x - mu) / (size + mu)^2),
     sum(w * (x / mu^2 - (x + size) / (size + mu)^2))
@@ -744,6 +836,10 @@ dft_print_count_fit <- function(fit) {
 # Frequency histogram: the share of the observations (of the weight, with
 # weights) in about `bins` bins of consecutive counts, and the probability of
 # each bin under each fitted model. The last bin ends at the largest count.
+# When the smallest count is above zero, a first bin holds the counts below
+# it: the data has none there, but a fitted model may put some of its
+# probability there (zero-truncated counts), which is the lack of fit the
+# chart is there to show.
 dft_count_hist_data <- function(counts, weights = NULL, bins = 20, cdfs = list()) {
   w <- if (is.null(weights)) rep(1, length(counts)) else weights
   lowest <- min(counts)
@@ -754,6 +850,11 @@ dft_count_hist_data <- function(counts, weights = NULL, bins = 20, cdfs = list()
   bin <- factor((counts - lowest) %/% width + 1, levels = seq_along(starts))
   observed <- as.numeric(tapply(w, bin, sum))
   observed[is.na(observed)] <- 0
+  if (lowest > 0) {
+    starts <- c(0, starts)
+    ends <- c(lowest - 1, ends)
+    observed <- c(0, observed)
+  }
   # (format = "d" gives "NA" from 2^31 up)
   label <- function(x) formatC(x, format = "f", digits = 0, big.mark = ",")
   labels <- ifelse(starts == ends, label(starts), paste0(label(starts), "-", label(ends)))

@@ -126,6 +126,21 @@ test_that("data columns are converted to numbers and uploaded files read cleanly
   expect_equal(dft_read_data(path, header = FALSE), data.frame(V1 = c(1L, 3L), V2 = c(2L, 4L)))
 })
 
+test_that("the top of a slicing slider is the 99.5th percentile, rounded up", {
+  set.seed(3)
+  x <- c(exp(rnorm(3000, 7, 1)), 5e6)
+  top <- dft_slider_top(x)
+  expect_equal(top, dft_nice_bound(quantile(x, 0.995, names = FALSE), up = TRUE))
+  expect_gte(top, quantile(x, 0.995, names = FALSE))
+  expect_lt(top, 20000)
+  expect_lt(mean(x > top), 0.005 + 1e-9)
+  #a range the body of the distribution can be placed in: with the largest claim as the top, a
+  #thousandth of the bar (the step) held 94% of the claims
+  expect_lt(mean(x <= min(x) + (top - min(x)) / 1000), 0.01)
+  expect_equal(dft_slider_top(c(100, 250, 300, 800)), 800)
+  expect_equal(dft_slider_top(rep(1, 10)), 1)
+})
+
 test_that("dft_fmt writes huge and tiny numbers in scientific notation", {
   dash <- intToUtf8(8212)
   expect_equal(dft_fmt(c(4.987e42, 1e-300, -2.5e20, 1e15, 1.234e14, 1234.5678, 0, 0.001234, NA, Inf)),

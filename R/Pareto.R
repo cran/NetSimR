@@ -4,6 +4,8 @@
 
 #' Pareto capped mean intermediary calculation
 #'
+#' @description Evaluates the closed-form expression \code{(shape * scale - cap * (scale / cap)^shape) / (shape - 1)} that the Pareto capped mean is built on, for checking or reusing the intermediate step.
+#'
 #' @param cap A non-negative real number -  the claim severity cap.
 #' @param scale A positive real number - the scale parameter of the Claim Severity's Pareto distribution.
 #' @param shape A positive real number - the shape parameter of the Claim Severity's Pareto distribution.
@@ -32,6 +34,8 @@ ParetoCappedMeanCalc<-function(cap,scale,shape){
 
 
 #' Pareto capped mean
+#'
+#' @description Gives the expected claim amount when each claim from a Pareto severity distribution is capped at \code{cap}, as needed to price a policy limit or a reinsurance layer.
 #'
 #' @param cap A non-negative real number -  the claim severity cap.
 #' @param scale A positive real number - the scale parameter of the Claim Severity's Pareto distribution.
@@ -70,6 +74,8 @@ ParetoCappedMean<-function(cap,scale,shape){
 
 #' Exposure Curve from a Pareto severity distribution
 #'
+#' @description Gives the share of the expected claim cost of a Pareto severity distribution that falls below the amount \code{x} (the capped mean divided by the mean), as used to exposure rate a layer.
+#'
 #' @param x A non-negative real number -  the claim amount where the exposure curve will be evaluated.
 #' @param scale A positive real number - the scale parameter of the Claim Severity's Pareto distribution.
 #' @param shape A positive real number - the shape parameter of the Claim Severity's Pareto distribution.
@@ -94,6 +100,8 @@ ExposureCurvePareto<-function(x,scale,shape){
 
 
 #' Increased Limit Factor Curve from a Pareto severity distribution
+#'
+#' @description Gives the ratio of the Pareto capped mean at \code{xHigh} to that at \code{xLow}, the factor that takes the expected cost of a policy limit of \code{xLow} to that of a limit of \code{xHigh}.
 #'
 #' @param xLow A non-negative real number -  the claim amount where the Increased Limit Factor Curve will be evaluated from.
 #' @param xHigh A non-negative real number -  the claim amount where the Increased Limit Factor Curve will be evaluated to.

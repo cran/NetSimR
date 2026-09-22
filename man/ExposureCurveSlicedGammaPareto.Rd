@@ -21,7 +21,10 @@ ExposureCurveSlicedGammaPareto(x, GShape, GRate, SlicePoint, PShape)
 The value of the Exposure curve at \code{x} with an attritional claim Gamma distribution with parameters \code{GShape} and \code{GRate} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{PShape}. The exposure curve divides by the mean, which is infinite when \code{PShape <= 1} (and \code{SlicePoint} is finite); the function returns 0 in that case.
 }
 \description{
-Exposure Curve from a Sliced Gamma Pareto severity distribution
+Gives the share of the expected claim cost of a sliced Gamma-Pareto severity distribution that falls below the amount \code{x} (the capped mean divided by the mean), as used to exposure rate a layer.
+}
+\details{
+\code{PShape} is the Pareto shape parameter, usually written alpha; the sliced LogNormal-Pareto functions call the same parameter \code{shape}.
 }
 \examples{
 ExposureCurveSlicedGammaPareto(3000,1,0.0005,1000,1.2)

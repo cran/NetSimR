@@ -19,7 +19,7 @@ ILFPareto(xLow, xHigh, scale, shape)
 The value of the Increased Limit Factor curve from \code{xLow} to \code{xHigh} with Claim Severity from a Pareto distribution with parameters \code{scale} and \code{shape}.
 }
 \description{
-Increased Limit Factor Curve from a Pareto severity distribution
+Gives the ratio of the Pareto capped mean at \code{xHigh} to that at \code{xLow}, the factor that takes the expected cost of a policy limit of \code{xLow} to that of a limit of \code{xHigh}.
 }
 \examples{
 ILFPareto(700,1200,500,1.2)

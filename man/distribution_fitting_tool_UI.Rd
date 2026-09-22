@@ -10,8 +10,10 @@ distribution_fitting_tool_UI
 The user interface of the application, a bslib navbar page.
 }
 \description{
-The page is built when the package is installed;
-run_shiny_distribution_fitting_tool() pairs it with
-distribution_fitting_tool_Server.
+The page of the distribution fitting application: a welcome
+  tab, the data upload and one tab for each analysis, with the settings
+  beside the results. It is built when the package is installed;
+  \code{\link{run_shiny_distribution_fitting_tool}} pairs it with
+  \code{distribution_fitting_tool_Server}.
 }
 \keyword{internal}

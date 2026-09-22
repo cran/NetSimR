@@ -23,7 +23,10 @@ ILFSlicedLNormPareto(xLow, xHigh, mu, sigma, SlicePoint, shape)
 The value of the Increased Limit Factor curve from \code{xLow} to \code{xHigh} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}.
 }
 \description{
-Increased Limit Factor Curve from a Sliced LogNormal Pareto severity distribution
+Gives the ratio of the sliced LogNormal-Pareto capped mean at \code{xHigh} to that at \code{xLow}, the factor that takes the expected cost of a policy limit of \code{xLow} to that of a limit of \code{xHigh}.
+}
+\details{
+\code{shape} is the Pareto shape parameter, usually written alpha; the sliced Gamma-Pareto functions call the same parameter \code{PShape}.
 }
 \examples{
 ILFSlicedLNormPareto(800,1200,6,1.5,1000,1.2)

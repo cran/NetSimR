@@ -2,12 +2,12 @@
 % Please edit documentation in R/SlicecdGammaPareto.R
 \name{qSlicedGammaPareto}
 \alias{qSlicedGammaPareto}
-\title{The inverse cumulative density function of a Sliced Gamma Pareto severity distribution}
+\title{The inverse cumulative distribution function of a Sliced Gamma Pareto severity distribution}
 \usage{
 qSlicedGammaPareto(q, GShape, GRate, SlicePoint, PShape)
 }
 \arguments{
-\item{q}{A real number between 0 and 1 -  the probability where the inverse cumulative density function will be evaluated. Values outside [0, 1] give \code{NaN}, as in \code{qgamma()}.}
+\item{q}{A real number between 0 and 1 -  the probability where the inverse cumulative distribution function will be evaluated. Values outside [0, 1] give \code{NaN} with a warning, as in \code{qgamma()}.}
 
 \item{GShape}{A positive real number -  the shape parameter of the attritional Claim Severity's Gamma distribution.}
 
@@ -18,10 +18,13 @@ qSlicedGammaPareto(q, GShape, GRate, SlicePoint, PShape)
 \item{PShape}{A positive real number - the shape parameter of the tail Claim Severity's Pareto distribution.}
 }
 \value{
-The value of the inverse cumulative density function at \code{q} with an attritional claim Gamma distribution with parameters \code{GShape} and \code{GRate} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{PShape}. A non-numeric argument or a non-positive parameter is an error; \code{NA} values give \code{NA}.
+The value of the inverse cumulative distribution function at \code{q} with an attritional claim Gamma distribution with parameters \code{GShape} and \code{GRate} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{PShape}. A non-numeric argument or a non-positive parameter is an error; \code{NA} values give \code{NA}.
 }
 \description{
-The inverse cumulative density function of a Sliced Gamma Pareto severity distribution
+Gives the claim amount that a claim from a sliced severity distribution, with Gamma attritional claims below the slice point and a Pareto tail above it, stays at or below with probability \code{q}; the inverse of \code{\link{pSlicedGammaPareto}}.
+}
+\details{
+\code{PShape} is the Pareto shape parameter, usually written alpha; the sliced LogNormal-Pareto functions call the same parameter \code{shape}.
 }
 \examples{
 qSlicedGammaPareto(0.5,1,0.0005,1000,1.2)

@@ -56,7 +56,7 @@
 #' @param gross TRUE (the default) to return the gross totals before the layers. FALSE allows a much faster run with an "unlimited" or "limited" each-and-every-loss layer, by drawing only the claims that reach it.
 #' @param shortcuts TRUE (the default) to use exact shortcuts where the settings allow; see \code{\link{simulate_function}}.
 #' @param progress An optional function called after each chunk of a sequential run with the fraction done and a short description.
-#' @return A data frame with one row per simulation, at full precision: \code{claim_counts}, \code{total_claims} (after the layers), \code{gross_claims} (before them, unless \code{gross = FALSE}) and, with limited reinstatements, \code{number_of_reinstatements_used}: the layer's recoveries in the simulation (after the aggregate deductible and limit, if any) divided by \code{eel_limit}, capped at \code{eel_reinstatements}.
+#' @return A data frame with one row per simulation, at full precision: \code{claim_counts}, \code{total_claims} (after the layers), \code{gross_claims} (before them, unless \code{gross = FALSE}) and, with limited reinstatements, \code{number_of_reinstatements_used}: the layer's recoveries in the simulation divided by \code{eel_limit}, capped at \code{eel_reinstatements}. The recoveries are taken after the aggregate deductible and limit of an "unlimited" or "limited" aggregate layer, but before an "exclude" aggregate layer is taken out: with an exclusion, the reinstatements are counted on the each-and-every-loss recoveries (after the reinstatement capacity). So three claims of 100 through a layer of 60 excess of 30 with two reinstatements and an "exclude" aggregate layer of 150 excess of 50 give a total of 50 but 2 reinstatements used.
 #' @seealso \code{\link{simulate_function}}, which this calls, and \code{\link{run_shiny_simulator}} for the same model in an app.
 #' @export
 #' @examples
@@ -104,6 +104,9 @@ simulate_claims <- function(
   claims_check_flag(parallel, "parallel")
   claims_check_flag(gross, "gross")
   claims_check_flag(shortcuts, "shortcuts")
+  if (!is.null(progress) && !is.function(progress)) {
+    stop("progress must be a function or NULL.", call. = FALSE)
+  }
 
   frequency_id <- claims_distribution_id(frequency, freq_dist_options, "frequency")
   severity_id <- claims_distribution_id(severity, sev_dist_options, "severity")

@@ -10,6 +10,10 @@ freq_dist_options
 The frequency distribution objects.
 }
 \description{
-A vector with the frequency distribution objects
+A named list of \code{distributionClass} objects, one for each claim count distribution
+of the simulator: \code{Poisson}, \code{Negative_Binomial}, \code{Binomial} and
+\code{Fixed_number_of_Counts}. The names are the values accepted by the \code{freqDistr} argument of
+\code{simulate_function()}, and the objects hold the parameter ids, labels and ranges
+of the app's inputs and the functions that draw the claim counts.
 }
 \keyword{internal}

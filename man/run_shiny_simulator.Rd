@@ -12,7 +12,9 @@ A shiny app object (class \code{shiny.appobj}). Printing it, as happens when
   \code{shiny::runApp()} to choose options such as the port.
 }
 \description{
-A function to run the shiny simulator application
+Opens the claims simulator, a Shiny app for running the frequency-severity model of
+\code{\link{simulate_function}} from a form, with charts, a report and saved settings,
+without writing any code.
 }
 \examples{
 if (interactive()) {

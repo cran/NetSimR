@@ -197,6 +197,22 @@ dft_ui_css <- "
   background: var(--sim-border-strong);
 }
 
+/* a slicing point: its slider, with the box where its value can be typed beside it */
+.dft-slice-point {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.dft-slice-point > .shiny-input-container {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dft-slice-typed {
+  flex: 0 0 7rem;
+}
+
 /* ---------- Results ---------- */
 .dft-results {
   display: flex;
@@ -574,11 +590,30 @@ dft_log_switch <- function(id) {
   bslib::input_switch(id, "Log scale for claim size", value = TRUE)
 }
 
+#' Slider for a slicing point, with a box beside it where the value can be typed
+#'
+#' The slider is without tick labels: once it covers the claims, from a small
+#' claim to a large one, the labels near the smallest overlap. The box lets a
+#' point be set exactly, or beyond the range of the slider, which stops at the
+#' 99.5th percentile of the claims; its label is for screen readers only. The
+#' server keeps the two in step.
+#' @noRd
+dft_slicing_point <- function(id, label, max, value) {
+  div(
+    class = "dft-slice-point",
+    sliderInput(id, label, min = 0, max = max, value = value, ticks = FALSE),
+    div(class = "dft-slice-typed",
+        sim_hidden_label(numericInput(paste0(id, "_typed"), paste(label, "as a number"), value = NA, width = "100%")))
+  )
+}
+
 #' User interface of the Shiny distribution fitting tool
 #'
-#' The page is built when the package is installed;
-#' run_shiny_distribution_fitting_tool() pairs it with
-#' distribution_fitting_tool_Server.
+#' @description The page of the distribution fitting application: a welcome
+#'   tab, the data upload and one tab for each analysis, with the settings
+#'   beside the results. It is built when the package is installed;
+#'   \code{\link{run_shiny_distribution_fitting_tool}} pairs it with
+#'   \code{distribution_fitting_tool_Server}.
 #' @return The user interface of the application, a bslib navbar page.
 #' @keywords internal
 distribution_fitting_tool_UI <- bslib::page_navbar(
@@ -852,9 +887,10 @@ distribution_fitting_tool_UI <- bslib::page_navbar(
         dft_help("Missing, negative, zero and non-numeric values are left out."),
         tags$hr(class = "sim-divider"),
         div(class = "sim-section-label", "Slicing points"),
-        sliderInput("slicing_point_left", "First slicing point", min = 0, max = 10, value = 5),
-        sliderInput("slicing_point_right", "Second slicing point", min = 0, max = 20, value = 10),
-        dft_help("The sliders cover the range of the data once the analysis has run. ",
+        dft_slicing_point("slicing_point_left", "First slicing point", max = 10, value = 5),
+        dft_slicing_point("slicing_point_right", "Second slicing point", max = 20, value = 10),
+        dft_help("Once the analysis has run, the sliders cover the claims up to the 99.5th percentile; ",
+                 "a point beyond that, or an exact value, can be typed in the box beside the slider. ",
                  "The second point must be above the first."),
         tags$hr(class = "sim-divider"),
         div(class = "sim-section-label", "Chart options"),

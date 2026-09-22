@@ -21,7 +21,10 @@ dSlicedGammaPareto(x, GShape, GRate, SlicePoint, PShape)
 The value of the probability density function (pdf) at \code{x} with an attritional claim Gamma distribution with parameters \code{GShape} and \code{GRate} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{PShape}. A non-numeric argument or a non-positive parameter is an error; \code{NA} values give \code{NA}.
 }
 \description{
-The probability density function (pdf) of a Sliced Gamma Pareto severity distribution
+Gives the probability density at the claim amount \code{x} of a sliced severity distribution, with Gamma attritional claims below the slice point and a Pareto tail above it.
+}
+\details{
+\code{PShape} is the Pareto shape parameter, usually written alpha; the sliced LogNormal-Pareto functions call the same parameter \code{shape}.
 }
 \examples{
 dSlicedGammaPareto(3000,1,0.0005,1000,1.2)

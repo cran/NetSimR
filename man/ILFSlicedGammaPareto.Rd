@@ -23,7 +23,10 @@ ILFSlicedGammaPareto(xLow, xHigh, GShape, GRate, SlicePoint, PShape)
 The value of the Increased Limit Factor curve from \code{xLow} to \code{xHigh} with an attritional claim Gamma distribution with parameters \code{GShape} and \code{GRate} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{PShape}.
 }
 \description{
-Increased Limit Factor Curve from a Sliced Gamma Pareto severity distribution
+Gives the ratio of the sliced Gamma-Pareto capped mean at \code{xHigh} to that at \code{xLow}, the factor that takes the expected cost of a policy limit of \code{xLow} to that of a limit of \code{xHigh}.
+}
+\details{
+\code{PShape} is the Pareto shape parameter, usually written alpha; the sliced LogNormal-Pareto functions call the same parameter \code{shape}.
 }
 \examples{
 ILFSlicedGammaPareto(2000,3000,1,0.0005,1000,1.2)

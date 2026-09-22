@@ -2,20 +2,30 @@
 % Please edit documentation in R/distribution_fitting_tool_global.R
 \name{run_shiny_distribution_fitting_tool}
 \alias{run_shiny_distribution_fitting_tool}
-\title{A function to run the distribution fitting tool application}
+\title{Run the distribution fitting application}
 \usage{
 run_shiny_distribution_fitting_tool()
 }
 \value{
 A shiny app object. Printing it, as happens when the function is
   called at the console, opens the application; it can also be passed to
-  shiny::runApp().
+  \code{shiny::runApp()}.
 }
 \description{
-A function to run the distribution fitting tool application
+Opens NetDisFit, a shiny application that fits frequency and
+  severity distributions to an uploaded claims file, compares them with the
+  data, and splices Pareto tails onto a LogNormal body or fits a piecewise
+  Pareto at chosen slicing points, ready for the NetSimR simulator.
 }
 \examples{
 if (interactive()) {
   run_shiny_distribution_fitting_tool()
 }
+}
+\seealso{
+\code{\link{run_shiny_simulator}} and
+  \code{\link{run_shiny_glm_fitting_tool}}, the other two applications;
+  \code{\link{SlicedLNormParetoMean}}, \code{\link{SlicedLNormParetoCappedMean}},
+  \code{\link{SlicedGammaParetoMean}} and \code{\link{SlicedGammaParetoCappedMean}}
+  for the moments of the sliced distributions the tool fits.
 }

@@ -17,7 +17,7 @@ GammaCappedMean(cap, shape, rate)
 The mean of the claim severity capped at \code{cap} with a Gamma distribution with parameters \code{shape} and \code{rate}. The arguments are recycled to a common length. A non-numeric argument, a negative \code{cap} or a non-positive \code{shape} or \code{rate} is an error; \code{NA} values give \code{NA}.
 }
 \description{
-Gamma capped mean
+Gives the expected claim amount when each claim from a Gamma severity distribution is capped at \code{cap}, as needed to price a policy limit or a reinsurance layer.
 }
 \examples{
 GammaCappedMean(700,1,0.0005)

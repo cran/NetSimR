@@ -2,12 +2,12 @@
 % Please edit documentation in R/SlicecdLogNormalPareto.R
 \name{pSlicedLNormPareto}
 \alias{pSlicedLNormPareto}
-\title{The cumulative density function (cdf) of a Sliced LogNormal Pareto severity distribution}
+\title{The cumulative distribution function (cdf) of a Sliced LogNormal Pareto severity distribution}
 \usage{
 pSlicedLNormPareto(x, mu, sigma, SlicePoint, shape)
 }
 \arguments{
-\item{x}{A real number -  the claim amount where the cumulative density function (cdf) will be evaluated. The cdf is 0 for negative \code{x}.}
+\item{x}{A real number -  the claim amount where the cumulative distribution function (cdf) will be evaluated. The cdf is 0 for negative \code{x}.}
 
 \item{mu}{A real number -  the first parameter of the attritional Claim Severity's LogNormal distribution.}
 
@@ -18,10 +18,13 @@ pSlicedLNormPareto(x, mu, sigma, SlicePoint, shape)
 \item{shape}{A positive real number - the shape parameter of the tail Claim Severity's Pareto distribution.}
 }
 \value{
-The value of the cumulative density function (cdf) at \code{x} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}. A non-numeric argument or a non-positive \code{sigma}, \code{SlicePoint} or \code{shape} is an error; \code{NA} values give \code{NA}.
+The value of the cumulative distribution function (cdf) at \code{x} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}. A non-numeric argument or a non-positive \code{sigma}, \code{SlicePoint} or \code{shape} is an error; \code{NA} values give \code{NA}.
 }
 \description{
-The cumulative density function (cdf) of a Sliced LogNormal Pareto severity distribution
+Gives the probability that a claim from a sliced severity distribution, with LogNormal attritional claims below the slice point and a Pareto tail above it, is at most \code{x}.
+}
+\details{
+\code{shape} is the Pareto shape parameter, usually written alpha; the sliced Gamma-Pareto functions call the same parameter \code{PShape}.
 }
 \examples{
 pSlicedLNormPareto(1200,6,1.5,1000,1.2)

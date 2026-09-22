@@ -19,7 +19,7 @@ ILFLNorm(xLow, xHigh, mu, sigma)
 The value of the Increased Limit Factor curve from \code{xLow} to \code{xHigh} with Claim Severity from a LogNormal distribution with parameters \code{mu} and \code{sigma}.
 }
 \description{
-Increased Limit Factor Curve from a LogNormal severity distribution
+Gives the ratio of the LogNormal capped mean at \code{xHigh} to that at \code{xLow}, the factor that takes the expected cost of a policy limit of \code{xLow} to that of a limit of \code{xHigh}.
 }
 \examples{
 ILFLNorm(1000,2000,6,1.5)

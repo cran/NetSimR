@@ -2,20 +2,36 @@
 % Please edit documentation in R/GLMFittingToolGlobal.R
 \name{run_shiny_glm_fitting_tool}
 \alias{run_shiny_glm_fitting_tool}
-\title{A function to run the GLM fitting tool application}
+\title{Run the generalised linear model fitting application}
 \usage{
 run_shiny_glm_fitting_tool()
 }
 \value{
 A shiny app object. Printing it, as happens when the function is
   called at the console, opens the application; it can also be passed to
-  shiny::runApp().
+  \code{shiny::runApp()}.
 }
 \description{
-A function to run the GLM fitting tool application
+Opens a Shiny application that imports data from a CSV file or
+  a database query, fits generalised linear models to it, compares the AIC
+  of stored models, charts actual against predicted values and downloads the
+  model and its predictions.
+}
+\details{
+The formula typed in the application, or read from one of its
+  settings files, is restricted to the columns of the imported data, numbers,
+  the formula operators and a small set of formula functions: \code{I()},
+  \code{log()}, \code{exp()}, \code{sqrt()}, \code{pmin()}, \code{pmax()},
+  \code{poly()}, \code{factor()}, \code{as.factor()}, \code{interaction()}
+  and \code{offset()}. Any other call is refused, so a settings file shared
+  between colleagues cannot run code.
 }
 \examples{
 if (interactive()) {
   run_shiny_glm_fitting_tool()
 }
+}
+\seealso{
+\code{\link{run_shiny_distribution_fitting_tool}} and
+  \code{\link{run_shiny_simulator}}, the package's other applications.
 }

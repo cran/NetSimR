@@ -13,8 +13,8 @@ test_that("frequency histogram data bins the counts and gives each model's bin p
   expect_equal(d$labels, c("0-1", "2-3", "4-5", "6-7", "8-9"))
   expect_equal(d$observed, c(4, 1, 3, 0, 2) / 10)
   expect_equal(d$fitted$Poisson, ppois(c(1, 3, 5, 7, 9), 2) - ppois(c(-1, 1, 3, 5, 7), 2))
-  #large counts keep their thousands separators
-  expect_equal(dft_count_hist_data(c(1000, 1500, 2999), bins = 2)$labels, c("1,000-1,999", "2,000-2,999"))
+  #large counts keep their thousands separators; the counts below the smallest are a bin of their own
+  expect_equal(dft_count_hist_data(c(1000, 1500, 2999), bins = 2)$labels, c("0-999", "1,000-1,999", "2,000-2,999"))
   #counts from 2^31 up are labelled in full (formatC(format = "d") gave "0-NA" with a warning)
   expect_no_warning(d <- dft_count_hist_data(c(0, 3e9, 5, 7), bins = 1))
   expect_equal(d$labels, "0-3,000,000,000")
@@ -24,6 +24,36 @@ test_that("frequency histogram data bins the counts and gives each model's bin p
   expect_equal(d$fitted$Poisson[4], ppois(10, 2) - ppois(8, 2))
   expect_equal(sum(d$fitted$Poisson), ppois(10, 2))
   expect_equal(dft_count_hist_data(0:9, NULL, bins = 4)$labels, c("0-2", "3-5", "6-8", "9"))
+})
+
+test_that("frequency histogram data shows the probability a model puts below the smallest count", {
+  #zero-truncated counts: the bins started at the smallest count, so the observed shares summed to 1
+  #while the fitted Poisson probabilities summed to 0.90, and the 0.10 at zero, the lack of fit the
+  #chart is there to show, was nowhere on it
+  set.seed(1)
+  counts <- rpois(2000, 2)
+  counts <- counts[counts > 0]
+  lambda <- mean(counts)
+  d <- dft_count_hist_data(counts, cdfs = list(Poisson = function(q) ppois(q, lambda)))
+  expect_equal(d$labels, as.character(0:max(counts)))
+  expect_equal(d$observed[1], 0)
+  expect_equal(d$observed[-1], as.numeric(table(factor(counts, levels = 1:max(counts)))) / length(counts))
+  expect_equal(d$fitted$Poisson, dpois(0:max(counts), lambda), tolerance = 1e-10)
+  expect_equal(sum(d$fitted$Poisson), ppois(max(counts), lambda), tolerance = 1e-10)
+  expect_gt(d$fitted$Poisson[1], 0.09)
+  #counts in the hundreds, with weights: one bin from zero to below the smallest, then the bins as before
+  d <- dft_count_hist_data(c(120, 125, 131), c(1, 2, 1), bins = 3, list(Poisson = function(q) ppois(q, 126)))
+  expect_equal(d$labels, c("0-119", "120-123", "124-127", "128-131"))
+  expect_equal(d$observed, c(0, 1, 2, 1) / 4)
+  expect_equal(d$fitted$Poisson, ppois(c(119, 123, 127, 131), 126) - ppois(c(-1, 119, 123, 127), 126), tolerance = 1e-10)
+  #the chart draws the extra bin
+  file <- tempfile(fileext = ".png")
+  grDevices::png(file, width = 800, height = 440, bg = "transparent")
+  expect_no_error(dft_category_chart(d$labels, bars = list(name = "Observed", values = d$observed, colour = "bar", border = "bar_border"),
+                                     lines = list(list(name = "Poisson", values = d$fitted$Poisson, colour = dft_model_palette[1])),
+                                     x_title = "Number of claims", y_title = "Share", y_percent = TRUE))
+  grDevices::dev.off()
+  expect_gt(file.size(file), 1000)
 })
 
 test_that("frequency cdf data is the weighted empirical cdf and the fitted cdfs at every count", {

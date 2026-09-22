@@ -21,7 +21,10 @@ dSlicedLNormPareto(x, mu, sigma, SlicePoint, shape)
 The value of the probability density function (pdf) at \code{x} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}. A non-numeric argument or a non-positive \code{sigma}, \code{SlicePoint} or \code{shape} is an error; \code{NA} values give \code{NA}.
 }
 \description{
-The probability density function (pdf) of a Sliced LogNormal Pareto severity distribution
+Gives the probability density at the claim amount \code{x} of a sliced severity distribution, with LogNormal attritional claims below the slice point and a Pareto tail above it.
+}
+\details{
+\code{shape} is the Pareto shape parameter, usually written alpha; the sliced Gamma-Pareto functions call the same parameter \code{PShape}.
 }
 \examples{
 dSlicedLNormPareto(1200,6,1.5,1000,1.2)

@@ -1,39 +1,336 @@
-Changes in Version 0.1.0
+Changes in Version 0.3.1
 
-  o First official release of the package on CRAN. The accompanying articles
-    are listed in the package description.
+  o Results change in four cases, each described below: an each-and-every-loss
+    layer with limited reinstatements combined with an aggregate deductible;
+    totals, gross claims and reinstatements used, which are no longer rounded
+    to two decimals; the ratios of PureIBNRGamma() and PureIBNRLNorm(); and the
+    quantiles, capped means and exposure curves in the three items that follow.
+    The Shiny tools also no longer load settings files saved as .rds.
+  o qSlicedGammaPareto() and qSlicedLNormPareto() give NaN for a probability
+    outside [0, 1], as qgamma() does. Where the reciprocal of the Pareto shape
+    is a whole number (a shape of 1, 0.5 or a third), a probability above 1
+    gave a plausible-looking quantile instead: q = 1.1 gave -7357.59 with a
+    shape of 1, and 54134.1 with a shape of 0.5.
+  o SlicedGammaParetoCappedMean() and SlicedLNormParetoCappedMean() give Inf
+    at an infinite cap when the Pareto shape is 1 or below, agreeing with
+    SlicedGammaParetoMean() and SlicedLNormParetoMean(). They gave NaN when
+    the weight of the tail underflowed to zero.
+  o ExposureCurveLNorm() gives 1 at an infinite cap, where it gave NaN when
+    the mean of the distribution overflowed (a sigma of 40, say).
+  o ExposureCurveGamma() and ExposureCurveLNorm() name themselves when
+    arguments of different lengths cannot be recycled, as the other functions
+    do; they named the capped mean they call.
+  o simulate_claims() rejects a progress argument that is not a function,
+    which it used to ignore.
+  o Settings files keep the exact value of every number. They were written
+    with 15 significant digits, so a value such as a third came back slightly
+    different and a seeded run loaded from its own settings file could give
+    different results. Values that need no more digits are still written
+    plainly (0.3 stays 0.3).
+  o A settings file with a setting given twice, a blank line between the
+    settings, no version line, or a value built to be enormous is refused with
+    a message saying what is wrong. A repeated setting used to load two values
+    into a field that holds one, and a missing version line reported
+    "subscript out of bounds".
+  o Claims simulator: a slice added while settings or an example are loading no
+    longer makes the next "Add slice" jump by the slices that were pending.
+  o Claims simulator: the report's histogram of claim totals keeps simulations
+    whose total is negative. It left them out while its note said that only
+    the simulations totalling zero were left out.
+  o Claims simulator: the report's headline figures, layer metrics and
+    gross/ceded/net table round the modelled series on its own scale, so they
+    agree with the statistics table on the same page and with the Compare tab.
+    A layer with a mean of 1.90 and a median of 0.00 was shown as 2 and 0.
+  o Claims simulator: distribution parameters far below one are shown to three
+    significant figures (an Exponential rate of 1e-5, a mean claim of 100,000,
+    was shown as 0), and a seed of 100000 is shown as 100,000, not 1e+05.
+  o Claims simulator: the report fits a phone-width window; below about 352 px
+    the right edge of every section was cut off. Its charts are drawn with the
+    cairo device on Windows, as the charts in the app already were.
+  o Claims simulator: the Compare tab tells apart two runs that differ only by
+    "Truncate at zero", and leaves out of the chart a run with too few
+    simulations to draw a curve, which appeared in the legend with no curve.
+    Return-period charts label their vertical axis Ceded or Net when that is
+    what they show, as the other charts do.
+  o Claims simulator: the frequency and severity choices and the Compare tab's
+    run name are announced by screen readers.
+  o Claims simulator: with multiprocessing on, an ordinary error during a run
+    (an invalid parameter, an overflowing distribution) no longer shuts the
+    parallel workers down, so the next run reuses them instead of starting new
+    ones. The workers are restarted only when one of them breaks, and then no
+    connection to a replaced worker is left open to be closed later with a
+    "closing unused connection" warning.
+  o GLM fitting tool: a formula may use the data's columns, the formula
+    operators and I(), log(), exp(), sqrt(), pmin(), pmax(), poly(), factor(),
+    as.factor(), interaction() and offset(); anything else is refused by name.
+    The formula was run as R code, so a settings file from someone else could
+    carry code that ran on the next click of Fit model.
+  o GLM fitting tool: after data is imported, the model tiles, the chart and
+    the downloads say which file the model on screen was fitted to, and the
+    downloads wait until it is fitted again; a download asked for anyway (from
+    a page left open across the import, or a kept link) is refused rather than
+    served. The tiles, the coefficients and the downloaded predictions used to
+    come from the previous import with nothing saying so.
+  o GLM fitting tool: two stored models are compared by AIC only when they
+    were fitted to the same import and left out the same rows; models of
+    unrelated data with the same number of rows were marked "lower".
+  o GLM fitting tool: warnings raised before a binomial response with more
+    than two values are kept rather than replaced; the predictions CSV calls
+    its column model_prediction when the data already has one called
+    prediction; and the number of bands read from a settings file is held to
+    the range of the slider.
+  o GLM fitting tool: a model is fitted as the screen shows it even when Fit
+    model is clicked straight after loading a stored model or a settings file,
+    or after a change of family, before the browser has reported the new
+    values. The fit mixed the loaded family and link with the response, offset,
+    weights and formula shown before the load, so a stored binomial model could
+    be fitted to the previous count response and fail. A settings file whose
+    link does not suit its family uses the family's default link and says so,
+    instead of leaving the link blank on screen.
+  o GLM fitting tool: MySQL is no longer offered as a data source, and RMySQL is
+    no longer suggested; RMySQL is deprecated by its authors. A settings file
+    that chose MySQL loads without it, and the database type is left as it is.
+    The database user no longer defaults to MySQL's "root".
+  o Distribution fitting tool: a file that is not valid UTF-8 is read as
+    Windows-1252, which is what Excel writes on a German or French Windows. An
+    accented character used to end the session with a grey overlay as soon as
+    the file was uploaded.
+  o Distribution fitting tool: a row with more fields than the rows above it
+    keeps them in their own columns. The surplus value started a new row
+    instead, so claims that were never in the file were fitted (a file of
+    eight claims gave eleven).
+  o Distribution fitting tool: the slicing point and piecewise Pareto
+    threshold sliders span the claims up to the largest once the top half a
+    percent are left out, so the body of a heavy-tailed distribution can be
+    reached; one large claim used to leave the body in less than a pixel of
+    the bar. A point can also be typed in the box beside its slider, and the
+    sliders grow to hold a value beyond their range.
+  o Distribution fitting tool: the header is found after more than 100 blank
+    lines; the frequency histogram shows the probability a model puts below
+    the smallest count, which zero-truncated data left off the chart; the
+    Pareto alpha between two slicing points needs at least three claims
+    between them and reports a fit that did not converge, instead of showing
+    whatever the optimiser stopped at; and the Data tile asks whether the
+    first row is a header when the column names are all numbers.
+  o The help pages say what each function does rather than repeating its
+    title, the sliced distribution pages say which argument is the Pareto
+    shape, and the three applications link to each other.
+  o The vignettes no longer carry LaTeX-only markup (\pagebreak and
+    \usepackage[utf8]{inputenc}) that an HTML vignette ignores, and no longer
+    show the date they were built on CRAN. The Sliced distributions vignette
+    refers to the capped mean vignette by its title.
+  o The exploratory scripts in tests/CappedMean, tests/PureIBNR and
+    tests/SlicedDistributions are left out of the package tarball; they were
+    never run by R CMD check.
+  o DESCRIPTION: the third article is "Taken to excess", the Shiny tools are
+    listed one by one, and testthat (>= 3.0.0) is required for the tests.
+    README: a CRAN badge and a list of the vignettes.
+  o PureIBNRGamma() and PureIBNRLNorm() compute the ratios from the unrounded
+    pure IBNR duration. They divided the duration rounded to 0.01 days, so
+    short periods lost precision (a one-hour period gave 0.96 instead of
+    1.00000, a week was wrong in the fourth decimal); ratios of long periods
+    can change in the fifth decimal.
+  o Shiny tools: charts are redrawn when the window is resized (legends used
+    to overlap), and on Windows they are drawn with the cairo device when no
+    other device is installed, with greyscale anti-aliasing, so the dark theme
+    no longer shows smeared text, bright grid lines or coloured fringes on
+    text.
+  o GLM fitting tool: the downloaded model (RDS) no longer contains the Shiny
+    session. It used to hold every input, including a database password typed
+    on the Data tab, and was many times larger than the model itself.
+  o GLM fitting tool: an import that fails keeps the data imported before, so
+    the data and the fitted model stay together, and the Data tab says that
+    the last import failed.
+  o GLM fitting tool: the AIC of two stored models is marked "lower" only when
+    they use the same weights; otherwise the models are shown as not
+    comparable.
+  o GLM fitting tool: after an import, the response defaults to a column whose
+    name suggests one (such as claim_count or loss), and the chart variable to
+    a column that is not an ID. Columns already chosen are kept.
+  o GLM fitting tool: settings are saved as a plain text file
+    ("glm_fitting_tool_settings.txt"), one "field: value" line per setting,
+    and loading one never runs code. Settings files saved as .rds by earlier
+    versions no longer load; save the settings again to get a text file.
+  o GLM fitting tool: the database server, port, database name, user and SQL
+    query are saved with the settings only when "Include database connection
+    details" is ticked (off by default), so a shared file does not disclose
+    internal infrastructure. The password is never saved.
+  o GLM fitting tool: in the "Data with predictions" CSV download, text cells
+    and column names that a spreadsheet would read as a formula (starting with
+    =, +, -, @, a tab or a carriage return) are written with a leading ', so
+    opening the file cannot run a formula from the uploaded data. Numbers are
+    unchanged.
+  o Claims simulator: values typed just after loading settings or an example
+    are no longer set back to the loaded values on a slow machine, and fields
+    that appear late (a slow browser) still start from the loaded values.
+  o A failed parallel run no longer leaves a socket connection open: the worker
+    that the future package relaunched after the error was never shut down,
+    and R later warned "closing unused connection" in the console.
+  o Distribution fitting tool: the Negative Binomial fit no longer falls back
+    to the Poisson (size 1e8) on overdispersed claim counts; it finds the
+    maximum likelihood size whenever the variance is above the mean, with or
+    without weights, and matches MASS::fitdistr().
+  o Distribution fitting tool: the columns are guessed again after the
+    separator or decimal mark is changed, while a column you chose is kept;
+    the slicing point and piecewise Pareto threshold sliders no longer show
+    overlapping tick labels.
+  o Claims simulator: simulations whose total is undefined (NaN) are no longer
+    dropped silently; the report, the summary and the Compare tab count them,
+    and the statistics state how many simulations they use. Normal severities
+    whose summed mean or standard deviation overflows add up the claims, as
+    simulating every claim does, instead of giving NaN.
+  o Claims simulator: very large values are shown as e.g. 1.000e+308 on the
+    Compare tab and in the implied moments instead of hundreds of digits.
+  o Claims simulator: switching a distribution or layer away and back, or
+    switching the custom seed off and on, keeps the values typed.
+  o Claims simulator: loading settings resets 'Truncate at zero' and clears
+    unused Pareto slices; quick 'Add slice' clicks each add a slice.
+  o Claims simulator: layout fixes for the navbar brand, the example list
+    (two examples have shorter names), the Compare table labels and the
+    return-period chart's "1 in 200" label, which stays inside the chart.
+  o Claims simulator: report charts of one simulation or of equal totals are
+    drawn sensibly; the 95% range for the mean is not below zero for totals
+    that cannot be negative and is labelled a normal approximation; the tail
+    count is now "Simulations at or beyond VaR 99.5%" and TVaR is documented
+    as the mean of the worst ceiling(n x (1 - p)) simulations.
+  o simulate_claims() and simulate_function(): the documentation of
+    number_of_reinstatements_used says that with an aggregate "exclude" layer
+    the reinstatements are counted before the exclusion.
+  o Claims simulator: the report and the Compare tab no longer fail for a run
+    whose totals include both +Inf and -Inf when a reinsurance structure is
+    set.
+  o Claims simulator: the report explains undefined (NaN) totals by their
+    cause (claims that overflowed to both +Inf and -Inf, or an infinite amount
+    meeting a layer with an infinite deductible or limit) instead of always
+    blaming an excluded layer with an infinite limit.
+  o Claims simulator: the Compare tab shows infinite values as Inf or -Inf in
+    every row, keeps the dash for undefined values, and says what both mean;
+    the report uses the singular wherever a count is one ("1 simulation").
+  o Shiny tools: the header stays on one row from 992 px wide, and on narrow
+    screens the app name gives way to the menu button instead of pushing it
+    off the page.
+  o Claims simulator: settings files are plain text (.txt) files that can be
+    read and compared, and loading one never runs code. Old .rds settings
+    files no longer load; save the settings again from this version.
+  o Claims simulator: the Compare tab's return-period chart is drawn with base
+    R graphics. It follows the app's light, dark or system theme and wraps its
+    legend at narrow widths; it no longer shows values on hover.
+  o Parallel runs of simulate_function() use the future package directly
+    instead of future.apply. Seeded results are unchanged, sequential and
+    parallel.
+  o simulate_function() and simulate_claims() return totals, gross claims
+    and reinstatements used at full precision; they were rounded to two
+    decimals, which distorted results for small amounts (e.g. in millions).
+    The app and the report round only for display, and small amounts keep
+    about three significant digits.
+  o Results change when an each-and-every-loss layer with limited
+    reinstatements is combined with an aggregate deductible. The aggregate
+    deductible now comes off the year's layer recoveries before the aggregate
+    limit and the reinstatement capacity cap them (the market convention):
+    three claims of 100 through 100 xs 0 with no reinstatements and an
+    aggregate deductible of 50 now cede 100, not 50. Reinstatements used are
+    counted after the deductible.
+  o The chance that all reinstatements are used, and the chance the layers are
+    exhausted, are exact rather than counting amounts just below the limit.
+  o Infinite distribution parameters, numbers of simulations, seeds, chunk
+    sizes, slice alphas and numbers of reinstatements are rejected with a
+    clear message. Inf is still allowed for the cap, deductibles, limits and
+    slice thresholds.
+  o apply_deductible_limit() stops on a negative deductible or limit, and its
+    documentation describes what it returns for each structure.
+  o PureIBNRGamma() and PureIBNRLNorm() count days on each date's own calendar
+    and clock, so Date, POSIXct and mixed inputs agree and results no longer
+    depend on the time zone or daylight saving (a mix of Date and POSIXct used
+    to report the whole period as unearned). Results can change in the second
+    decimal where the time zone had shifted them. Non-date input and expiry
+    dates before inception dates are errors.
+  o The capped mean, exposure curve, ILF and sliced distribution functions
+    stop with a clear error on non-positive parameters or negative caps,
+    instead of returning plausible-looking numbers. NA parameters still give
+    NA.
+  o ParetoCappedMean(), ExposureCurvePareto() and the sliced functions accept
+    zero-length input (returning numeric(0)) and keep matrix dimensions and
+    names.
+  o LNormCappedMean() no longer overflows to NaN or Inf for large sigmas, and
+    dSlicedGammaPareto() and dSlicedLNormPareto() no longer overflow for large
+    slice points or shapes. erf() is accurate near zero. The sliced functions
+    give the attritional distribution for an infinite slice point, instead of
+    NaN.
+  o The PureIBNR vignette computes its theoretical pure IBNR count rather than
+    hard-coding it.
+  o Distribution fitting tool: the Gamma fit gives the exact maximum
+    likelihood estimate at any scale; claims of 1e9 or more got a wrong shape.
+  o Fitting tools data upload: with a decimal comma, points are read as
+    thousands separators ("15.000,5" is 15000.5), and files with a separator
+    at the end of each row are read correctly (the columns were shifted by
+    one, or the file failed to load).
+  o GLM fitting tool: "." in a formula (also ". - x", ".^2") leaves out the
+    offset and weights columns, empty or single-valued columns, and text
+    columns with very many values such as IDs, and says which were left out.
+  o GLM fitting tool: explains formulas it cannot read, text responses for
+    non-binomial families, single-valued predictors and columns with no
+    values, instead of showing R errors; reads numbers with thousands
+    separators ("1,200") as numbers; chart labels mention exposure only when
+    the offset is used as one.
+  o Distribution fitting tool: the first piecewise Pareto layer includes the
+    smallest claim; all-zero claim counts give a clear message instead of
+    failed fits; very large and very small numbers are shown in scientific
+    notation, and large weighted totals in full.
 
+Changes in Version 0.3.0
 
-Changes in Version 0.1.1
-
-  o Updates a dependency to the rmarkdown package.
-
-
-Changes in Version 0.1.2
-
-  o Added shiny simulation tool.
-
-
-Changes in Version 0.1.3
-
-  o Added Shiny glm fitting tool.
-
-
-Changes in Version 0.1.4
-
-  o Added port selection for sql and prioritised csv input in Shiny glm fitting tool.
-  o Added distribution fitting tool
-
-Changes in Version 0.1.5
-
-  o Added database name in inputs of glm database
-  o Increased the maximum csv file size for glm builder and distribution fitting to 64gb
-  o Fixed bug loading inputs for GLM builder
-  o Added piecewise pareto fit to distribution fitting tool
-
-Changes in Version 0.1.6
-
-  o Updated the shiny simulation tool.
+  o Fewer dependencies: plotly, reactable, fitdistrplus, future.apply and
+    htmltools are no longer imported, so installing NetSimR installs 35
+    packages instead of 82. The charts of the three Shiny tools are
+    drawn with base R graphics, the tables are plain HTML, and the Poisson and
+    Negative Binomial fits of the distribution fitting tool are computed
+    directly, with the same results as before.
+  o Distribution fitting and GLM fitting tools: the charts follow the light or
+    dark theme; they no longer show values on hover or zoom. The data previews
+    show the first 100 rows in a table that scrolls both ways, instead of a
+    searchable table.
+  o Distribution fitting tool: the Poisson and Negative Binomial fits are the
+    exact maximum likelihood estimates (fitdistrplus's optimiser stopped
+    slightly short of the maximum). When the counts are not overdispersed the
+    Negative Binomial tends to the Poisson; its size is then set to 1e8, with a
+    note.
+  o Distribution fitting tool: suggests the Negative Binomial only when its
+    fit has the lower AIC (the suggestion could contradict the fit table); the
+    frequency histogram labels counts from 2^31 up in full (they read "NA")
+    and its last bin ends at the largest count; the mean excess chart explains
+    that it needs three different claim sizes instead of drawing an empty
+    chart.
+  o Fitting tools: the data preview shows the first 50 columns and opens at
+    once for wide files (1,000 columns took about 20 seconds).
+  o GLM fitting tool: the actual against predicted chart fits its left axis to
+    the values, so a response around 1,000 no longer draws as a flat line; its
+    bands read "18-24" rather than "(18.0006,23.9723]"; a text variable with
+    more than 100 values gives a message instead of hundreds of bars.
+  o Claims simulator: the Compare tab's return-period chart shows runs with
+    negative totals (e.g. a Normal severity with a negative mean); its y axis
+    used to start at zero. The chart's x axis reaches 1 in 1,000,000.
+  o Simulation report: runs with infinite totals (e.g. a Pareto severity with a
+    very small alpha) no longer fail with "need finite 'ylim' values". The
+    charts leave infinite totals out with a note, the tables show Inf, and a
+    ceded or net column that would be infinite minus infinite is left blank
+    instead of showing NaN. Very large amounts are shown in scientific
+    notation.
+  o simulate_function(): a seedValue given without seedSetBinary fixes the
+    seed (seedSetBinary defaults to TRUE when seedValue is given); it used to
+    be ignored.
+  o apply_deductible_limit(): an NA, missing or unknown reinsurance_structure,
+    or more than one, is an error that lists the options.
+  o The capped mean, exposure curve, ILF, sliced distribution and pure IBNR
+    functions stop with "<argument> must be numeric" for non-numeric input,
+    and all of them treat lengths that do not recycle as an error.
+    GammaCappedMean(), LNormCappedMean(), IGamma() and the ILF functions used
+    to recycle them with a warning. Results for valid input are unchanged.
+  o PureIBNRGamma() and PureIBNRLNorm(): one period with several parameter
+    values or valuation dates gives the right ratios on every row; rows after
+    the first used to repeat the first row's ratios.
+  o New vignette "Simulating claims with simulate_claims()". Help pages link
+    related functions, and internal objects are hidden from the index.
+    Vignette typos are corrected.
 
 Changes in Version 0.2.0
 
@@ -198,121 +495,35 @@ Changes in Version 0.2.0
     10,000,000, the same range as the validation.
   o bslib 0.9.0 or later is required.
 
-Changes in Version 0.3.0
+Changes in Version 0.1.6
 
-  o Fewer dependencies: plotly, reactable, fitdistrplus, future.apply and
-    htmltools are no longer imported, so installing NetSimR installs 35
-    packages instead of 82. The charts of the three Shiny tools are
-    drawn with base R graphics, the tables are plain HTML, and the Poisson and
-    Negative Binomial fits of the distribution fitting tool are computed
-    directly, with the same results as before.
-  o Distribution fitting and GLM fitting tools: the charts follow the light or
-    dark theme; they no longer show values on hover or zoom. The data previews
-    show the first 100 rows in a table that scrolls both ways, instead of a
-    searchable table.
-  o Distribution fitting tool: the Poisson and Negative Binomial fits are the
-    exact maximum likelihood estimates (fitdistrplus's optimiser stopped
-    slightly short of the maximum). When the counts are not overdispersed the
-    Negative Binomial tends to the Poisson; its size is then set to 1e8, with a
-    note.
-  o Distribution fitting tool: suggests the Negative Binomial only when its
-    fit has the lower AIC (the suggestion could contradict the fit table); the
-    frequency histogram labels counts from 2^31 up in full (they read "NA")
-    and its last bin ends at the largest count; the mean excess chart explains
-    that it needs three different claim sizes instead of drawing an empty
-    chart.
-  o Fitting tools: the data preview shows the first 50 columns and opens at
-    once for wide files (1,000 columns took about 20 seconds).
-  o GLM fitting tool: the actual against predicted chart fits its left axis to
-    the values, so a response around 1,000 no longer draws as a flat line; its
-    bands read "18-24" rather than "(18.0006,23.9723]"; a text variable with
-    more than 100 values gives a message instead of hundreds of bars.
-  o Claims simulator: the Compare tab's return-period chart shows runs with
-    negative totals (e.g. a Normal severity with a negative mean); its y axis
-    used to start at zero. The chart's x axis reaches 1 in 1,000,000.
-  o Simulation report: runs with infinite totals (e.g. a Pareto severity with a
-    very small alpha) no longer fail with "need finite 'ylim' values". The
-    charts leave infinite totals out with a note, the tables show Inf, and a
-    ceded or net column that would be infinite minus infinite is left blank
-    instead of showing NaN. Very large amounts are shown in scientific
-    notation.
-  o simulate_function(): a seedValue given without seedSetBinary fixes the
-    seed (seedSetBinary defaults to TRUE when seedValue is given); it used to
-    be ignored.
-  o apply_deductible_limit(): an NA, missing or unknown reinsurance_structure,
-    or more than one, is an error that lists the options.
-  o The capped mean, exposure curve, ILF, sliced distribution and pure IBNR
-    functions stop with "<argument> must be numeric" for non-numeric input,
-    and all of them treat lengths that do not recycle as an error.
-    GammaCappedMean(), LNormCappedMean(), IGamma() and the ILF functions used
-    to recycle them with a warning. Results for valid input are unchanged.
-  o PureIBNRGamma() and PureIBNRLNorm(): one period with several parameter
-    values or valuation dates gives the right ratios on every row; rows after
-    the first used to repeat the first row's ratios.
-  o New vignette "Simulating claims with simulate_claims()". Help pages link
-    related functions, and internal objects are hidden from the index.
-    Vignette typos are corrected.
-  o Claims simulator: the Compare tab's return-period chart is drawn with base
-    R graphics. It follows the app's light, dark or system theme and wraps its
-    legend at narrow widths; it no longer shows values on hover.
-  o Parallel runs of simulate_function() use the future package directly
-    instead of future.apply. Seeded results are unchanged, sequential and
-    parallel.
-  o simulate_function() and simulate_claims() return totals, gross claims
-    and reinstatements used at full precision; they were rounded to two
-    decimals, which distorted results for small amounts (e.g. in millions).
-    The app and the report round only for display, and small amounts keep
-    about three significant digits.
-  o Results change when an each-and-every-loss layer with limited
-    reinstatements is combined with an aggregate deductible. The aggregate
-    deductible now comes off the year's layer recoveries before the aggregate
-    limit and the reinstatement capacity cap them (the market convention):
-    three claims of 100 through 100 xs 0 with no reinstatements and an
-    aggregate deductible of 50 now cede 100, not 50. Reinstatements used are
-    counted after the deductible.
-  o The chance that all reinstatements are used, and the chance the layers are
-    exhausted, are exact rather than counting amounts just below the limit.
-  o Infinite distribution parameters, numbers of simulations, seeds, chunk
-    sizes, slice alphas and numbers of reinstatements are rejected with a
-    clear message. Inf is still allowed for the cap, deductibles, limits and
-    slice thresholds.
-  o apply_deductible_limit() stops on a negative deductible or limit, and its
-    documentation describes what it returns for each structure.
-  o PureIBNRGamma() and PureIBNRLNorm() count days on each date's own calendar
-    and clock, so Date, POSIXct and mixed inputs agree and results no longer
-    depend on the time zone or daylight saving (a mix of Date and POSIXct used
-    to report the whole period as unearned). Results can change in the second
-    decimal where the time zone had shifted them. Non-date input and expiry
-    dates before inception dates are errors.
-  o The capped mean, exposure curve, ILF and sliced distribution functions
-    stop with a clear error on non-positive parameters or negative caps,
-    instead of returning plausible-looking numbers. NA parameters still give
-    NA.
-  o ParetoCappedMean(), ExposureCurvePareto() and the sliced functions accept
-    zero-length input (returning numeric(0)) and keep matrix dimensions and
-    names.
-  o LNormCappedMean() no longer overflows to NaN or Inf for large sigmas, and
-    dSlicedGammaPareto() and dSlicedLNormPareto() no longer overflow for large
-    slice points or shapes. erf() is accurate near zero. The sliced functions
-    give the attritional distribution for an infinite slice point, instead of
-    NaN.
-  o The PureIBNR vignette computes its theoretical pure IBNR count rather than
-    hard-coding it.
-  o Distribution fitting tool: the Gamma fit gives the exact maximum
-    likelihood estimate at any scale; claims of 1e9 or more got a wrong shape.
-  o Fitting tools data upload: with a decimal comma, points are read as
-    thousands separators ("15.000,5" is 15000.5), and files with a separator
-    at the end of each row are read correctly (the columns were shifted by
-    one, or the file failed to load).
-  o GLM fitting tool: "." in a formula (also ". - x", ".^2") leaves out the
-    offset and weights columns, empty or single-valued columns, and text
-    columns with very many values such as IDs, and says which were left out.
-  o GLM fitting tool: explains formulas it cannot read, text responses for
-    non-binomial families, single-valued predictors and columns with no
-    values, instead of showing R errors; reads numbers with thousands
-    separators ("1,200") as numbers; chart labels mention exposure only when
-    the offset is used as one.
-  o Distribution fitting tool: the first piecewise Pareto layer includes the
-    smallest claim; all-zero claim counts give a clear message instead of
-    failed fits; very large and very small numbers are shown in scientific
-    notation, and large weighted totals in full.
+  o Updated the shiny simulation tool.
+
+Changes in Version 0.1.5
+
+  o Added database name in inputs of glm database
+  o Increased the maximum csv file size for glm builder and distribution fitting to 64gb
+  o Fixed bug loading inputs for GLM builder
+  o Added piecewise pareto fit to distribution fitting tool
+
+Changes in Version 0.1.4
+
+  o Added port selection for sql and prioritised csv input in Shiny glm fitting tool.
+  o Added distribution fitting tool
+
+Changes in Version 0.1.3
+
+  o Added Shiny glm fitting tool.
+
+Changes in Version 0.1.2
+
+  o Added shiny simulation tool.
+
+Changes in Version 0.1.1
+
+  o Updates a dependency to the rmarkdown package.
+
+Changes in Version 0.1.0
+
+  o First official release of the package on CRAN. The accompanying articles
+    are listed in the package description.

@@ -64,8 +64,9 @@ axis_amount_labels <- function(at) {
 
 #' TVaR of an already sorted vector
 #'
-#' The average of the worst (1 - p) share of simulations, which stays correct when
-#' many totals tie (for example at zero), unlike averaging everything at or above VaR.
+#' The average of the worst (1 - p) share of simulations: the mean of the largest
+#' \code{ceiling(n * (1 - p))} values (at least one). This stays correct when many totals
+#' tie (for example at zero), unlike averaging everything at or above VaR.
 #'
 #' @param sorted A numeric vector sorted in increasing order, without NAs.
 #' @param p A single probability.
@@ -86,29 +87,56 @@ sorted_tvar <- function(sorted, p) {
 #' reused for all percentiles, so a run of a million simulations takes a few
 #' seconds at most. All numbers are returned unformatted.
 #'
+#' Simulations whose total is undefined (NaN, e.g. infinite minus infinite, or NA) have
+#' no place in the statistics: they are left out of every figure and counted in
+#' \code{undefined}, so that the figures rest on the \code{n} simulations with a defined
+#' total. The claim frequency uses every simulation, as its counts are always defined.
+#'
+#' TVaR at probability p is the mean of the worst \code{ceiling(n * (1 - p))} totals.
+#' \code{stats$beyond_var995} counts the simulations at or beyond VaR 99.5% (totals
+#' that tie with VaR included), and \code{stats$tail_count995} the simulations that TVaR
+#' 99.5% averages. The 95% range for the mean is the normal approximation
+#' mean +/- 1.96 standard errors; when no total is negative its lower end is kept at zero
+#' or above, as the mean of such totals cannot be negative.
+#'
 #' @param settings The list of \code{simulate_function} arguments used for the run.
 #' @param results The data frame returned by \code{simulate_function}, or a numeric
 #'   vector of total claims.
-#' @return A list with the elements \code{n}, \code{role} ("gross", "ceded", "net"
-#'   or "mixed"), \code{modelled_label}, \code{totals}, \code{stats},
+#' @return A list with the elements \code{n} (simulations with a defined total),
+#'   \code{undefined} (simulations whose total is NaN or NA), \code{undefined_cause} (the
+#'   undefined totals split into \code{claims}, whose gross total is undefined too, as
+#'   claims overflowed to both +Inf and -Inf; \code{structures}, whose gross total is
+#'   defined; and \code{unknown}, without gross totals to tell), \code{role} ("gross",
+#'   "ceded", "net" or "mixed"), \code{modelled_label}, \code{totals}, \code{stats},
 #'   \code{percentiles}, \code{percentiles_dropped}, \code{gross}, \code{layer}
 #'   and \code{frequency}. \code{gross}, \code{layer} and \code{frequency} are
-#'   \code{NULL} when they do not apply. \code{gross} holds \code{table}, \code{series}
-#'   and \code{unknown}, the number of simulations whose gross and modelled totals are
-#'   both infinite, so that their difference is unknown (NA) and its column blank.
+#'   \code{NULL} when they do not apply. \code{gross} holds \code{table}, \code{series},
+#'   \code{unknown}, the number of simulations whose gross and modelled totals are
+#'   both infinite, so that their difference is unknown (NA) and its column blank, and
+#'   \code{undefined}, the number of defined totals whose gross total is NaN.
 #' @noRd
 summarise_simulation <- function(settings, results) {
   s <- settings
   if (is.numeric(results)) results <- data.frame(total_claims = results)
   results <- as.data.frame(results)
   if (!"total_claims" %in% names(results)) stop("The results need a total_claims column.", call. = FALSE)
-  results <- results[!is.na(results$total_claims), , drop = FALSE]
+  #the claim counts of every simulation, before the undefined totals are set aside
+  counts <- if ("claim_counts" %in% names(results)) as.numeric(results$claim_counts) else NULL
+  defined <- !is.na(results$total_claims)
+  undefined <- sum(!defined)
+  #an undefined total whose gross total is undefined too comes from the claims themselves
+  gross_undefined <- if ("gross_claims" %in% names(results)) is.na(results$gross_claims[!defined]) else NULL
+  results <- results[defined, , drop = FALSE]
   totals <- as.numeric(results$total_claims)
   n <- length(totals)
-  if (n == 0) stop("There are no simulated totals to summarise.", call. = FALSE)
+  if (n == 0) {
+    if (undefined > 0) {
+      stop("Every simulated total is undefined (NaN), so there is nothing to summarise.", call. = FALSE)
+    }
+    stop("There are no simulated totals to summarise.", call. = FALSE)
+  }
   column_or_null <- function(name) if (name %in% names(results)) as.numeric(results[[name]]) else NULL
   gross <- column_or_null("gross_claims")
-  counts <- column_or_null("claim_counts")
   reinstatements_used <- column_or_null("number_of_reinstatements_used")
 
   is_blank <- function(x) is.null(x) || length(x) == 0 || all(is.na(x))
@@ -142,6 +170,19 @@ summarise_simulation <- function(settings, results) {
   }
   modelled_label <- switch(role, gross = "Total claims", ceded = "Ceded", net = "Net", mixed = "After structures")
 
+  #why totals are undefined: claims that overflowed to both +Inf and -Inf in one simulation
+  #(so the gross total is NaN too), or an infinite amount less an infinite deductible or
+  #limit in the structures; without the gross totals only a gross run's cause is known
+  undefined_cause <- c(claims = 0, structures = 0, unknown = 0)
+  if (!is.null(gross_undefined)) {
+    undefined_cause[["claims"]] <- sum(gross_undefined)
+    undefined_cause[["structures"]] <- undefined - sum(gross_undefined)
+  } else if (role == "gross") {
+    undefined_cause[["claims"]] <- undefined
+  } else {
+    undefined_cause[["unknown"]] <- undefined
+  }
+
   # ---------- statistics of the modelled totals ----------
   sorted <- sort(totals)
   q <- function(p) sorted_quantile(sorted, p)
@@ -149,9 +190,12 @@ summarise_simulation <- function(settings, results) {
   totals_sd <- sd_or_na(totals)
   var995 <- q(0.995)
 
-  #accuracy: standard error of the mean, and a distribution-free 95% range for VaR 99.5%
-  #from the order statistics around the 99.5th percentile
+  #accuracy: standard error of the mean with a normal-approximation 95% range, and a
+  #distribution-free 95% range for VaR 99.5% from the order statistics around it
   se <- if (n > 1) totals_sd / sqrt(n) else NA_real_
+  mean_ci <- c(totals_mean - 1.96 * se, totals_mean + 1.96 * se)
+  #the approximation can reach below zero for heavy-tailed totals that cannot be negative
+  if (sorted[1] >= 0 && !is.na(mean_ci[1])) mean_ci[1] <- max(mean_ci[1], 0)
   p_tail <- 0.995
   spread <- 1.96 * sqrt(n * p_tail * (1 - p_tail))
   var995_ci <- c(
@@ -170,9 +214,12 @@ summarise_simulation <- function(settings, results) {
     var995 = var995,
     tvar995 = sorted_tvar(sorted, 0.995),
     se = se,
-    mean_ci = c(totals_mean - 1.96 * se, totals_mean + 1.96 * se),
+    mean_ci = mean_ci,
     var995_ci = var995_ci,
-    beyond_var995 = floor(round(n * (1 - p_tail), 8)),
+    #totals equal to VaR count too, so ties (e.g. at zero) can make this far more than 0.5%
+    beyond_var995 = sum(sorted >= var995),
+    #the worst 0.5% that TVaR 99.5% averages (see sorted_tvar)
+    tail_count995 = max(1, ceiling(round(n * (1 - p_tail), 8))),
     zero_share = mean(totals == 0)
   )
 
@@ -208,7 +255,8 @@ summarise_simulation <- function(settings, results) {
       if (anyNA(x)) return(rep(NA_real_, 7))
       x_sorted <- sort(x)
       x_mean <- mean(x)
-      share <- if (gross_mean > 0) x_mean / gross_mean else NA_real_
+      #the gross mean is NaN when the gross totals hold both +Inf and -Inf
+      share <- if (isTRUE(gross_mean > 0)) x_mean / gross_mean else NA_real_
       c(
         x_mean,
         #Inf / Inf, when both means are infinite
@@ -224,7 +272,8 @@ summarise_simulation <- function(settings, results) {
       check.names = FALSE,
       stringsAsFactors = FALSE
     )
-    gross_summary <- list(table = table, series = series, unknown = sum(unknown))
+    #gross totals of +Inf and -Inf claims are NaN, which leaves the columns that need them blank
+    gross_summary <- list(table = table, series = series, unknown = sum(unknown), undefined = sum(is.na(gross)))
   }
 
   # ---------- layer metrics ----------
@@ -293,15 +342,17 @@ summarise_simulation <- function(settings, results) {
     counts_sorted <- sort(counts)
     frequency <- list(
       mean = mean(counts),
-      sd = sd_or_na(counts),
+      sd = if (length(counts) > 1) stats::sd(counts) else NA_real_,
       p_zero = mean(counts == 0),
       p99 = sorted_quantile(counts_sorted, 0.99),
-      max = counts_sorted[n]
+      max = counts_sorted[length(counts_sorted)]
     )
   }
 
   list(
     n = n,
+    undefined = undefined,
+    undefined_cause = undefined_cause,
     role = role,
     modelled_label = modelled_label,
     totals = totals,

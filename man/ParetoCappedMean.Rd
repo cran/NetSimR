@@ -17,7 +17,7 @@ ParetoCappedMean(cap, scale, shape)
 The mean of the claim severity capped at \code{cap} with a Pareto distribution with parameters \code{scale} and \code{shape}. A cap at or below \code{scale} is returned unchanged, as no claim is smaller than \code{scale}. The arguments are recycled to a common length. A non-numeric argument, a negative \code{cap} or a non-positive \code{scale} or \code{shape} is an error; \code{NA} values give \code{NA}.
 }
 \description{
-Pareto capped mean
+Gives the expected claim amount when each claim from a Pareto severity distribution is capped at \code{cap}, as needed to price a policy limit or a reinsurance layer.
 }
 \examples{
 ParetoCappedMean(600,200,1.2)

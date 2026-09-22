@@ -47,16 +47,25 @@ sim_tab_fmt_amount <- function(x, digits = NULL) {
   if (is.null(x) || length(x) == 0 || is.na(x[1]) || !is.numeric(x)) return(intToUtf8(8212))
   #adding zero turns -0 (e.g. no claims under a Normal severity with a negative mean) into 0
   x <- as.numeric(x[1]) + 0
+  if (is.infinite(x)) return(sim_tab_fmt_infinite(x))
   #amounts too large for a readable fixed format (a Pareto severity with a tiny alpha)
   if (is.finite(x) && abs(x) >= 1e15) return(formatC(x, format = "e", digits = 3))
   if (is.null(digits)) digits <- display_digits(x)
   formatC(x, format = "f", digits = digits, big.mark = ",")
 }
 
+#' Show an infinite number as signed infinity
+#'
+#' Every figure of the compare tab shows an infinite value as "Inf" or "-Inf", as the
+#' report does, and keeps the dash for values that are undefined (NaN) or missing.
+#' @noRd
+sim_tab_fmt_infinite <- function(x) if (x > 0) "Inf" else "-Inf"
+
 #' Format a whole number with thousands separators
 #' @noRd
 sim_tab_fmt_int <- function(x) {
   if (is.null(x) || length(x) == 0 || is.na(x[1])) return(intToUtf8(8212))
+  if (is.infinite(x[1])) return(sim_tab_fmt_infinite(x[1]))
   formatC(round(as.numeric(x[1])), format = "d", big.mark = ",")
 }
 
@@ -65,6 +74,10 @@ sim_tab_fmt_int <- function(x) {
 sim_tab_fmt_pct <- function(p, digits = 1) {
   if (is.null(p) || length(p) == 0 || is.na(p[1])) return(intToUtf8(8212))
   p <- as.numeric(p[1])
+  #e.g. a loss on line of an infinite expected loss
+  if (is.infinite(p)) return(sim_tab_fmt_infinite(p))
+  #e.g. a loss on line of a huge expected loss on a small limit
+  if (is.finite(p) && abs(100 * p) >= 1e15) return(paste0(formatC(100 * p, format = "e", digits = 3), "%"))
   #small probabilities get an extra decimal so they do not round to zero
   if (p > 0 && p < 0.01 && digits < 2) digits <- 2
   paste0(formatC(100 * p, format = "f", digits = digits), "%")
@@ -78,11 +91,21 @@ sim_tab_fmt_pct <- function(p, digits = 1) {
 #' @noRd
 sim_tab_describe_settings <- function(s) {
   is_number <- function(x) is.numeric(x) && length(x) == 1 && !is.na(x)
+  #values too large for a readable fixed format (e.g. 1e308) use the report's scientific
+  #format, "1.000e+308", instead of printing hundreds of digits
+  huge <- function(x) is.finite(x) & abs(x) >= 1e15
   fmt <- function(x) {
     if (!is_number(x)) return("?")
+    if (huge(x)) return(formatC(x, format = "e", digits = 3))
     formatC(x, format = "f", digits = if (x == round(x)) 0 else max(2, display_digits(x)), big.mark = ",")
   }
-  fmt_param <- function(x) sub("\\.?0+$", "", formatC(x, format = "f", digits = 4))
+  #four decimals, or more for a small parameter (an Exponential rate of 1e-5, say, which four
+  #would show as 0), with the trailing zeros stripped
+  fmt_param <- function(x) {
+    out <- vapply(x, function(v) sub("\\.?0+$", "", formatC(v, format = "f", digits = max(4, display_digits(v)))), character(1))
+    out[huge(x)] <- formatC(x[huge(x)], format = "e", digits = 3)
+    out
+  }
 
   distr_text <- function(options, id, values) {
     known <- is.character(id) && length(id) == 1 && id %in% names(options)
@@ -116,6 +139,10 @@ sim_tab_describe_settings <- function(s) {
   al <- structure_text(s$reinsuranceStructureAL, s$reinsurance_structure_al_dedctible_amount,
                        s$reinsurance_structure_al_limit_amount)
 
+  #only the Normal distribution can be truncated at zero; older settings lists lack the field
+  severity <- distr_text(sev_dist_options, s$sevDistr, s$sev_params)
+  if (isTRUE(s$sevTruncateAtZero) && identical(s$sevDistr, "Normal")) severity <- paste(severity, "truncated at zero")
+
   slices <- if (isTRUE(s$paretoSlice) && is_number(s$pareto_slice_times)) {
     paste(fmt(s$pareto_slice_times), if (s$pareto_slice_times == 1) "Pareto slice" else "Pareto slices")
   }
@@ -123,8 +150,7 @@ sim_tab_describe_settings <- function(s) {
   seed <- if (isTRUE(s$seedSetBinary) && is_number(s$seedValue)) paste("seed", fmt(s$seedValue))
 
   parts <- c(
-    paste(distr_text(freq_dist_options, s$freqDistr, s$freq_params), "/",
-          distr_text(sev_dist_options, s$sevDistr, s$sev_params)),
+    paste(distr_text(freq_dist_options, s$freqDistr, s$freq_params), "/", severity),
     slices, cap, paste("EEL", eel), paste("AL", al), seed
   )
   paste(parts, collapse = ", ")
@@ -140,14 +166,15 @@ sim_tab_return_period_grid <- exp(seq(log(2), log(1e6), length.out = 700))
 #'
 #' Uses the same quantile approach as the report: the loss at return period r is the
 #' quantile of the totals at probability 1 - 1/r. Return periods stop at n/10, so at
-#' least 10 simulations lie beyond each point.
+#' least 10 simulations lie beyond each point. A run of 20 simulations or fewer has no
+#' curve: its only return period would be 2, a single point that a line cannot show.
 #' @param totals Numeric vector of simulated totals.
-#' @return A data frame with columns rp and value (possibly empty).
+#' @return A data frame with columns rp and value (empty, or with at least two rows).
 #' @noRd
 sim_tab_return_period_curve <- function(totals) {
   totals <- totals[!is.na(totals)]
   max_rp <- length(totals) / 10
-  if (max_rp < 2) return(data.frame(rp = numeric(0), value = numeric(0)))
+  if (max_rp <= 2) return(data.frame(rp = numeric(0), value = numeric(0)))
   rps <- c(sim_tab_return_period_grid[sim_tab_return_period_grid < max_rp], max_rp)
   data.frame(rp = rps, value = stats::quantile(totals, 1 - 1 / rps, names = FALSE))
 }
@@ -183,6 +210,8 @@ sim_tab_compare_entry <- function(run) {
     digits = display_digits(totals),
     metrics = list(
       n = n,
+      #simulations whose total is undefined (NaN), left out of the other metrics
+      undefined = if (is.null(summary$undefined)) 0 else as.numeric(summary$undefined[1]),
       mean = pick(stats, "mean"),
       sd = pick(stats, "sd"),
       median = pick(stats, "median"),
@@ -201,7 +230,8 @@ sim_tab_compare_entry <- function(run) {
 #'
 #' @param entries List of compare entries (see sim_tab_compare_entry) to show as columns.
 #' @param names Display names, one per entry.
-#' @return An HTML table built with shiny tags.
+#' @return An HTML table built with shiny tags, followed by a note on what Inf and the dash
+#'   mean when a run has infinite totals.
 #' @noRd
 sim_tab_metrics_table <- function(entries, names) {
   amount_row <- function(label, key) {
@@ -211,8 +241,20 @@ sim_tab_metrics_table <- function(entries, names) {
     )
   }
   has_value <- function(key) any(vapply(entries, function(e) !is.na(e$metrics[[key]]), logical(1)))
+  #infinite totals give infinite figures, and undefined ones where +Inf meets -Inf (the mean)
+  #or where the spread of infinite totals is taken (the standard deviation)
+  amount_keys <- c("mean", "sd", "median", "var99", "var995", "tvar995")
+  any_infinite <- any(vapply(entries, function(e) {
+    any(is.infinite(unlist(e$metrics[amount_keys], use.names = FALSE)))
+  }, logical(1)))
+  infinite_note <- if (any_infinite) {
+    p(class = "sim-muted small mt-2 mb-0", paste0(
+      "Inf and -Inf are infinite values. A dash is a value that is undefined or does not apply, such as ",
+      "the standard deviation of infinite totals, or the mean of totals that include both +Inf and -Inf."
+    ))
+  }
 
-  tags$table(
+  table <- tags$table(
     class = "sim-compare-table",
     tags$thead(tags$tr(
       tags$th("Metric"),
@@ -224,6 +266,12 @@ sim_tab_metrics_table <- function(entries, names) {
     tags$tbody(
       tags$tr(tags$td("Modelled result"), lapply(entries, function(e) tags$td(e$modelled_label))),
       tags$tr(tags$td("Simulations"), lapply(entries, function(e) tags$td(sim_tab_fmt_int(e$metrics$n)))),
+      #the metrics rest on the simulations with a defined total; undefined ones are counted apart
+      if (any(vapply(entries, function(e) isTRUE(e$metrics$undefined > 0), logical(1)))) tags$tr(
+        tags$td(title = "Simulations whose total is undefined (NaN), left out of the other metrics",
+                "Undefined (NaN) totals"),
+        lapply(entries, function(e) tags$td(sim_tab_fmt_int(e$metrics$undefined)))
+      ),
       amount_row("Mean", "mean"),
       amount_row("Standard deviation", "sd"),
       amount_row("Median", "median"),
@@ -240,6 +288,7 @@ sim_tab_metrics_table <- function(entries, names) {
       )
     )
   )
+  tagList(table, infinite_note)
 }
 
 #' Tick marks of the y axis of the compare chart
@@ -256,6 +305,18 @@ sim_tab_y_ticks <- function(values) {
   pretty(y_range, n = 5)
 }
 
+#' Title of the y axis of the compare chart
+#'
+#' What the drawn runs model ("Total claims", "Ceded", "Net" or "After structures", see
+#' summarise_simulation) when they all model the same thing, and "Loss" when they differ.
+#' @param entries List of the compare entries drawn.
+#' @return A single string.
+#' @noRd
+sim_tab_y_label <- function(entries) {
+  labels <- unique(vapply(entries, function(e) e$modelled_label, character(1)))
+  if (length(labels) == 1) labels else "Loss"
+}
+
 #' Overlaid return-period chart for the compare tab
 #'
 #' @param entries List of compare entries to draw.
@@ -264,7 +325,9 @@ sim_tab_y_ticks <- function(values) {
 #' alone, so a transparent device lets the card show through. The legend sits above the
 #' plot and wraps onto as many rows as the width of the device needs.
 #' @param dark TRUE to use the dark theme colours.
-#' @return NULL, invisibly; called for its drawing.
+#' @return Called for its drawing; invisibly, a list with \code{plot}, the left and right
+#'   edges of the plot region, and \code{marker}, those of the "1 in 200" label (NULL when
+#'   the chart stops before 1 in 200), both in inches from the left of the device.
 #' @noRd
 sim_tab_return_period_plot <- function(entries, names, dark = FALSE) {
   #the chart stops where the smallest run stops
@@ -278,11 +341,14 @@ sim_tab_return_period_plot <- function(entries, names, dark = FALSE) {
   palette <- c("#3b82f6", "#f97316", "#10b981", "#a855f7", "#ef4444", "#eab308")
   series_colours <- palette[(seq_along(entries) - 1) %% length(palette) + 1]
 
+  #a curve needs two points for lines() to draw anything; a run cut down to one is left
+  #out of the legend rather than listed there with no curve
   curves <- lapply(entries, function(e) e$curve[e$curve$rp <= max_rp * (1 + 1e-9), , drop = FALSE])
-  drawn <- vapply(curves, nrow, integer(1)) > 0
+  drawn <- vapply(curves, nrow, integer(1)) >= 2
   curves <- curves[drawn]
   names <- names[drawn]
   series_colours <- series_colours[drawn]
+  y_label <- sim_tab_y_label(entries[drawn])
 
   axis_cex <- 0.85
   legend_cex <- 0.9
@@ -352,11 +418,20 @@ sim_tab_return_period_plot <- function(entries, names, dark = FALSE) {
                  col.axis = colours$muted, cex.axis = axis_cex)
   graphics::axis(2, at = y_ticks, labels = y_labels, tick = FALSE, col.axis = colours$muted, cex.axis = axis_cex)
   graphics::mtext("Return period", side = 1, line = 2.1, col = colours$muted, cex = legend_cex)
-  graphics::mtext("Total claims", side = 2, line = label_lines + 1, col = colours$muted, cex = legend_cex, las = 0)
+  graphics::mtext(y_label, side = 2, line = label_lines + 1, col = colours$muted, cex = legend_cex, las = 0)
 
+  marker_extent <- NULL
   if (200 <= max_rp) {
     graphics::abline(v = 200, col = colours$marker, lty = 2, lwd = 1.5)
-    graphics::text(200, graphics::par("usr")[4], "1 in 200", adj = c(-0.12, 1.5), col = colours$marker, cex = 0.8)
+    #the label sits right of the line, or left of it where it would run past the plot's right
+    #edge (a narrow chart, or a run just over 2,000 simulations)
+    marker_label <- "1 in 200"
+    line_x <- graphics::grconvertX(200, "user", "inches")
+    label_width <- graphics::strwidth(marker_label, units = "inches", cex = 0.8)
+    fits_right <- line_x + 1.12 * label_width <= graphics::grconvertX(1, "npc", "inches")
+    graphics::text(200, graphics::par("usr")[4], marker_label, adj = c(if (fits_right) -0.12 else 1.12, 1.5),
+                   col = colours$marker, cex = 0.8)
+    marker_extent <- if (fits_right) line_x + c(0.12, 1.12) * label_width else line_x - c(1.12, 0.12) * label_width
   }
   for (i in seq_along(curves)) {
     #a curve stops where the losses become infinite
@@ -377,7 +452,10 @@ sim_tab_return_period_plot <- function(entries, names, dark = FALSE) {
     graphics::text(to_x(key_x0 + key_width + key_gap), to_y(row_y), names, adj = c(0, 0.5),
                    col = colours$font, cex = legend_cex, xpd = NA)
   }
-  invisible(NULL)
+  invisible(list(
+    plot = graphics::grconvertX(c(0, 1), "npc", "inches"),
+    marker = marker_extent
+  ))
 }
 
 # ---------------------------------------------------------------- styles and scripts
@@ -587,6 +665,8 @@ sim_tab_css <- "
 .sim-compare-table td:first-child {
   color: var(--sim-label);
   font-weight: 600;
+  /* labels such as 'Chance the layers are hit' stay on one line; the table scrolls instead */
+  white-space: nowrap;
 }
 
 .sim-compare-table tbody tr:last-child td {
@@ -1175,8 +1255,9 @@ sim_compare_tab_server <- function(id, last_run, max_runs = 6, default_included 
               tags$span(class = "sim-run-id", paste("Run", entry$id)),
               div(
                 class = "sim-run-name-input",
-                textInput(ns(paste0("name_", entry$id)), label = NULL,
-                          value = isolate(state$name[[key]]), placeholder = entry$name)
+                #the label is read out but not shown; the placeholder shows the default name
+                sim_hidden_label(textInput(ns(paste0("name_", entry$id)), label = paste("Name of run", entry$id),
+                                           value = isolate(state$name[[key]]), placeholder = entry$name))
               ),
               tags$button(
                 type = "button",
@@ -1207,12 +1288,16 @@ sim_compare_tab_server <- function(id, last_run, max_runs = 6, default_included 
     })
 
     #drawn in base graphics on a transparent background, in the colours of the app theme;
-    #the theme input (see sim_compare_theme_js) makes it redraw when the theme changes
-    output$return_period_chart <- renderPlot({
+    #the theme input (see sim_compare_theme_js) makes it redraw when the theme changes, and
+    #netsimr_render_plot (R/plot_device.R) redraws it on resize with a device that draws the
+    #semi-transparent text and gridlines of the dark theme properly on Windows
+    output$return_period_chart <- netsimr_render_plot({
       inputs <- chart_inputs()
       validate(need(length(inputs$entries) > 0, "Include at least one run to draw the chart."))
+      #the chart stops at a tenth of the smallest run; at 20 simulations that is return period
+      #2 alone, a single point with no curve to draw (see sim_tab_return_period_curve)
       max_rp <- min(vapply(inputs$entries, function(e) e$metrics$n, numeric(1))) / 10
-      validate(need(max_rp >= 2, "The chart needs runs of at least 20 simulations."))
+      validate(need(max_rp > 2, "The chart needs runs of more than 20 simulations."))
       sim_tab_return_period_plot(inputs$entries, inputs$names, dark = identical(input$app_theme, "dark"))
     }, bg = "transparent", alt = "Losses by return period for the included runs")
   })

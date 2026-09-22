@@ -10,6 +10,8 @@ reinsurance_structures_options
 The reinsurance structure options
 }
 \description{
-A vector with the reinsurance structure options
+The names of the reinsurance structures that \code{\link{apply_deductible_limit}} and
+\code{\link{simulate_function}} accept, used by the simulator app as the choices of its
+structure inputs and to validate saved settings.
 }
 \keyword{internal}

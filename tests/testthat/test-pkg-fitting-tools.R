@@ -300,41 +300,147 @@ test_that("GLM fitting tool leaves a logical binomial response as it is, TRUE be
   })
 })
 
-test_that("GLM fitting tool saves settings without the password and restores column choices after import", {
-  csv <- write_glm_csv()
+#records the input updates and notifications of a testServer session, which the mock
+#session otherwise drops: the last message sent to each input, and each notification shown
+record_session_messages <- function(session) {
+  log <- new.env()
+  log$inputs <- list()
+  log$notes <- list()
+  session$sendInputMessage <- function(inputId, message) log$inputs[[inputId]] <- message
+  session$sendNotification <- function(type, message) {
+    if (identical(type, "show")) log$notes[[length(log$notes) + 1]] <- message
+  }
+  log
+}
+
+#the GLM tool's inputs for a database import and a model, with a password and a multi-line query
+glm_settings_session <- function(session, query, password, include_db) {
+  session$setInputs(data_source = "Database", db_type = "PostgreSQL", db_host = "db.internal.example",
+                    db_port = "5433", db_name = "claims_dw", db_user = "analyst", db_password = password,
+                    sql_query = query, csv_header = FALSE, csv_sep = ";", csv_dec = ",", csv_quote = "'",
+                    glm_distribution = "poisson", link_function = "log", offset_log = FALSE,
+                    formula = "x1 + x2", number_of_bands_input = 7, band_method = "width",
+                    settings_include_db = include_db)
+}
+
+test_that("GLM fitting tool settings round trip through a text file with the connection details when asked", {
+  query <- "SELECT \"policy id\", 'a''b' AS x\nFROM claims\n  WHERE region = 'North' -- \\ comment\n;"
+  password <- "S3cret-settings-pw"
+  path <- tempfile(fileext = ".txt")
   shiny::testServer(GLMFittingToolServer, {
-    session$setInputs(db_password = "secret", formula = "x1 + x2", glm_distribution = "poisson", link_function = "log", csv_sep = ",")
-    saved <- readRDS(output$DownloadDataHandlerConf)
-    expect_identical(saved$tool, glm_settings_tool)
-    expect_null(saved$inputs$db_password)
-    expect_equal(saved$inputs$formula, "x1 + x2")
+    glm_settings_session(session, query, password, include_db = TRUE)
+    file.copy(output$DownloadDataHandlerConf, path)
+  })
+  text <- readLines(path)
+  expect_identical(text[1:2], c("NetSimRSettings: GLM fitting tool", "SettingsVersion: 1"))
+  fields <- sub(":.*", "", text)
+  expect_true(all(c(glm_settings_connection_ids, "db_type", "data_source", "formula") %in% fields))
+  #never the password, whether its value or its field
+  expect_false(any(grepl(password, text, fixed = TRUE)))
+  expect_false("db_password" %in% fields)
+  saved <- read_settings_file(path, glm_settings_tool)$values
+  expect_identical(saved$sql_query, query)
+  expect_identical(saved$number_of_bands_input, 7)
+
+  shiny::testServer(GLMFittingToolServer, {
+    log <- record_session_messages(session)
+    session$setInputs(load_config = list(datapath = path, name = "glm_fitting_tool_settings.txt"))
+    sent <- lapply(log$inputs, `[[`, "value")
+    expect_identical(sent$sql_query, query)
+    expect_identical(sent[c("data_source", "db_type", "db_host", "db_port", "db_name", "db_user")],
+                     list(data_source = "Database", db_type = "PostgreSQL", db_host = "db.internal.example",
+                          db_port = "5433", db_name = "claims_dw", db_user = "analyst"))
+    expect_identical(sent[c("csv_header", "csv_sep", "csv_dec", "csv_quote")],
+                     list(csv_header = FALSE, csv_sep = ";", csv_dec = ",", csv_quote = "'"))
+    expect_identical(sent[c("glm_distribution", "link_function", "offset_log", "formula", "band_method")],
+                     list(glm_distribution = "poisson", link_function = "log", offset_log = FALSE,
+                          formula = "x1 + x2", band_method = "width"))
+    #updateSliderInput() sends the number as text
+    expect_equal(as.numeric(sent$number_of_bands_input), 7)
+    expect_null(log$inputs$db_password)
+    expect_length(log$notes, 1)
+    expect_identical(log$notes[[1]]$type, "message")
+  })
+})
+
+test_that("GLM fitting tool settings leave out the connection details unless the box is ticked", {
+  password <- "S3cret-settings-pw"
+  for (include_db in list(FALSE, NULL)) {
+    path <- tempfile(fileext = ".txt")
+    shiny::testServer(GLMFittingToolServer, {
+      glm_settings_session(session, "SELECT *\nFROM internal_table", password, include_db = include_db)
+      file.copy(output$DownloadDataHandlerConf, path)
+    })
+    text <- readLines(path)
+    fields <- sub(":.*", "", text)
+    expect_false(any(c(glm_settings_connection_ids, "db_password") %in% fields))
+    for (secret in c(password, "db.internal.example", "claims_dw", "analyst", "5433", "internal_table")) {
+      expect_false(any(grepl(secret, text, fixed = TRUE)))
+    }
+    #the database type and the other choices are kept
+    expect_true(all(c("data_source", "db_type", "csv_sep", "glm_distribution", "formula") %in% fields))
+    #loading the file applies the fields it has and leaves the connection details as they are
+    shiny::testServer(GLMFittingToolServer, {
+      log <- record_session_messages(session)
+      session$setInputs(load_config = list(datapath = path, name = "glm_fitting_tool_settings.txt"))
+      expect_identical(log$inputs$db_type$value, "PostgreSQL")
+      expect_identical(log$inputs$formula$value, "x1 + x2")
+      expect_false(any(c(glm_settings_connection_ids, "db_password") %in% names(log$inputs)))
+    })
+  }
+})
+
+test_that("GLM fitting tool refuses files that are not its settings, with a notification", {
+  rds <- tempfile(fileext = ".rds")
+  saveRDS(list(version = 2, inputs = list()), rds)
+  #a settings file of earlier versions, which saved them with saveRDS()
+  old_rds <- tempfile(fileext = ".rds")
+  saveRDS(list(tool = "NetSimR GLM fitting tool", version = 1L, inputs = list(formula = "x1", response_variable = "y")), old_rds)
+  junk <- tempfile(fileext = ".txt")
+  writeLines(c("not a settings file", "just some text"), junk)
+  simulator <- tempfile(fileext = ".txt")
+  write_settings_file(list(formula = "x1"), simulator, "claims simulator", 1)
+  #a value that is code is not run
+  code <- tempfile(fileext = ".txt")
+  writeLines(c("NetSimRSettings: GLM fitting tool", "SettingsVersion: 1", "formula: stop(\"code ran\")"), code)
+  #values of the wrong type or not among the choices
+  invalid <- tempfile(fileext = ".txt")
+  write_settings_file(list(glm_distribution = "not a family", number_of_bands_input = "ten", formula = NA_character_),
+                      invalid, glm_settings_tool, 1)
+  files <- list(
+    list(path = rds, name = "settings.rds", message = "not a NetSimR settings file"),
+    list(path = old_rds, name = "glm_tool_settings.rds", message = "not a NetSimR settings file"),
+    list(path = junk, name = "notes.txt", message = "not a NetSimR settings file"),
+    list(path = simulator, name = "simulator.txt", message = "for the claims simulator, not the GLM fitting tool"),
+    list(path = code, name = "code.txt", message = "'formula' has a value that cannot be read"),
+    list(path = invalid, name = "invalid.txt", message = "has no settings this version of the GLM fitting tool can use")
+  )
+  shiny::testServer(GLMFittingToolServer, {
+    log <- record_session_messages(session)
+    for (f in files) {
+      log$notes <- list()
+      session$setInputs(load_config = list(datapath = f$path, name = f$name))
+      expect_length(log$notes, 1)
+      expect_identical(log$notes[[1]]$type, "error")
+      expect_match(as.character(log$notes[[1]]$html), f$message, fixed = TRUE)
+      expect_match(as.character(log$notes[[1]]$html), f$name, fixed = TRUE)
+      expect_length(log$inputs, 0)
+      expect_equal(pending_columns(), list())
+    }
+  })
+})
+
+test_that("GLM fitting tool applies column choices from a settings file once the data is imported", {
+  csv <- write_glm_csv()
+  path <- tempfile(fileext = ".txt")
+  write_settings_file(list(response_variable = "y", weights = "w", formula = "x1"), path, glm_settings_tool, 1)
+  shiny::testServer(GLMFittingToolServer, {
     #column choices loaded before any import wait for the data
-    settings_file <- tempfile(fileext = ".rds")
-    saveRDS(list(tool = glm_settings_tool, version = 1L, inputs = list(response_variable = "y", weights = "w", formula = "x1")), settings_file)
-    session$setInputs(load_config = list(datapath = settings_file, name = "s.rds"))
+    session$setInputs(load_config = list(datapath = path, name = "s.txt"))
     expect_equal(pending_columns(), list(response_variable = "y", weights = "w"))
     session$setInputs(data_source = "CSV File", csv_file = list(datapath = csv$path, name = "glm.csv"), submit = 1)
     session$flushReact()
     expect_equal(pending_columns(), list())
-    #a file that is not a settings file is refused without an error: text, a truncated file,
-    #an object that is not a list, and lists with no usable input
-    junk <- tempfile(fileext = ".rds")
-    writeLines("not a settings file", junk)
-    session$setInputs(load_config = list(datapath = junk, name = "junk.rds"))
-    expect_equal(pending_columns(), list())
-    truncated <- tempfile(fileext = ".rds")
-    writeBin(readBin(settings_file, "raw", 20), truncated)
-    others <- list(1:3, new.env(), list(1, 2), list(tool = glm_settings_tool, inputs = "x"),
-                   list(response_variable = list("y"), formula = NA_character_, number_of_bands_input = "ten"))
-    files <- c(truncated, vapply(others, function(x) {
-      path <- tempfile(fileext = ".rds")
-      saveRDS(x, path)
-      path
-    }, character(1)))
-    for (i in seq_along(files)) {
-      session$setInputs(load_config = list(datapath = files[i], name = paste0("junk", i, ".rds")))
-      expect_equal(pending_columns(), list())
-    }
   })
 })
 

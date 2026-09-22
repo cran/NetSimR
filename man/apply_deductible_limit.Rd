@@ -28,7 +28,8 @@ claims less what a 'Limited Layer' with the same deductible and limit would cede
 or limit the structure uses is negative.
 }
 \description{
-Apply a deductible and limit to claims
+Works out what a reinsurance structure cedes (or, for an excluded layer, leaves) of each
+claim, for pricing a layer or checking the simulator's figures by hand.
 }
 \examples{
 apply_deductible_limit(c(100, 50, 20), 'Limited Layer', 40, 20)

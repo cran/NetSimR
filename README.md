@@ -1,6 +1,7 @@
 # NetSimR
 
 [![R-CMD-check](https://github.com/NetSimAnalytics/NetSimR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/NetSimAnalytics/NetSimR/actions/workflows/R-CMD-check.yaml)
+[![CRAN status](https://www.r-pkg.org/badges/version/NetSimR)](https://CRAN.R-project.org/package=NetSimR)
 
 NetSimR is an R package of actuarial functions for non-life insurance and
 reinsurance pricing, reserving and capital modelling, with three Shiny tools
@@ -73,11 +74,26 @@ run_shiny_distribution_fitting_tool()  # frequency and severity fits
 run_shiny_glm_fitting_tool()           # generalised linear models
 ```
 
+## Vignettes
+
+Four vignettes set out the theory behind the functions and work through
+examples:
+
+- *Capped means, exposure curves and increased limit factors*
+- *Sliced LogNormal-Pareto and Gamma-Pareto distributions*
+- *Pure IBNR exposure from a reporting delay distribution*
+- *Simulating claims with simulate_claims()*
+
+They are on the package's [CRAN page](https://CRAN.R-project.org/package=NetSimR),
+and `browseVignettes("NetSimR")` opens the copies installed with the package
+(a development version installed from GitHub has them only when installed with
+`build_vignettes = TRUE`).
+
 ## References
 
 The methods are described in articles by Yiannis Parizas in *The Actuary*:
 [Free for All](https://www.theactuary.com/2023/03/02/free-all) (2023),
 [Escaping the triangle](https://www.theactuary.com/features/2019/06/2019/06/05/escaping-triangle)
 (2019) and
-[Take to excess](https://www.theactuary.com/features/2019/03/2019/03/06/taken-excess)
+[Taken to excess](https://www.theactuary.com/features/2019/03/2019/03/06/taken-excess)
 (2019).

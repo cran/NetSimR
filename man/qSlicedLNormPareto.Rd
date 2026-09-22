@@ -2,12 +2,12 @@
 % Please edit documentation in R/SlicecdLogNormalPareto.R
 \name{qSlicedLNormPareto}
 \alias{qSlicedLNormPareto}
-\title{The inverse cumulative density function of a Sliced LogNormal Pareto severity distribution}
+\title{The inverse cumulative distribution function of a Sliced LogNormal Pareto severity distribution}
 \usage{
 qSlicedLNormPareto(q, mu, sigma, SlicePoint, shape)
 }
 \arguments{
-\item{q}{A real number between 0 and 1 -  the probability where the inverse cumulative density function will be evaluated. Values outside [0, 1] give \code{NaN}, as in \code{qlnorm()}.}
+\item{q}{A real number between 0 and 1 -  the probability where the inverse cumulative distribution function will be evaluated. Values outside [0, 1] give \code{NaN} with a warning, as in \code{qlnorm()}.}
 
 \item{mu}{A real number -  the first parameter of the attritional Claim Severity's LogNormal distribution.}
 
@@ -18,10 +18,13 @@ qSlicedLNormPareto(q, mu, sigma, SlicePoint, shape)
 \item{shape}{A positive real number - the shape parameter of the tail Claim Severity's Pareto distribution.}
 }
 \value{
-The value of the inverse cumulative density function at \code{q} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}. A non-numeric argument or a non-positive \code{sigma}, \code{SlicePoint} or \code{shape} is an error; \code{NA} values give \code{NA}.
+The value of the inverse cumulative distribution function at \code{q} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}. A non-numeric argument or a non-positive \code{sigma}, \code{SlicePoint} or \code{shape} is an error; \code{NA} values give \code{NA}.
 }
 \description{
-The inverse cumulative density function of a Sliced LogNormal Pareto severity distribution
+Gives the claim amount that a claim from a sliced severity distribution, with LogNormal attritional claims below the slice point and a Pareto tail above it, stays at or below with probability \code{q}; the inverse of \code{\link{pSlicedLNormPareto}}.
+}
+\details{
+\code{shape} is the Pareto shape parameter, usually written alpha; the sliced Gamma-Pareto functions call the same parameter \code{PShape}.
 }
 \examples{
 qSlicedLNormPareto(0.5,6,1.5,1000,1.2)

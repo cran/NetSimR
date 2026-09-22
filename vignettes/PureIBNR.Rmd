@@ -1,12 +1,11 @@
 ---
 title: "Pure IBNR exposure from a reporting delay distribution"
 author: "Yiannis Parizas"
-date: '`r format(Sys.Date(), "%d-%m-%Y")`'
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Pure IBNR exposure from a reporting delay distribution}
   %\VignetteEngine{knitr::rmarkdown}
-  \usepackage[utf8]{inputenc}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include=FALSE}
@@ -20,7 +19,6 @@ This vignette will cover pure IBNR functions of the NetSimR package. It will ove
 
 
 
-\pagebreak
 ## 2.Background theory
 
 
@@ -38,7 +36,6 @@ As integration is equivalent to summing the function values, when the partition 
 
 
 
-\pagebreak
 ## 3. Functions usage
 
 
@@ -58,7 +55,6 @@ When this method is combined with a truncated regression, the method can adjust 
 Reinsurance structures are easier to implement on top of this method compared to triangles.
 
 
-\pagebreak
 ## 4. Examples
 
 

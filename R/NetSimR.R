@@ -1,13 +1,15 @@
-#' NetSimR: A non-life insurance package for computing various statistics
-#'
-#' The NetSimR package provides five categories of functions:
+#' @description The NetSimR package provides five categories of functions:
 #' \enumerate{
-#' \item Capped means, Exposure and ILF curve from various severity distributions
+#' \item Capped means, Exposure and ILF curves from various severity distributions, and the special functions behind them
 #' \item Pure IBNR and UPR earned periods
 #' \item Sliced distributions
-#' \item Frequency-severity claims simulation
-#' \item Shiny apps for simulating claims and fitting distributions
+#' \item Frequency-severity claims simulation, and applying a reinsurance layer to simulated claims
+#' \item Shiny apps for simulating claims, fitting distributions and fitting GLMs
 #' }
+#'
+#' @section NetSimR special functions:
+#' \code{\link{IGamma}}
+#' \code{\link{erf}}
 #'
 #' @section NetSimR mean functions:
 #' \code{\link{SlicedGammaParetoMean}}
@@ -17,6 +19,7 @@
 #' \code{\link{GammaCappedMean}}
 #' \code{\link{LNormCappedMean}}
 #' \code{\link{ParetoCappedMean}}
+#' \code{\link{ParetoCappedMeanCalc}}
 #' \code{\link{SlicedGammaParetoCappedMean}}
 #' \code{\link{SlicedLNormParetoCappedMean}}
 #'
@@ -49,6 +52,7 @@
 #' @section NetSimR claims simulation functions:
 #' \code{\link{simulate_claims}}
 #' \code{\link{simulate_function}}
+#' \code{\link{apply_deductible_limit}}
 #'
 #' @section NetSimR Shiny apps:
 #' \code{\link{run_shiny_simulator}}

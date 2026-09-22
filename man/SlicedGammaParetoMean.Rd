@@ -13,13 +13,16 @@ SlicedGammaParetoMean(GShape, GRate, SlicePoint, PShape)
 
 \item{SlicePoint}{A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution. An infinite slice point gives the Gamma distribution.}
 
-\item{PShape}{A positive real number - the Shape parameter of the tail Claim Severity's Pareto distribution.}
+\item{PShape}{A positive real number - the shape parameter of the tail Claim Severity's Pareto distribution.}
 }
 \value{
-The mean of the claim severity with an attritional claim Gamma distribution with parameters \code{GShape} and \code{GRate} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{PShape}. A non-numeric or non-positive parameter is an error; \code{NA} values give \code{NA}.
+The mean of the claim severity with an attritional claim Gamma distribution with parameters \code{GShape} and \code{GRate} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{PShape}. The mean is \code{Inf} when \code{PShape <= 1} (and \code{SlicePoint} is finite), as the Pareto tail then has no finite mean. A non-numeric or non-positive parameter is an error; \code{NA} values give \code{NA}.
 }
 \description{
-Sliced Gamma Pareto mean
+Gives the expected claim amount of a sliced severity distribution, with Gamma attritional claims below the slice point and a Pareto tail above it.
+}
+\details{
+\code{PShape} is the Pareto shape parameter, usually written alpha; the sliced LogNormal-Pareto functions call the same parameter \code{shape}.
 }
 \examples{
 SlicedGammaParetoMean(1,0.0005,1000,1.2)

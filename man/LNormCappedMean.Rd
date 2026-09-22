@@ -17,7 +17,7 @@ LNormCappedMean(cap, mu, sigma)
 The mean of the claim severity capped at \code{cap} with a LogNormal distribution with parameters \code{mu} and \code{sigma}. The arguments are recycled to a common length. A non-numeric argument, a negative \code{cap} or a non-positive \code{sigma} is an error; \code{NA} values give \code{NA}.
 }
 \description{
-Lognormal capped mean
+Gives the expected claim amount when each claim from a LogNormal severity distribution is capped at \code{cap}, as needed to price a policy limit or a reinsurance layer.
 }
 \examples{
 LNormCappedMean(2000,6,1.5)

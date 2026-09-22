@@ -21,7 +21,10 @@ ExposureCurveSlicedLNormPareto(x, mu, sigma, SlicePoint, shape)
 The value of the Exposure curve at \code{x} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}. The exposure curve divides by the mean, which is infinite when \code{shape <= 1} (and \code{SlicePoint} is finite); the function returns 0 in that case.
 }
 \description{
-Exposure Curve from a Sliced LogNormal Pareto severity distribution
+Gives the share of the expected claim cost of a sliced LogNormal-Pareto severity distribution that falls below the amount \code{x} (the capped mean divided by the mean), as used to exposure rate a layer.
+}
+\details{
+\code{shape} is the Pareto shape parameter, usually written alpha; the sliced Gamma-Pareto functions call the same parameter \code{PShape}.
 }
 \examples{
 ExposureCurveSlicedLNormPareto(1200,6,1.5,1000,1.2)

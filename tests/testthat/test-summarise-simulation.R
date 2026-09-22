@@ -13,15 +13,17 @@ test_that("the summary has the documented fields with the right types", {
   sm <- summarise_simulation(settings, res)
 
   expect_type(sm, "list")
-  expect_named(sm, c("n", "role", "modelled_label", "totals", "stats", "percentiles",
+  expect_named(sm, c("n", "undefined", "undefined_cause", "role", "modelled_label", "totals", "stats", "percentiles",
                      "percentiles_dropped", "gross", "layer", "frequency"))
   expect_equal(sm$n, 1000)
+  expect_equal(sm$undefined, 0)
+  expect_equal(sm$undefined_cause, c(claims = 0, structures = 0, unknown = 0))
   expect_equal(sm$role, "gross")
   expect_equal(sm$modelled_label, "Total claims")
   expect_equal(sm$totals, res$total_claims)
 
   expect_named(sm$stats, c("mean", "median", "sd", "cv", "min", "max", "var99", "var995", "tvar995",
-                           "se", "mean_ci", "var995_ci", "beyond_var995", "zero_share"))
+                           "se", "mean_ci", "var995_ci", "beyond_var995", "tail_count995", "zero_share"))
   expect_true(all(vapply(sm$stats, is.numeric, logical(1))))
   expect_length(sm$stats$mean_ci, 2)
   expect_length(sm$stats$var995_ci, 2)
@@ -32,6 +34,27 @@ test_that("the summary has the documented fields with the right types", {
   expect_null(sm$gross)
   expect_null(sm$layer)
   expect_type(sm$frequency, "list")
+})
+
+test_that("undefined totals are split by cause, and a NaN gross mean gives no share", {
+  exclude <- base_settings(reinsuranceStructureAL = "Exclude Layer", reinsurance_structure_al_dedctible_amount = 10,
+                           reinsurance_structure_al_limit_amount = Inf)
+  #an undefined gross total comes from the claims (+Inf and -Inf), a defined one from the structure
+  results <- data.frame(claim_counts = 1L, total_claims = c(1:20, NaN, NaN, NaN, Inf, -Inf),
+                        gross_claims = c(1:20, NaN, Inf, Inf, Inf, -Inf))
+  sm <- summarise_simulation(exclude, results)
+  expect_equal(sm$undefined, 3)
+  expect_equal(sm$undefined_cause, c(claims = 1, structures = 2, unknown = 0))
+  #the gross mean of +Inf and -Inf is NaN, so no column has a share of it
+  expect_true(all(is.na(unlist(sm$gross$table[2, -1]))))
+  #without the gross totals the cause is known only for a run without structures
+  expect_equal(summarise_simulation(exclude, results$total_claims)$undefined_cause, c(claims = 0, structures = 0, unknown = 3))
+  expect_equal(summarise_simulation(base_settings(), results$total_claims)$undefined_cause, c(claims = 3, structures = 0, unknown = 0))
+  #a defined total whose gross total is NaN is counted apart, as its columns are left blank
+  ceded <- base_settings(reinsuranceStructureEEL = "Unlimited Layer", reinsurance_structure_eel_dedctible_amount = 0)
+  gross_nan <- summarise_simulation(ceded, data.frame(claim_counts = 1L, total_claims = c(1:20, Inf), gross_claims = c(1:20, NaN)))
+  expect_equal(gross_nan$gross$undefined, 1)
+  expect_true(all(is.na(gross_nan$gross$table$Gross)))
 })
 
 test_that("infinite gross and modelled totals leave their difference unknown rather than NaN", {
@@ -156,8 +179,9 @@ test_that("the gross block splits gross into ceded and net", {
 
   ceded <- summarise_simulation(layered_settings(), results)$gross
   expect_type(ceded, "list")
-  expect_named(ceded, c("table", "series", "unknown"))
+  expect_named(ceded, c("table", "series", "unknown", "undefined"))
   expect_equal(ceded$unknown, 0)
+  expect_equal(ceded$undefined, 0)
   expect_named(ceded$series, c("Gross", "Ceded", "Net"))
   expect_equal(ceded$series$Gross, gross)
   expect_equal(ceded$series$Ceded, totals)
@@ -281,6 +305,7 @@ test_that("a numeric vector of totals is accepted and NA totals are dropped", {
 
   with_na <- summarise_simulation(base_settings(), c(1, NA, 3, NA, 5))
   expect_equal(with_na$n, 3)
+  expect_equal(with_na$undefined, 2)
   expect_equal(with_na$stats$mean, 3)
 
   expect_error(summarise_simulation(base_settings(), numeric(0)))

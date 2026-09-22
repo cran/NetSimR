@@ -43,6 +43,38 @@ test_that("distribution fitting tool reads points as thousands separators with a
   })
 })
 
+test_that("distribution fitting tool guesses the columns again once the separator and decimal mark are fixed", {
+  path <- fit_lines(c("policy_id;exposure;claim_count;claim_amount", "P1;0,837;1;2.452,94", "P2;0,964;0;",
+                      "P3;0,931;2;4.203,29", "P4;0,512;1;812,5"))
+  shiny::testServer(distribution_fitting_tool_Server, {
+    #the browser sets each select to the column the server gives it
+    mirror <- function() do.call(session$setInputs, column_choices()$selected)
+    #read with the default comma separator, the file has other columns
+    fit_upload(session, path)
+    expect_false("claim_amount" %in% names(data()))
+    mirror()
+    #with the separator fixed, the amounts are not numbers yet ("0,837" reads as 837), so the guess is the exposure
+    session$setInputs(sep = ";")
+    expect_equal(column_choices()$selected$severity_var, "exposure")
+    mirror()
+    #with the decimal comma the amounts are numbers: the guess of the claim size column is made again
+    #(it stayed on the exposure)
+    session$setInputs(dec = ",")
+    expect_equal(column_choices()$selected$severity_var, "claim_amount")
+    expect_equal(column_choices()$selected$counts_var, "claim_count")
+    mirror()
+    #a column the user chose is kept when the columns change, while the file has it
+    session$setInputs(severity_var = "exposure", dec = ".")
+    expect_equal(column_choices()$selected$severity_var, "exposure")
+    session$setInputs(dec = ",")
+    expect_equal(column_choices()$selected$severity_var, "exposure")
+    #and the same file uploaded again keeps every column
+    session$setInputs(sliced_sev_var = "claim_count")
+    fit_upload(session, path, sep = ";", dec = ",")
+    expect_equal(column_choices()$selected$sliced_sev_var, "claim_count")
+  })
+})
+
 test_that("both tools read a file with a separator at the end of each row", {
   #read.csv() took the first column as row names, so sev showed the counts; repeated values failed
   path <- fit_lines(c("sev,n", "100,1,", "250,2,", "250,3,", "80,4,"))
@@ -252,6 +284,141 @@ test_that("GLM fitting tool labels bands readably and refuses text with too many
     session$setInputs(visualize_variable = "si", execute_visualization = 4)
     expect_equal(fitness_data()$band, c("1,000", "25,000", "250,000"))
     expect_match(output$fitness_plot$src, "^data:image/png;base64,")
+  })
+})
+
+test_that("the slicing points can be placed in the body of heavy-tailed claims, or typed beyond the sliders", {
+  set.seed(3)
+  x <- c(exp(rnorm(3000, 7, 1)), 5e6)
+  shiny::testServer(distribution_fitting_tool_Server, {
+    #the messages sent to the browser's inputs (updateSliderInput() sends the numbers as text); a
+    #message also has fields that are not numbers, which become NA here without a warning each
+    sent <- list()
+    session$sendInputMessage <- function(inputId, message) {
+      sent[[inputId]] <<- lapply(message, function(field) suppressWarnings(as.numeric(field)))
+    }
+    fit_upload(session, fit_csv(data.frame(sev = x)))
+    session$setInputs(sliced_sev_var = "sev", execute_sliced_sev_analysis = 1)
+    #the sliders ran to the largest claim with a step of 5,000, and 94% of the claims lay below 5,037: the
+    #first click snapped to 380,037 or to the bottom, and the tool said to move the first point up
+    left <- sent$slicing_point_left
+    expect_equal(left$min, dft_nice_bound(min(x)))
+    expect_equal(left$max, dft_slider_top(x))
+    expect_lt(left$max, 20000)
+    expect_equal(left$step, signif((left$max - left$min) / 1000, 1))
+    expect_lt(mean(x <= left$min + left$step), 0.001)
+    expect_equal(left$value, signif(quantile(x, 0.75, names = FALSE), 3))
+    expect_equal(sent$slicing_point_right$value, signif(quantile(x, 0.95, names = FALSE), 3))
+    expect_equal(sent$slicing_point_right$max, left$max)
+    #the browser sets the sliders to the values sent; the boxes beside them follow
+    session$setInputs(slicing_point_left = left$value, slicing_point_right = sent$slicing_point_right$value)
+    expect_equal(sent$slicing_point_left_typed$value, left$value)
+    expect_equal(sent$slicing_point_right_typed$value, sent$slicing_point_right$value)
+    expect_equal(slicing_points(), c(left$value, sent$slicing_point_right$value))
+    #a point typed beyond the range widens both sliders to hold it and moves its slider to it
+    sent <- list()
+    session$setInputs(slicing_point_right_typed = 40000)
+    expect_equal(sent$slicing_point_right$value, 40000)
+    expect_equal(sent$slicing_point_right$max, 40000)
+    expect_equal(sent$slicing_point_left$max, 40000)
+    expect_equal(sent$slicing_point_left$min, left$min)
+    expect_null(sent$slicing_point_left$value)
+    #and is fitted where it lies, once the browser has moved the slider
+    session$setInputs(slicing_point_right = 40000)
+    expect_equal(slicing_points(), c(left$value, 40000))
+    expect_true(is.finite(paretoX2Alpha()))
+    expect_equal(paretoX2Alpha(), sum(x > 40000) / sum(log(x[x > 40000] / 40000)))
+    #a point typed within the range moves its slider only, exactly (not to a step)
+    sent <- list()
+    session$setInputs(slicing_point_left_typed = 999.5)
+    expect_equal(sent$slicing_point_left$value, 999.5)
+    expect_equal(sent$slicing_point_left$max, 40000)
+    expect_null(sent$slicing_point_right)
+    #a typed value the slider already has, or no value, sends nothing
+    sent <- list()
+    session$setInputs(slicing_point_left = 999.5)
+    expect_equal(sent$slicing_point_left_typed$value, 999.5)
+    sent <- list()
+    session$setInputs(slicing_point_left_typed = 999.5)
+    session$setInputs(slicing_point_left_typed = NA)
+    expect_length(sent, 0)
+    #a new run of the analysis sets the range again
+    fit_upload(session, fit_csv(data.frame(sev = c(100, 250, 300, 800, 1200, 5000))))
+    session$setInputs(execute_sliced_sev_analysis = 2)
+    expect_equal(sent$slicing_point_left$max, dft_slider_top(c(100, 250, 300, 800, 1200, 5000)))
+    expect_equal(slicing_range(), c(sent$slicing_point_left$min, sent$slicing_point_left$max))
+  })
+  #the piecewise thresholds stop at the 99.5th percentile too, and never below the third distinct claim
+  shiny::testServer(distribution_fitting_tool_Server, {
+    fit_upload(session, fit_csv(data.frame(sev = x)))
+    session$setInputs(piecewise_pareto_var = "sev", num_pareto_slices = 2, execute_piecewise_sev_analysis = 1)
+    html <- as.character(dynamic_sliders())
+    expect_match(html, paste0("data-max=\"", format(dft_slider_top(x)), "\""), fixed = TRUE)
+    fit_upload(session, fit_csv(data.frame(sev = c(rep(1, 1000), 2, 3, 4, 5))))
+    session$setInputs(execute_piecewise_sev_analysis = 2)
+    html <- as.character(dynamic_sliders())
+    expect_match(html, "data-min=\"2\"", fixed = TRUE)
+    expect_match(html, "data-max=\"3\"", fixed = TRUE)
+  })
+})
+
+test_that("the Pareto alpha of a layer needs three claims in it, and a failed fit is reported", {
+  set.seed(2)
+  #(distinct claims, so that the points hold exactly the claims counted below)
+  x <- unique(round(exp(rnorm(300, 7, 1.2))))
+  sorted <- sort(x)
+  shiny::testServer(distribution_fitting_tool_Server, {
+    notes <- list()
+    session$sendNotification <- function(type, message) notes[[length(notes) + 1]] <<- message
+    fit_upload(session, fit_csv(data.frame(sev = x)))
+    session$setInputs(sliced_sev_var = "sev", execute_sliced_sev_analysis = 1)
+    #one claim between the points: the sum of squares is nearly flat, and the alpha shown was whatever
+    #the optimiser stopped at (0.327 here, 0.0079 elsewhere), with no warning
+    session$setInputs(slicing_point_left = sorted[250], slicing_point_right = sorted[251])
+    expect_equal(sum(x > sorted[250] & x <= sorted[251]), 1)
+    expect_error(slicing_points(), "at least three claims must lie between them")
+    expect_error(fit_slice_pareto(sliced_sev_data(), sorted[250], sorted[251]), "at least three claims")
+    expect_error(output$slc_sev_fitted_param_summary, "at least three claims")
+    #a message about the points is not reported as a failed fit
+    expect_length(notes, 0)
+    #three claims fit
+    session$setInputs(slicing_point_left = sorted[250], slicing_point_right = sorted[253])
+    expect_equal(sum(x > sorted[250] & x <= sorted[253]), 3)
+    expect_true(is.finite(paretoX2AlphaMod()))
+    expect_length(notes, 0)
+    #an optimiser that does not converge is a failed fit: reported, and a dash in the table
+    #(optim() reaches the server through the package's imports, where it can be replaced)
+    with_mocked_bindings(optim = function(...) list(par = 1, convergence = 52L), {
+      session$setInputs(slicing_point_left = sorted[240], slicing_point_right = sorted[260])
+      expect_true(is.na(paretoX2AlphaMod()))
+    }, .package = "NetSimR")
+    #(the mocked optim() fails the body fit of the same tab too, which is reported in its own right)
+    messages <- vapply(notes, function(note) as.character(note$html), character(1))
+    pareto <- grep("Sliced Pareto fit failed: the optimisation did not converge", messages, fixed = TRUE)
+    expect_length(pareto, 1)
+    expect_equal(notes[[pareto]]$type, "error")
+  })
+})
+
+test_that("the Data tile asks whether the first row is a header when the column names are numbers", {
+  shiny::testServer(distribution_fitting_tool_Server, {
+    tile <- function() gsub("\\s+", " ", gsub("<[^>]+>", " ", output$data_overview$html))
+    #a file without a header, read with one: the columns were named "100" and "1" and a row was lost, silently
+    fit_upload(session, fit_lines(c("100,1", "250,2", "300,3")))
+    expect_equal(names(data()), c("100", "1"))
+    expect_match(tile(), "Columns 2 The column names look like numbers: is the first row a header?", fixed = TRUE)
+    #with the header switch off the columns get V names
+    session$setInputs(data_includes_header = FALSE)
+    expect_equal(names(data()), c("V1", "V2"))
+    expect_match(tile(), "Columns 2 2 numeric", fixed = TRUE)
+    #names that are text, and a single column
+    fit_upload(session, fit_lines(c("sev,n", "100,1", "250,2")))
+    expect_match(tile(), "Columns 2 2 numeric", fixed = TRUE)
+    fit_upload(session, fit_lines(c("sev;n", "100;1", "250;2")))
+    expect_match(tile(), "Only one column: check the separator", fixed = TRUE)
+    #a single numeric name is a header question first
+    fit_upload(session, fit_lines(c("100", "250", "300")))
+    expect_match(tile(), "is the first row a header?", fixed = TRUE)
   })
 })
 

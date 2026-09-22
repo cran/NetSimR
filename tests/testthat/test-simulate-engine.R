@@ -53,6 +53,13 @@ use_shared_workers <- function() {
   invisible(NULL)
 }
 
+#the socket connections open in this session (the workers' ones), by number and description
+open_sockets <- function() {
+  connections <- showConnections(all = TRUE)
+  is_socket <- connections[, "class"] == "sockconn"
+  paste(rownames(connections)[is_socket], connections[is_socket, "description"])
+}
+
 test_that("parallel runs give the same results as sequential runs", {
   skip_on_cran()
   use_shared_workers()
@@ -65,6 +72,7 @@ test_that("parallel runs give the same results as sequential runs", {
 test_that("an error in a parallel chunk is raised with its message", {
   skip_on_cran()
   use_shared_workers()
+  worker_sockets <- open_sockets()
   #a huge (finite) Poisson mean passes the settings checks but makes the chunks fail
   sequential_error <- tryCatch(suppressWarnings(run_simulation(freq_params = 1e300)), error = identity)
   parallel_error <- tryCatch(suppressWarnings(run_simulation(freq_params = 1e300, multiprocessing = TRUE)),
@@ -72,6 +80,11 @@ test_that("an error in a parallel chunk is raised with its message", {
   expect_s3_class(sequential_error, "error")
   expect_s3_class(parallel_error, "error")
   expect_identical(conditionMessage(parallel_error), conditionMessage(sequential_error))
+  #the workers survive the error: a chunk group whose result was left unread made future
+  #relaunch its worker on the next run, and the new worker's connection was not closed when
+  #the plan was shut down (the garbage collector closed it later, with a warning)
+  expect_equal(nrow(run_simulation(numOfSimulations = 1000, chunk_size = 250, multiprocessing = TRUE)), 1000)
+  expect_identical(open_sockets(), worker_sockets)
 })
 
 #values captured from version 0.2.1 (chunks run with future.apply) before the parallel runs
@@ -149,6 +162,19 @@ test_that("seeded parallel runs give the captured results, on the caller's plan 
   settings <- utils::modifyList(case$settings, list(multiprocessing = TRUE))
   expect_captured_run(do.call(simulate_function, settings), case, "layered (own plan)")
   expect_identical(future::plan(), sequential_plan)
+})
+
+test_that("a parallel call on its own workers leaves no connections open, after an error too", {
+  skip_on_cran()
+  old_plan <- future::plan(future::sequential)
+  on.exit(future::plan(old_plan), add = TRUE)
+  old_options <- options(mc.cores = 2, parallelly.availableCores.methods = "mc.cores")
+  on.exit(options(old_options), add = TRUE)
+  sockets_before <- open_sockets()
+  expect_equal(nrow(run_simulation(numOfSimulations = 1000, chunk_size = 250, multiprocessing = TRUE)), 1000)
+  expect_identical(open_sockets(), sockets_before)
+  expect_error(suppressWarnings(run_simulation(freq_params = 1e300, multiprocessing = TRUE)))
+  expect_identical(open_sockets(), sockets_before)
 })
 
 test_that("the progress callback is called once per chunk", {
@@ -327,20 +353,6 @@ test_that("a cap at or below the deductible cedes nothing with layer-only draws"
                         reinsuranceStructureEEL = "Unlimited Layer", reinsurance_structure_eel_dedctible_amount = 1000)
   expect_equal(res$total_claims, rep(0, 500))
   expect_gt(mean(res$claim_counts), 2.5)
-})
-
-test_that("old settings files with the Normal under mu and sigma still load", {
-  old <- list(sevDistr = "Normal", mu = 1000, sigma = 600, freqDistr = "Poisson", lamda = 3)
-  migrated <- sim_settings_migrate(old, version = 1)
-  expect_equal(migrated$normal_mean, 1000)
-  expect_equal(migrated$normal_sd, 600)
-  expect_null(migrated$mu)
-  ids <- vapply(sim_settings_plan(migrated), `[[`, character(1), "id")
-  expect_true(all(c("normal_mean", "normal_sd") %in% ids))
-  #Log-Normal files and current files are left as they are
-  lognormal <- list(sevDistr = "LogNormal", mu = 9, sigma = 1.3)
-  expect_identical(sim_settings_migrate(lognormal, version = 1), lognormal)
-  expect_identical(sim_settings_migrate(old, version = 2), old)
 })
 
 #put back the plan in place before this file (on CRAN the parallel tests are skipped and

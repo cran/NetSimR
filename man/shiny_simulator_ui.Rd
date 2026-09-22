@@ -2,14 +2,17 @@
 % Please edit documentation in R/ShinySimulatorUI.R
 \name{shiny_simulator_ui}
 \alias{shiny_simulator_ui}
-\title{UI file for the Shiny NetSimR Simulator Tool}
+\title{User interface of the Shiny NetSimR simulator}
 \usage{
 shiny_simulator_ui
 }
 \value{
-Returns the UI code for the shiny application.
+The user interface of the application, a bslib navbar page, which
+  \code{\link{run_shiny_simulator}} pairs with \code{shiny_simulator_server}.
 }
 \description{
-UI file for the Shiny NetSimR Simulator Tool
+The page the simulator opens in: a welcome panel and the
+  simulator itself, where the claim, reinsurance and run settings are
+  entered and the results, charts and report are shown.
 }
 \keyword{internal}

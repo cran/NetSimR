@@ -179,9 +179,11 @@ h3 {
 }
 
 /* ---------- Settings ---------- */
+/* the tracks of the auto-fit grids never exceed the width available, so a narrow phone
+   (or the frame of the Report tab at one) gets a single column instead of a cut-off edge */
 .settings-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
   gap: 12px;
 }
 
@@ -237,7 +239,7 @@ h3 {
 /* ---------- Tables ---------- */
 .two-col {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
   gap: 16px;
   align-items: start;
 }
@@ -366,7 +368,10 @@ h3 {
 /* ---------- Responsive and print ---------- */
 @media (max-width: 900px) {
   .report-layout {
-    grid-template-columns: 1fr;
+    /* minmax(0, ...), not 1fr: the floor of 1fr is the widest thing inside, and the tables
+       that scroll on their own (overflow-x: auto) count their whole width towards it, so
+       every section was pushed wider than the window and its right edge cut off */
+    grid-template-columns: minmax(0, 1fr);
     padding: 16px;
     gap: 16px;
   }
@@ -618,6 +623,52 @@ report_theme_switch <- function() {
   )
 }
 
+#' Ticks for a chart axis of numbers of simulations
+#'
+#' Whole numbers only, so a chart of a few simulations is not labelled 0, 0, 0, 0, 0, 1.
+#' @param top The top of the axis.
+#' @return Increasing whole-number tick values from zero.
+#' @noRd
+sim_report_count_ticks <- function(top) {
+  at <- pretty(c(0, top))
+  #pretty() steps such as 0.2 are not exact, so 5 * 0.2 is compared with a tolerance
+  at <- round(at[abs(at - round(at)) < 1e-8])
+  if (length(at) < 2) at <- c(0, max(1, ceiling(top)))
+  at
+}
+
+#' Range of amounts a report chart spans
+#'
+#' A single value (every total equal, e.g. one simulation or a fixed claim amount) is
+#' widened to 12 per cent either side of it (0.5 either side of zero), so it is drawn as a
+#' narrow bar or step in the middle of the chart rather than across the whole axis.
+#' @param x Finite amounts.
+#' @return The range to draw, two numbers.
+#' @noRd
+sim_report_amount_range <- function(x) {
+  x_range <- range(x)
+  if (x_range[1] != x_range[2]) return(x_range)
+  half <- if (x_range[1] != 0) abs(x_range[1]) * 0.01 else 0.5
+  widened <- x_range[1] + c(-12, 12) * half
+  if (all(is.finite(widened))) widened else x_range
+}
+
+#' Totals the report's histogram draws
+#'
+#' Layers that are rarely hit produce many zero totals; a single bar at zero would flatten
+#' the histogram, so from a fifth of zeros up the chart leaves the zeros out and the report
+#' states their share. Only the zeros go: negative totals (a Normal severity with a negative
+#' mean) belong to the distribution the chart describes and stay in it.
+#' @param x Finite totals.
+#' @param zero_share Share of the simulations whose total is zero.
+#' @return A list with \code{values}, the totals to draw, and \code{zeros_dropped}, whether
+#'   the zeros were left out.
+#' @noRd
+sim_report_histogram_totals <- function(x, zero_share = mean(x == 0)) {
+  zeros_dropped <- isTRUE(zero_share >= 0.2) && any(x != 0)
+  list(values = if (zeros_dropped) x[x != 0] else x, zeros_dropped = zeros_dropped)
+}
+
 #' Write the simulation report as a self-contained HTML file
 #'
 #' Builds the page with shiny's HTML tag functions and embeds the charts as PNG images, so the
@@ -636,12 +687,15 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
   summary <- summarise_simulation(settings, results)
   claims <- summary$totals
   n <- summary$n
+  #simulations whose total is undefined (NaN) are left out of every figure, and said so
+  n_undefined <- summary$undefined
   if (is.numeric(results)) results <- data.frame(total_claims = results)
   results <- as.data.frame(results)
-  results <- results[!is.na(results$total_claims), , drop = FALSE]
   column_or_null <- function(name) if (name %in% names(results)) as.numeric(results[[name]]) else NULL
-  gross <- column_or_null("gross_claims")
+  #the claim counts of every simulation are defined, so the frequency chart uses them all
   counts <- column_or_null("claim_counts")
+  results <- results[!is.na(results$total_claims), , drop = FALSE]
+  gross <- column_or_null("gross_claims")
 
   div <- shiny::div
   tags <- shiny::tags
@@ -662,22 +716,37 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
     #amounts too large for a readable fixed format (a Pareto severity with a tiny alpha)
     huge <- is.finite(x) & abs(x) >= 1e15
     out[huge] <- formatC(x[huge], format = "e", digits = 3)
+    #infinite amounts show as Inf or -Inf; undefined ones (NaN) as a dash
+    out[is.na(x)] <- dash
     out
   }
   fmt_int <- function(x) if (is_blank(x)) dash else formatC(round(as.numeric(x)), format = "d", big.mark = ",")
-  fmt_pct <- function(x, digits = 1) paste0(formatC(100 * x, format = "f", digits = digits), "%")
+  fmt_pct <- function(x, digits = 1) {
+    out <- paste0(formatC(100 * x, format = "f", digits = digits), "%")
+    #e.g. a loss on line of a huge expected loss on a small limit
+    huge <- is.finite(x) & abs(100 * x) >= 1e15
+    out[huge] <- paste0(formatC(100 * x[huge], format = "e", digits = 3), "%")
+    #infinite shares show as signed infinity, like the amounts, and undefined ones as a dash
+    out[is.infinite(x)] <- ifelse(x[is.infinite(x)] > 0, "Inf", "-Inf")
+    out[is.na(x)] <- dash
+    out
+  }
   #small probabilities get an extra decimal so they do not round to zero
   fmt_prob <- function(p) {
     if (is_blank(p)) return(dash)
     if (p > 0 && p < 0.01) fmt_pct(p, 2) else fmt_pct(p)
   }
-  #headline amounts use one decimal style for the whole report, set by the scale of the results
-  #(the results are unrounded; small amounts get enough decimals not to show as zero)
-  amount_digits <- display_digits(c(claims, gross))
+  #headline amounts use one decimal style for the whole report, set by the scale of the
+  #modelled totals as on the Compare tab, so a small ceded series under a large gross one
+  #keeps its decimals (the results are unrounded; small amounts get enough decimals not to
+  #show as zero); the gross totals are formatted on their own scale in their table
+  amount_digits <- display_digits(claims)
   fmt_amount <- function(x) if (is_blank(x)) dash else fmt_num(x, amount_digits)
   #settings amounts are formatted on their own scale
   fmt_setting <- function(x) if (is_blank(x)) dash else fmt_num(x, display_digits(x))
   fmt_return_period <- function(p) paste("1 in", formatC(round(1 / (1 - p)), format = "d", big.mark = ","))
+  #a count with its noun, e.g. "1 simulation" and "2 simulations"
+  count_of <- function(k, noun) paste(fmt_int(k), if (isTRUE(k == 1)) noun else paste0(noun, "s"))
 
   known <- function(options, id) !is_blank(id) && is.character(id) && id %in% names(options)
   distr_label <- function(options, id) {
@@ -688,7 +757,9 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
   param_text <- function(values, options, id) {
     values <- unlist(values)
     if (is_blank(values)) return(dash)
-    shown <- sub("\\.?0+$", "", fmt_num(values, 4))
+    #four decimals, or more for a small parameter (an Exponential rate of 1e-5, say, which
+    #four would show as 0), with the trailing zeros stripped
+    shown <- vapply(values, function(v) sub("\\.?0+$", "", fmt_num(v, max(4, display_digits(v)))), character(1))
     labels <- if (known(options, id)) options[[id]]@param_labels else NULL
     if (length(labels) == length(values)) {
       #non-breaking spaces keep each "name = value" pair on one line
@@ -732,36 +803,67 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
   }
   axis_labels <- axis_amount_labels
   x_axis <- function(at) graphics::axis(1, at = at, labels = axis_labels(at), col = pal$grid, col.ticks = pal$grid)
+  count_ticks <- sim_report_count_ticks
+  amount_range <- sim_report_amount_range
 
   #infinite totals (draws that overflow, e.g. from a Pareto severity with a tiny alpha)
   #cannot be drawn: the histogram leaves them out and the curves stop where they start
   finite_claims <- claims[is.finite(claims)]
   n_infinite <- n - length(finite_claims)
+  #totals of +Inf and of -Inf together make the figures that include both (the mean) undefined
+  both_infinities <- any(claims == Inf) && any(claims == -Inf)
   infinite_note <- if (n_infinite > 0) {
-    paste0(fmt_int(n_infinite), " simulations (", fmt_prob(n_infinite / n),
-           ") had infinite totals and are left out of the charts.")
+    paste0(count_of(n_infinite, "simulation"), " (", fmt_prob(n_infinite / n), ") had ",
+           if (n_infinite == 1) "an infinite total and is" else "infinite totals and are", " left out of the charts.")
+  }
+  #the reason for undefined totals depends on where they arose (see summarise_simulation):
+  #claims of +Inf and -Inf in one simulation leave the gross total undefined too, while a
+  #structure turns an infinite gross amount into infinity minus infinity
+  undefined_text <- if (n_undefined > 0) {
+    cause <- summary$undefined_cause
+    claims_reason <- "claims overflowed to both +Inf and -Inf, whose sum is undefined"
+    structure_reason <- paste("an infinite amount met a layer with an infinite deductible or an excluded layer",
+                              "with an infinite limit, which leaves infinity minus infinity")
+    reason <- if (is.null(cause) || cause[["unknown"]] > 0) {
+      paste0(", for example because ", claims_reason, ", or because ", structure_reason, ".")
+    } else if (cause[["structures"]] == 0) {
+      paste0(": the ", claims_reason, ".")
+    } else if (cause[["claims"]] == 0) {
+      paste0(": ", structure_reason, ".")
+    } else {
+      paste0(". In ", fmt_int(cause[["claims"]]), " of them the ", claims_reason, "; in ",
+             fmt_int(cause[["structures"]]), " ", structure_reason, ".")
+    }
+    paste0(
+      fmt_int(n_undefined), " of ", count_of(n + n_undefined, "simulation"), " had ",
+      if (n_undefined == 1) "an undefined (NaN) total" else "undefined (NaN) totals", reason, " ",
+      if (n_undefined == 1) "It is" else "They are", " left out of every figure and chart in this report, ",
+      "which describe the other ", count_of(n, "simulation"), "."
+    )
   }
 
-  #layers that are rarely hit produce many zero totals; a single bar at zero would flatten
-  #the histogram, so it shows the non-zero totals and states the zero share
+  #layers that are rarely hit produce many zero totals, which would flatten the histogram,
+  #so it leaves them out (and only them, see sim_report_histogram_totals) and states their share
   zero_share <- st$zero_share
-  drop_zeros <- zero_share >= 0.2 && any(finite_claims > 0)
-  plot_claims <- if (drop_zeros) finite_claims[finite_claims > 0] else finite_claims
-  zero_note <- if (drop_zeros) {
+  histogram_totals <- sim_report_histogram_totals(finite_claims, zero_share)
+  plot_claims <- histogram_totals$values
+  zero_note <- if (histogram_totals$zeros_dropped) {
     paste0(" ", fmt_pct(zero_share), " of simulations had zero total claims and are left out of this chart.")
   } else {
     ""
   }
 
   #draw each chart once per theme into a temporary PNG at twice screen resolution and embed
-  #both as data URIs; the page shows the one that matches the current theme
+  #both as data URIs; the page shows the one that matches the current theme. The device
+  #arguments (R/plot_device.R) ask Windows for the cairo device, which anti-aliases
   chart_image <- function(draw, height, alt, width = 9) {
     images <- lapply(names(palettes), function(theme) {
       path <- tempfile(fileext = ".png")
       on.exit(unlink(path), add = TRUE)
       pal <<- palettes[[theme]]
       res <- 192
-      grDevices::png(path, width = width * res, height = height * res, res = res, bg = pal$bg)
+      do.call(grDevices::png, c(list(path, width = width * res, height = height * res, res = res, bg = pal$bg),
+                                png_device_args()))
       tryCatch(draw(), finally = grDevices::dev.off())
       tags$img(class = paste0("chart-", theme), src = base64enc::dataURI(file = path, mime = "image/png"), alt = alt)
     })
@@ -779,14 +881,18 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
   draw_histogram <- function() {
     if (length(plot_claims) == 0) return(draw_no_data("Every total is infinite, so there is nothing to draw."))
     chart_par()
-    h <- graphics::hist(plot_claims, breaks = 80, plot = FALSE)
+    x_lim <- amount_range(plot_claims)
+    #every total equal: one bar a twelfth of the axis wide
+    breaks <- if (diff(range(plot_claims)) == 0 && diff(x_lim) > 0) mean(x_lim) + c(-1, 1) * diff(x_lim) / 24 else 80
+    h <- graphics::hist(plot_claims, breaks = breaks, plot = FALSE)
+    if (length(breaks) == 1) x_lim <- range(h$breaks)
     y_top <- max(h$counts) * 1.1
     graphics::plot(h, col = NA, border = NA, main = "", xlab = modelled_label, ylab = "Simulations",
-                   axes = FALSE, ylim = c(0, y_top))
-    y_at <- pretty(c(0, y_top))
+                   axes = FALSE, xlim = x_lim, ylim = c(0, y_top))
+    y_at <- count_ticks(y_top)
     graphics::abline(h = y_at, col = pal$grid, lwd = 0.8)
     graphics::plot(h, col = pal$blue, border = pal$bg, add = TRUE)
-    x_axis(pretty(h$breaks))
+    x_axis(pretty(x_lim))
     graphics::axis(2, at = y_at, labels = formatC(y_at, format = "d", big.mark = ","), lwd = 0)
     #an infinite mean or VaR has no place on the axis; the legend still gives it
     if (is.finite(claims_mean)) graphics::abline(v = claims_mean, col = pal$navy, lty = 2, lwd = 1.8)
@@ -798,8 +904,9 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
 
   #return periods are only drawn where at least 10 simulations lie beyond them
   max_return_period <- n / 10
-  #series: a named list of list(values, col, lty, lwd); the names become the legend labels
-  draw_return_periods <- function(series) {
+  #series: a named list of list(values, col, lty, lwd); the names become the legend labels.
+  #ylab names what the losses are, as the other charts' axes do (e.g. "Ceded", not "Total claims")
+  draw_return_periods <- function(series, ylab) {
     rps <- exp(seq(log(2), log(max_return_period), length.out = 300))
     ys <- lapply(series, function(x) quantile_of_vec(x$values, 1 - 1 / rps))
     #infinite losses are left out of the limits; the curves stop where they start
@@ -813,7 +920,7 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
     chart_par(mar = c(4.2, left, 1, 1))
     graphics::plot(range(rps), y_range, type = "n", log = "x", axes = FALSE, main = "",
                    xlab = "Return period", ylab = "", ylim = y_range)
-    graphics::title(ylab = "Total claims", line = left - 1.3)
+    graphics::title(ylab = ylab, line = left - 1.3)
     ticks <- return_period_axis_ticks[return_period_axis_ticks <= max_return_period]
     graphics::abline(v = ticks, col = pal$grid, lwd = 0.8)
     graphics::abline(h = y_at, col = pal$grid, lwd = 0.8)
@@ -846,13 +953,17 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
     if (!any(finite)) return(draw_no_data("Every total is infinite, so there is nothing to draw."))
     cdf_x <- cdf_x[finite]
     cdf_probs <- cdf_probs[finite]
+    x_lim <- amount_range(cdf_x)
     chart_par()
     graphics::plot(cdf_x, cdf_probs, type = "n", axes = FALSE, main = "",
-                   xlab = modelled_label, ylab = "Cumulative probability", ylim = c(0, 1))
+                   xlab = modelled_label, ylab = "Cumulative probability", xlim = x_lim, ylim = c(0, 1))
     graphics::abline(h = seq(0, 1, 0.25), col = pal$grid, lwd = 0.8)
     if (is.finite(var995)) graphics::abline(v = var995, col = pal$red, lty = 2, lwd = 1.5)
-    graphics::lines(cdf_x, cdf_probs, type = "s", col = pal$blue, lwd = 2.4)
-    x_axis(pretty(range(cdf_x)))
+    #the step runs from the left edge of the chart to the right one, so a single total
+    #reads as a step at that total; totals of -Inf lie left of every amount drawn
+    graphics::lines(c(x_lim[1], cdf_x, x_lim[2]), c(mean(claims == -Inf), cdf_probs, cdf_probs[length(cdf_probs)]),
+                    type = "s", col = pal$blue, lwd = 2.4)
+    x_axis(pretty(x_lim))
     graphics::axis(2, at = seq(0, 1, 0.25), labels = paste0(seq(0, 100, 25), "%"), lwd = 0)
   }
 
@@ -867,7 +978,7 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
       bar_labels <- as.character(0:top)
       if (any(whole_counts > top)) bar_labels[length(bar_labels)] <- paste0(top, "+")
       y_top <- max(heights) * 1.1
-      y_at <- pretty(c(0, y_top))
+      y_at <- count_ticks(y_top)
       graphics::barplot(heights, col = NA, border = NA, axes = FALSE, ylim = c(0, y_top),
                         xlab = "Claims per period", ylab = "Simulations")
       graphics::abline(h = y_at, col = pal$grid, lwd = 0.8)
@@ -883,7 +994,7 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
     } else {
       h <- graphics::hist(whole_counts, breaks = 40, plot = FALSE)
       y_top <- max(h$counts) * 1.1
-      y_at <- pretty(c(0, y_top))
+      y_at <- count_ticks(y_top)
       graphics::plot(h, col = NA, border = NA, main = "", axes = FALSE, ylim = c(0, y_top),
                      xlab = "Claims per period", ylab = "Simulations")
       graphics::abline(h = y_at, col = pal$grid, lwd = 0.8)
@@ -944,17 +1055,24 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
   key_results <- report_section(
     "key-results", "Key results",
     tags$p(class = "section-intro", key_intro),
+    if (n_undefined > 0) div(class = "callout callout-warning", undefined_text),
     if (n_infinite > 0) div(class = "callout callout-warning", paste0(
-      fmt_int(n_infinite), " of ", fmt_int(n), " simulations had infinite totals, so the figures that ",
-      "include them are infinite. This happens when claim draws overflow, e.g. with a very small Pareto alpha."
+      fmt_int(n_infinite), " of ", if (n_undefined > 0) "the ", count_of(n, "simulation"),
+      if (n_undefined > 0) " with a defined total", " had ", if (n_infinite == 1) "an infinite total" else "infinite totals",
+      if (both_infinities) paste0(" (", fmt_int(sum(claims == Inf)), " of +Inf and ", fmt_int(sum(claims == -Inf)), " of -Inf)"),
+      ", so the figures that include ", if (n_infinite == 1) "it" else "them", " are infinite",
+      if (both_infinities) ", or undefined (shown as a dash) where they add +Inf to -Inf, as the mean does",
+      ". This happens when claim draws overflow, e.g. with ",
+      if (any(claims == -Inf)) "a Normal severity with a huge standard deviation." else "a very small Pareto alpha."
     )),
     div(
       class = "kpi-grid",
-      tile("Mean", fmt_amount(claims_mean), paste(fmt_int(n), "simulations")),
+      tile("Mean", fmt_amount(claims_mean),
+           if (n_undefined > 0) paste(fmt_int(n), "of", count_of(n + n_undefined, "simulation")) else count_of(n, "simulation")),
       tile("Median", fmt_amount(st$median)),
       tile("Standard deviation", fmt_amount(claims_sd), if (cv_text != dash) paste("CV", cv_text)),
       tile("VaR 99.5%", fmt_amount(var995), fmt_return_period(0.995), class = "kpi kpi-tail"),
-      tile("TVaR 99.5%", fmt_amount(tvar995), "Average beyond VaR 99.5%", class = "kpi kpi-tail"),
+      tile("TVaR 99.5%", fmt_amount(tvar995), "Average of the worst 0.5%", class = "kpi kpi-tail"),
       tile("Maximum", fmt_amount(st$max), "Largest simulated total")
     )
   )
@@ -980,7 +1098,7 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
       class = "settings-grid",
       setting_card("Simulation", list(
         "Simulations" = fmt_int(s$numOfSimulations),
-        "Seed" = if (isTRUE(s$seedSetBinary)) paste("Fixed at", s$seedValue) else off("Random"),
+        "Seed" = if (isTRUE(s$seedSetBinary)) paste("Fixed at", fmt_int(s$seedValue)) else off("Random"),
         "Processing" = if (isTRUE(s$multiprocessing)) "Parallel" else "Single process"
       )),
       setting_card("Frequency", list(
@@ -1022,16 +1140,21 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
   if (has_gross) {
     columns <- summary$gross$series
     gross_table <- summary$gross$table
-    #the share of the gross mean is a percentage; every other row is an amount
-    format_cell <- function(metric, value) {
+    #the share of the gross mean is a percentage; every other row is an amount, formatted on
+    #the scale of its own column (the modelled column's is the headline style), so a rarely
+    #hit layer's ceded figures keep the decimals the gross totals do not need
+    column_digits <- lapply(columns, display_digits)
+    format_cell <- function(metric, value, digits) {
       if (metric == "Share of gross mean") {
         if (is.na(value)) dash else fmt_pct(value)
       } else {
-        fmt_amount(value)
+        fmt_num(value, digits)
       }
     }
     formatted <- lapply(names(columns), function(k) {
-      vapply(seq_len(nrow(gross_table)), function(i) format_cell(gross_table$metric[i], gross_table[[k]][i]), character(1))
+      vapply(seq_len(nrow(gross_table)), function(i) {
+        format_cell(gross_table$metric[i], gross_table[[k]][i], column_digits[[k]])
+      }, character(1))
     })
     comparison <- data.frame(
       Metric = gross_table$metric,
@@ -1050,12 +1173,25 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
     unknown_note <- NULL
     known <- !vapply(columns, anyNA, logical(1))
     if (isTRUE(summary$gross$unknown > 0)) {
-      unknown_name <- names(columns)[!known][1]
+      #the column of gross minus the modelled totals: ceded for exclusions, otherwise the third
+      unknown_name <- if (role == "net") names(columns)[2] else names(columns)[3]
+      unknown <- summary$gross$unknown
       unknown_note <- paste0(
-        fmt_int(summary$gross$unknown), " simulations had infinite gross and ", tolower(names(columns)[2]),
-        " totals, so their ", tolower(unknown_name), " amount (infinite minus infinite) is unknown and the ",
-        unknown_name, " column is left blank."
+        count_of(unknown, "simulation"), " had infinite gross and ", tolower(modelled_label),
+        " totals, so ", if (unknown == 1) "its" else "their", " ", tolower(unknown_name),
+        " amount (infinite minus infinite) is unknown and the ", unknown_name, " column is left blank."
       )
+    }
+    #claims of +Inf and -Inf in one simulation leave its gross total undefined (NaN)
+    if (isTRUE(summary$gross$undefined > 0)) {
+      blank <- names(columns)[!known]
+      undefined_gross <- summary$gross$undefined
+      unknown_note <- paste(unknown_note, paste0(
+        count_of(undefined_gross, "simulation"), " had ",
+        if (undefined_gross == 1) "an undefined (NaN) gross total" else "undefined (NaN) gross totals",
+        ", as the claims overflowed to both +Inf and -Inf, so the ", paste(blank, collapse = " and "),
+        if (length(blank) == 1) " column is" else " columns are", " left blank."
+      ))
     }
     comparison_chart <- if (max_return_period >= 5) {
       styles <- list(
@@ -1070,7 +1206,7 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
       div(class = "chart-card",
           tags$h3(paste(paste(names(comparison_series), collapse = ", "), "by return period")),
           tags$p(class = "chart-note", "How the structures change the loss at each return period, on a log scale."),
-          chart_image(function() draw_return_periods(comparison_series), 4.2, "Gross, ceded and net losses by return period"))
+          chart_image(function() draw_return_periods(comparison_series, "Loss"), 4.2, "Gross, ceded and net losses by return period"))
     }
     gross_section <- report_section(
       "gross-net", "Gross, ceded and net",
@@ -1134,6 +1270,13 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
               cv_text, fmt_num(st$min), fmt_num(st$max)),
     stringsAsFactors = FALSE
   )
+  #the statistics rest on the simulations with a defined total; the others are counted apart
+  if (n_undefined > 0) {
+    summary_stats$Metric[1] <- "Simulations with a defined total"
+    summary_stats <- rbind(summary_stats[1, ], data.frame(
+      Metric = "Undefined (NaN) totals, left out", Value = fmt_int(n_undefined), stringsAsFactors = FALSE
+    ), summary_stats[-1, ])
+  }
 
   #a percentile is only listed when at least 10 simulations lie beyond it
   percentiles <- summary$percentiles
@@ -1152,23 +1295,25 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
     ))
   }
 
-  #accuracy: standard error of the mean, and a distribution-free 95% range for VaR 99.5%
-  #from the order statistics around the 99.5th percentile
+  #accuracy: standard error of the mean with a normal-approximation range, and a
+  #distribution-free 95% range for VaR 99.5% from the order statistics around it
   standard_error <- st$se
-  beyond_var <- st$beyond_var995
+  tail_count <- st$tail_count995
   accuracy <- data.frame(
-    Metric = c("Standard error of the mean", "95% range for the mean", "95% range for VaR 99.5%", "Simulations beyond VaR 99.5%"),
+    Metric = c("Standard error of the mean", "95% range for the mean", "95% range for VaR 99.5%",
+               "Simulations at or beyond VaR 99.5%"),
     Value = c(
       fmt_amount(standard_error),
       if (is.na(standard_error)) dash else paste(fmt_amount(st$mean_ci[1]), "to", fmt_amount(st$mean_ci[2])),
       paste(fmt_amount(st$var995_ci[1]), "to", fmt_amount(st$var995_ci[2])),
-      fmt_int(beyond_var)
+      fmt_int(st$beyond_var995)
     ),
     stringsAsFactors = FALSE
   )
-  accuracy_warning <- if (beyond_var < 50) {
+  accuracy_warning <- if (tail_count < 50) {
     div(class = "callout callout-warning", paste0(
-      "Only ", fmt_int(beyond_var), " simulations lie beyond VaR 99.5%, so the tail figures are uncertain. ",
+      "TVaR 99.5% is the average of only ", fmt_int(tail_count), if (tail_count == 1) " simulation" else " simulations",
+      " (the worst 0.5%), so the tail figures are uncertain. ",
       "At least 10,000 simulations are recommended for 99.5% figures."
     ))
   }
@@ -1185,7 +1330,12 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
       tags$h3("Simulation accuracy"),
       report_table(accuracy, 2),
       tags$p(class = "table-note",
-             "The ranges show how much the figures could move from simulation noise alone. Narrow ranges mean the run was large enough.")
+             "The ranges show how much the figures could move from simulation noise alone. Narrow ranges mean the run was large enough."),
+      tags$p(class = "table-note", paste0(
+        "The range for the mean is a normal approximation (the mean plus or minus 1.96 standard errors), ",
+        "which is rough for heavy-tailed totals; when no total is negative it is kept at zero or above. ",
+        "The count at or beyond VaR 99.5% includes totals equal to VaR, so ties (e.g. many zero totals) can make it large."
+      ))
     ),
     accuracy_warning
   )
@@ -1228,11 +1378,16 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
           "The loss expected once in each number of periods, on a log scale.",
           " Return periods are shown up to ", fmt_return_period(1 - 1 / max_return_period), "."
         )),
-        chart_image(function() draw_return_periods(modelled_series), 4.2, "Losses by return period"))
+        chart_image(function() draw_return_periods(modelled_series, modelled_label), 4.2, "Losses by return period"))
   }
 
   charts <- report_section(
     "charts", "Charts",
+    if (n_undefined > 0) div(class = "callout callout-warning", paste0(
+      count_of(n_undefined, "simulation"), " had ",
+      if (n_undefined == 1) "an undefined (NaN) total and is" else "undefined (NaN) totals and are",
+      " left out of the charts."
+    )),
     if (!is.null(infinite_note)) div(class = "callout callout-warning", infinite_note),
     div(class = "chart-card",
         tags$h3("Distribution of total claims"),
@@ -1250,7 +1405,11 @@ write_simulation_report <- function(file, settings, results, generated = Sys.tim
     "how-to-read", "How to read this report",
     div(class = "callout", tags$ul(
       tags$li("A large gap between the median and the tail percentiles points to a heavy-tailed outcome."),
-      tags$li("VaR is the loss exceeded only with the stated probability. TVaR is the average loss in those worst cases, so it is always at least as large as VaR."),
+      tags$li(paste0(
+        "VaR is the loss exceeded only with the stated probability. TVaR is the average loss in those worst cases, ",
+        "so it is always at least as large as VaR: TVaR 99.5% is the mean of the worst 0.5% of the simulations, ",
+        "rounded up to a whole number (here ", fmt_int(st$tail_count995), ")."
+      )),
       tags$li("The return period shows the same probability as a frequency: 99.5% corresponds to a 1 in 200 year event."),
       if (has_gross) tags$li("Gross is before reinsurance. Ceded is what the layers pay, and net is what remains."),
       if (!no_structure(eel) && !no_structure(al)) {

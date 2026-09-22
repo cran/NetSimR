@@ -2,12 +2,12 @@
 % Please edit documentation in R/SlicecdGammaPareto.R
 \name{pSlicedGammaPareto}
 \alias{pSlicedGammaPareto}
-\title{The cumulative density function (cdf) of a Sliced Gamma-Pareto severity distribution}
+\title{The cumulative distribution function (cdf) of a Sliced Gamma-Pareto severity distribution}
 \usage{
 pSlicedGammaPareto(x, GShape, GRate, SlicePoint, PShape)
 }
 \arguments{
-\item{x}{A real number -  the claim amount where the cumulative density function (cdf) will be evaluated. The cdf is 0 for negative \code{x}.}
+\item{x}{A real number -  the claim amount where the cumulative distribution function (cdf) will be evaluated. The cdf is 0 for negative \code{x}.}
 
 \item{GShape}{A positive real number -  the shape parameter of the attritional Claim Severity's Gamma distribution.}
 
@@ -18,10 +18,13 @@ pSlicedGammaPareto(x, GShape, GRate, SlicePoint, PShape)
 \item{PShape}{A positive real number - the shape parameter of the tail Claim Severity's Pareto distribution.}
 }
 \value{
-The value of the cumulative density function (cdf) at \code{x} with an attritional claim Gamma distribution with parameters \code{GShape} and \code{GRate} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{PShape}. A non-numeric argument or a non-positive parameter is an error; \code{NA} values give \code{NA}.
+The value of the cumulative distribution function (cdf) at \code{x} with an attritional claim Gamma distribution with parameters \code{GShape} and \code{GRate} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{PShape}. A non-numeric argument or a non-positive parameter is an error; \code{NA} values give \code{NA}.
 }
 \description{
-The cumulative density function (cdf) of a Sliced Gamma-Pareto severity distribution
+Gives the probability that a claim from a sliced severity distribution, with Gamma attritional claims below the slice point and a Pareto tail above it, is at most \code{x}.
+}
+\details{
+\code{PShape} is the Pareto shape parameter, usually written alpha; the sliced LogNormal-Pareto functions call the same parameter \code{shape}.
 }
 \examples{
 pSlicedGammaPareto(3000,1,0.0005,1000,1.2)

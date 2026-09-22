@@ -1,12 +1,11 @@
 ---
 title: "Simulating claims with simulate_claims()"
 author: "Yiannis Parizas"
-date: '`r format(Sys.Date(), "%d-%m-%Y")`'
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Simulating claims with simulate_claims()}
   %\VignetteEngine{knitr::rmarkdown}
-  \usepackage[utf8]{inputenc}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include=FALSE}

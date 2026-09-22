@@ -16,7 +16,9 @@ test_that("PureIBNRGamma reproduces the documented example", {
   expect_equal(ibnr$UnearnedDuration, c(0, 0, 62))
   expect_equal(ibnr$PureIBNRDuration, c(0, 0.01, 46.67))
   expect_equal(ibnr$UnearnedDurationRatio, c(0, 0, 0.17033))
-  expect_equal(ibnr$PureIBNRDurationRatio, c(0, 0.00003, 0.12821))
+  #the ratios come from the unrounded durations (dividing the durations rounded to 0.01 days
+  #gave 0.00003 for the second period)
+  expect_equal(ibnr$PureIBNRDurationRatio, c(0, 0.00002, 0.12821))
 })
 
 test_that("PureIBNRLNorm reproduces the documented example", {
@@ -27,7 +29,7 @@ test_that("PureIBNRLNorm reproduces the documented example", {
   #52.17 (Europe), 52.18 (UTC) or 52.19 (Sydney) depending on the machine's time zone
   expect_equal(ibnr$PureIBNRDuration, c(28.12, 52.18, 98.84))
   expect_equal(ibnr$UnearnedDurationRatio, c(0, 0, 0.17033))
-  expect_equal(ibnr$PureIBNRDurationRatio, c(0.07725, 0.14335, 0.27154))
+  expect_equal(ibnr$PureIBNRDurationRatio, c(0.07726, 0.14336, 0.27155))
 })
 
 test_that("pure IBNR is the capped mean of the delay between the earned window and the valuation date", {

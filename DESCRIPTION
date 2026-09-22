@@ -1,8 +1,9 @@
 Package: NetSimR
 Type: Package
 Title: Actuarial Functions for Non-Life Insurance Modelling
-Version: 0.3.0
-Authors@R: person("Yiannis", "Parizas", email = "yiannis.parizas@gmail.com", role = c("aut", "cre"))
+Version: 0.3.1
+Authors@R: person("Yiannis", "Parizas", email = "yiannis.parizas@gmail.com", role = c("aut", "cre"),
+                  comment = c(ORCID = "0009-0000-0523-0751"))
 Description: Assists actuaries and other insurance modellers in pricing,
     reserving and capital modelling for non-life insurance and
     reinsurance modelling. Provides functions that help model
@@ -17,13 +18,13 @@ Description: Assists actuaries and other insurance modellers in pricing,
     distributions.
     Includes calculating pure IBNR exposure with LogNormal and
     Gamma distribution for reporting delay.
-    Includes three 'shiny' tools, one to simulate insurance claims applying
-    reinsurance structures, fit generalised linear models and fit claims
-    frequency or severity distributions.
+    Includes three 'shiny' tools: a claims simulator with reinsurance
+    structures, a generalised linear model fitting tool, and a claims
+    frequency and severity distribution fitting tool.
     Methods used in the package refer to
     Free for All by Yiannis Parizas (2023) <https://www.theactuary.com/2023/03/02/free-all>;
     Escaping the triangle by Yiannis Parizas (2019) <https://www.theactuary.com/features/2019/06/2019/06/05/escaping-triangle>;
-    Take to excess by Yiannis Parizas (2019) <https://www.theactuary.com/features/2019/03/2019/03/06/taken-excess>.
+    Taken to excess by Yiannis Parizas (2019) <https://www.theactuary.com/features/2019/03/2019/03/06/taken-excess>.
 License: GPL-3
 URL: https://github.com/NetSimAnalytics/NetSimR
 BugReports: https://github.com/NetSimAnalytics/NetSimR/issues
@@ -31,14 +32,15 @@ Encoding: UTF-8
 Language: en-GB
 Imports: shiny (>= 1.8.1), base64enc, bslib (>= 0.9.0), future (>=
         1.17.0), parallel, methods, stats, utils, graphics, grDevices
-Suggests: knitr, rmarkdown, crch, testthat, DBI, RMySQL, RODBC,
-        RPostgreSQL, RSQLite
+Suggests: knitr, rmarkdown, crch, testthat (>= 3.0.0), shinytest2,
+        chromote, pkgload, DBI, RODBC, RPostgreSQL, RSQLite
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.1.0
 NeedsCompilation: no
-Packaged: 2026-09-14 16:41:35 UTC; yiann
-Author: Yiannis Parizas [aut, cre]
+Packaged: 2026-09-22 06:32:39 UTC; yiann
+Author: Yiannis Parizas [aut, cre] (ORCID:
+    <https://orcid.org/0009-0000-0523-0751>)
 Maintainer: Yiannis Parizas <yiannis.parizas@gmail.com>
 Repository: CRAN
-Date/Publication: 2026-09-15 11:30:13 UTC
+Date/Publication: 2026-09-22 06:50:02 UTC

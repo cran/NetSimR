@@ -15,7 +15,7 @@ IGamma(a, x)
 The value of the upper incomplete gamma function at \code{x} with shape parameter \code{a}, i.e. \code{gamma(a) * pgamma(x, a, lower.tail = FALSE)}. The arguments are recycled to a common length. A non-numeric or non-positive \code{a} or a negative \code{x} is an error.
 }
 \description{
-Upper incomplete gamma function
+Evaluates the upper incomplete gamma function, the integral of \code{t^(a - 1) * exp(-t)} from \code{x} to infinity, which appears in the closed form of the Gamma capped mean.
 }
 \examples{
 IGamma(1,1)

@@ -14,9 +14,12 @@ shiny_simulator_server(input, output, session)
 \item{session}{Session for the server function.}
 }
 \value{
-Returns server rendering for the shiny application.
+Called by shiny for its side effects, the outputs and observers of a
+  session; the value is not used.
 }
 \description{
-Server function for the Shiny Simulator application
+Builds the dynamic inputs of the claims simulator, runs the simulations when asked and
+serves the results tabs, the downloads and the saving and loading of settings; it is
+the server that \code{\link{run_shiny_simulator}} pairs with \code{shiny_simulator_ui}.
 }
 \keyword{internal}

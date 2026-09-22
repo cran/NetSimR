@@ -10,6 +10,8 @@ max_number_of_pareto_slices
 The maximum number of Pareto Slices.
 }
 \description{
-Parameter to set the maximum number of Pareto slices
+The largest number of Pareto slices that the simulator app and
+\code{\link{simulate_claims}} accept, so that the app can build one row of slice inputs
+for each.
 }
 \keyword{internal}

@@ -76,6 +76,8 @@ restore_shape <- function(result, args) {
 
 #' Upper incomplete gamma function
 #'
+#' @description Evaluates the upper incomplete gamma function, the integral of \code{t^(a - 1) * exp(-t)} from \code{x} to infinity, which appears in the closed form of the Gamma capped mean.
+#'
 #' @param a A positive real number - the shape parameter.
 #' @param x A non-negative real number.
 #' @return The value of the upper incomplete gamma function at \code{x} with shape parameter \code{a}, i.e. \code{gamma(a) * pgamma(x, a, lower.tail = FALSE)}. The arguments are recycled to a common length. A non-numeric or non-positive \code{a} or a negative \code{x} is an error.
@@ -96,6 +98,8 @@ IGamma<-function(a,x){
 
 
 #' Gamma capped mean
+#'
+#' @description Gives the expected claim amount when each claim from a Gamma severity distribution is capped at \code{cap}, as needed to price a policy limit or a reinsurance layer.
 #'
 #' @param cap A non-negative real number -  the claim severity cap.
 #' @param shape A positive real number - the shape parameter of the Claim Severity's Gamma distribution.
@@ -127,10 +131,12 @@ GammaCappedMean<- function(cap,shape,rate){
 
 #' Exposure Curve from a Gamma severity distribution
 #'
+#' @description Gives the share of the expected claim cost of a Gamma severity distribution that falls below the amount \code{x} (the capped mean divided by the mean), as used to exposure rate a layer.
+#'
 #' @param x A non-negative real number -  the claim amount where the exposure curve will be evaluated.
 #' @param shape A positive real number - the shape parameter of the Claim Severity's Gamma distribution.
 #' @param rate A positive real number - the rate parameter of the Claim Severity's Gamma distribution.
-#' @return The value of the Exposure curve at \code{x} with Claim Severity from a Gamma distribution with parameters \code{shape} and \code{rate}.
+#' @return The value of the Exposure curve at \code{x} with Claim Severity from a Gamma distribution with parameters \code{shape} and \code{rate}. The arguments are recycled to a common length. A non-numeric argument, a negative \code{x} or a non-positive \code{shape} or \code{rate} is an error; \code{NA} values give \code{NA}.
 #' @family exposure curve functions
 #' @export
 #' @examples
@@ -139,12 +145,17 @@ GammaCappedMean<- function(cap,shape,rate){
 ExposureCurveGamma<-function(x,shape,rate){
   check_positive(x = x, allow_zero = TRUE)
   check_positive(shape = shape, rate = rate)
-  GammaCappedMean(x,shape,rate)*rate/shape
+  # recycle every argument to a common length, so that a recycling error names this function
+  args<-recycle_arguments(x = x, shape = shape, rate = rate)
+  x<-args$x; shape<-args$shape; rate<-args$rate
+  restore_shape(GammaCappedMean(x,shape,rate)*rate/shape, args)
 }
 
 
 
 #' Increased Limit Factor Curve from a Gamma severity distribution
+#'
+#' @description Gives the ratio of the Gamma capped mean at \code{xHigh} to that at \code{xLow}, the factor that takes the expected cost of a policy limit of \code{xLow} to that of a limit of \code{xHigh}.
 #'
 #' @param xLow A non-negative real number -  the claim amount where the Increased Limit Factor Curve will be evaluated from.
 #' @param xHigh A non-negative real number -  the claim amount where the Increased Limit Factor Curve will be evaluated to.
@@ -196,10 +207,16 @@ pure_ibnr_exposure <- function(IncDate, ExpDate, ValDate, params, delayCappedMea
   MaxRepDelay<-pmax(0, ValDays - IncDays)
   Duration<-ExpDays - IncDays
   EarnedDuration<-MaxRepDelay-MinRepDelay
-  UnearnedDuration<-Duration-EarnedDuration
-  UnearnedDurationRatio<-ifelse(Duration==0,0,round(UnearnedDuration/Duration,5))
-  PureIBNRDuration<-round(delayCappedMean(MaxRepDelay, params)-delayCappedMean(MinRepDelay, params),2)
-  PureIBNRDurationRatio<-ifelse(Duration==0,0,round(PureIBNRDuration/Duration,5))
+  # rounded far below a second (1e-5 days), only to drop the floating-point noise (about
+  # 1e-12 days) that subtracting POSIXct times of day leaves behind
+  UnearnedDuration<-round(Duration-EarnedDuration,10)
+  # as.numeric() so that zero-length input gives numeric(0) rather than ifelse()'s logical(0)
+  UnearnedDurationRatio<-as.numeric(ifelse(Duration==0,0,round(UnearnedDuration/Duration,5)))
+  PureIBNRExact<-delayCappedMean(MaxRepDelay, params)-delayCappedMean(MinRepDelay, params)
+  PureIBNRDuration<-round(PureIBNRExact,2)
+  # the ratio comes from the unrounded duration: dividing the duration rounded to 0.01 days
+  # would cost short periods their precision (a one-hour period gave 0.96 instead of 1)
+  PureIBNRDurationRatio<-as.numeric(ifelse(Duration==0,0,round(PureIBNRExact/Duration,5)))
   data.frame(UnearnedDuration,PureIBNRDuration,UnearnedDurationRatio,PureIBNRDurationRatio)
 }
 
@@ -207,14 +224,16 @@ pure_ibnr_exposure <- function(IncDate, ExpDate, ValDate, params, delayCappedMea
 
 #' Pure IBNR exposure from a Gamma reporting delay distribution
 #'
-#' Durations are counted in days on each date's own calendar and clock: a \code{POSIXct} time of day counts as a fraction of a day, and daylight saving changes do not add fractions of a day, so \code{Date} and \code{POSIXct} dates (or a mix of them) give the same results.
+#' @description Gives the unearned and pure IBNR exposure of each policy period at a valuation date, from a Gamma reporting delay, as needed to reserve for claims that have occurred but have not yet been reported.
+#'
+#' @details Durations are counted in days on each date's own calendar and clock: a \code{POSIXct} time of day counts as a fraction of a day, and daylight saving changes do not add fractions of a day, so \code{Date} and \code{POSIXct} dates (or a mix of them) give the same results.
 #'
 #' @param IncDate A \code{Date} or \code{POSIXct} vector -  the inception dates of the periods. Numbers and character strings are not accepted; convert them with \code{as.Date()} first.
 #' @param ExpDate A \code{Date} or \code{POSIXct} vector -  the expiry dates of the periods. Must not be before the inception dates.
 #' @param ValDate A \code{Date} or \code{POSIXct} date -  the valuation date.
 #' @param shape A positive real number - the shape parameter of the reporting delay's Gamma distribution, with the delay measured in days.
 #' @param rate A positive real number - the rate parameter (per day) of the reporting delay's Gamma distribution.
-#' @return A data frame with the unearned and pure IBNR exposure of each period in days (\code{UnearnedDuration}, and \code{PureIBNRDuration} rounded to 2 decimals) and as proportions between 0 and 1 of the period's duration (\code{UnearnedDurationRatio} and \code{PureIBNRDurationRatio}, rounded to 5 decimals), where the reporting delay has a Gamma distribution with parameters \code{shape} and \code{rate}. The dates and parameters are recycled to a common length, one row each; lengths that do not recycle are an error.
+#' @return A data frame with the unearned and pure IBNR exposure of each period in days (\code{UnearnedDuration}, and \code{PureIBNRDuration} rounded to 2 decimals) and as proportions between 0 and 1 of the period's duration (\code{UnearnedDurationRatio} and \code{PureIBNRDurationRatio}, rounded to 5 decimals), where the reporting delay has a Gamma distribution with parameters \code{shape} and \code{rate}. The ratios are computed before the durations are rounded. A period of zero length (\code{ExpDate} equal to \code{IncDate}) gives ratios of 0. The dates and parameters are recycled to a common length, one row each; lengths that do not recycle are an error.
 #' @family pure IBNR functions
 #' @export
 #' @examples

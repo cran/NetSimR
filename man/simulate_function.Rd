@@ -45,9 +45,9 @@ simulate_function(
 
 \item{seedValue}{The seed value, a whole number between \code{-.Machine$integer.max} and \code{.Machine$integer.max}, or NULL (the default) for no fixed seed.}
 
-\item{freqDistr}{The frequency distribution. Options are as per the freq_dist_options.}
+\item{freqDistr}{The frequency distribution: \code{"Poisson"}, \code{"Negative_Binomial"}, \code{"Binomial"} or \code{"Fixed_number_of_Counts"}. The parameters of each are listed in \code{\link{simulate_claims}}.}
 
-\item{sevDistr}{The severity distribution. Options are as per the sev_dist_options.}
+\item{sevDistr}{The severity distribution: \code{"Normal"}, \code{"LogNormal"}, \code{"Gamma"}, \code{"Exponential"}, \code{"Pareto"} or \code{"Fixed_Severity"}. The parameters of each are listed in \code{\link{simulate_claims}}.}
 
 \item{paretoSlice}{True if there is Pareto slicing.}
 
@@ -94,10 +94,14 @@ A data frame with one row per simulation, at full precision: \code{claim_counts}
 the claim count; \code{total_claims}, the total claims after the reinsurance structures;
 \code{gross_claims}, the gross total claims before them (after Pareto slices and the
 severity cap; unless \code{gross = FALSE}); and, when reinstatements are limited,
-\code{number_of_reinstatements_used}: the EEL layer's recoveries in the period (after the
-aggregate deductible and limit, when there is an aggregate layer) divided by the EEL
-limit, capped at the number of reinstatements, so reinstatements are counted pro rata to
-the amount recovered.
+\code{number_of_reinstatements_used}: the EEL layer's recoveries in the period divided by
+the EEL limit, capped at the number of reinstatements, so reinstatements are counted pro
+rata to the amount recovered. The recoveries are taken after the aggregate deductible and
+limit of an aggregate 'Unlimited Layer' or 'Limited Layer', but before an aggregate
+'Exclude Layer' is taken out: with an exclusion they are the EEL recoveries after the
+reinstatement capacity. For example, three claims of 100 through a layer of 60 excess of
+30 with two reinstatements and an aggregate exclusion of 150 excess of 50 give a total of
+50 but 2 reinstatements used (180 / 60, capped at 2).
 Stops with an error that names any required setting that is missing or invalid.
 }
 \description{

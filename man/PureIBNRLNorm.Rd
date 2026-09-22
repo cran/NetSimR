@@ -18,9 +18,12 @@ PureIBNRLNorm(IncDate, ExpDate, ValDate, mu, sigma)
 \item{sigma}{A positive real number - the second parameter of the reporting delay's LogNormal distribution.}
 }
 \value{
-A data frame with the unearned and pure IBNR exposure of each period in days (\code{UnearnedDuration}, and \code{PureIBNRDuration} rounded to 2 decimals) and as proportions between 0 and 1 of the period's duration (\code{UnearnedDurationRatio} and \code{PureIBNRDurationRatio}, rounded to 5 decimals), where the reporting delay has a LogNormal distribution with parameters \code{mu} and \code{sigma}. The dates and parameters are recycled to a common length, one row each; lengths that do not recycle are an error.
+A data frame with the unearned and pure IBNR exposure of each period in days (\code{UnearnedDuration}, and \code{PureIBNRDuration} rounded to 2 decimals) and as proportions between 0 and 1 of the period's duration (\code{UnearnedDurationRatio} and \code{PureIBNRDurationRatio}, rounded to 5 decimals), where the reporting delay has a LogNormal distribution with parameters \code{mu} and \code{sigma}. The ratios are computed before the durations are rounded. A period of zero length (\code{ExpDate} equal to \code{IncDate}) gives ratios of 0. The dates and parameters are recycled to a common length, one row each; lengths that do not recycle are an error.
 }
 \description{
+Gives the unearned and pure IBNR exposure of each policy period at a valuation date, from a LogNormal reporting delay, as needed to reserve for claims that have occurred but have not yet been reported.
+}
+\details{
 Durations are counted in days on each date's own calendar and clock: a \code{POSIXct} time of day counts as a fraction of a day, and daylight saving changes do not add fractions of a day, so \code{Date} and \code{POSIXct} dates (or a mix of them) give the same results.
 }
 \examples{

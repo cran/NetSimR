@@ -4,11 +4,15 @@
 
 #' Sliced LogNormal Pareto mean
 #'
+#' @description Gives the expected claim amount of a sliced severity distribution, with LogNormal attritional claims below the slice point and a Pareto tail above it.
+#'
+#' @details \code{shape} is the Pareto shape parameter, usually written alpha; the sliced Gamma-Pareto functions call the same parameter \code{PShape}.
+#'
 #' @param mu A real number -  the first parameter of the attritional Claim Severity's LogNormal distribution.
 #' @param sigma A positive real number -  the second parameter of the attritional Claim Severity's LogNormal distribution.
 #' @param SlicePoint A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution. An infinite slice point gives the LogNormal distribution.
 #' @param shape A positive real number - the shape parameter of the tail Claim Severity's Pareto distribution.
-#' @return The mean of the claim severity with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}. A non-numeric argument or a non-positive \code{sigma}, \code{SlicePoint} or \code{shape} is an error; \code{NA} values give \code{NA}.
+#' @return The mean of the claim severity with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}. The mean is \code{Inf} when \code{shape <= 1} (and \code{SlicePoint} is finite), as the Pareto tail then has no finite mean. A non-numeric argument or a non-positive \code{sigma}, \code{SlicePoint} or \code{shape} is an error; \code{NA} values give \code{NA}.
 #' @family sliced distribution functions
 #' @export
 #' @examples
@@ -37,6 +41,10 @@ SlicedLNormParetoMean<-function(mu, sigma, SlicePoint, shape){
 
 #' Sliced LogNormal Pareto capped mean
 #'
+#' @description Gives the expected claim amount when each claim from a sliced severity distribution, with LogNormal attritional claims below the slice point and a Pareto tail above it, is capped at \code{cap}.
+#'
+#' @details \code{shape} is the Pareto shape parameter, usually written alpha; the sliced Gamma-Pareto functions call the same parameter \code{PShape}.
+#'
 #' @param cap A non-negative real number -  the claim severity cap.
 #' @param mu A real number -  the first parameter of the attritional Claim Severity's LogNormal distribution.
 #' @param sigma A positive real number -  the second parameter of the attritional Claim Severity's LogNormal distribution.
@@ -56,15 +64,28 @@ SlicedLNormParetoCappedMean<-function(cap,mu, sigma, SlicePoint, shape){
   # recycle every argument to a common length, so that ifelse() keeps them all
   args<-recycle_arguments(cap = cap, mu = mu, sigma = sigma, SlicePoint = SlicePoint, shape = shape)
   cap<-args$cap; mu<-args$mu; sigma<-args$sigma; SlicePoint<-args$SlicePoint; shape<-args$shape
+  # the Pareto tail adds S(SlicePoint) * (Pareto capped mean - SlicePoint) to the capped mean
+  # at the slice point; it adds nothing when the tail is never reached (S(SlicePoint) = 0),
+  # unless the Pareto capped mean is infinite (an infinite cap with shape <= 1), where the
+  # result is the infinite mean, as in SlicedLNormParetoMean (0 * Inf would be NaN)
+  up<-plnorm(SlicePoint,mu,sigma,lower.tail = FALSE)
+  paretoTail<-ParetoCappedMean(cap, SlicePoint, shape)-SlicePoint
+  tailTerm<-up*paretoTail
+  tailTerm[which(up==0)]<-0
+  tailTerm[which(paretoTail==Inf)]<-Inf
   restore_shape(ifelse(cap<=SlicePoint
                        ,LNormCappedMean(cap, mu, sigma)
-                       ,LNormCappedMean(SlicePoint, mu, sigma)+plnorm(SlicePoint,mu,sigma,lower.tail = FALSE)*(ParetoCappedMean(cap, SlicePoint, shape)-SlicePoint)
+                       ,LNormCappedMean(SlicePoint, mu, sigma)+tailTerm
   ), args)
 }
 
 
 
 #' Exposure Curve from a Sliced LogNormal Pareto severity distribution
+#'
+#' @description Gives the share of the expected claim cost of a sliced LogNormal-Pareto severity distribution that falls below the amount \code{x} (the capped mean divided by the mean), as used to exposure rate a layer.
+#'
+#' @details \code{shape} is the Pareto shape parameter, usually written alpha; the sliced Gamma-Pareto functions call the same parameter \code{PShape}.
 #'
 #' @param x A non-negative real number -  the claim amount where the exposure curve will be evaluated.
 #' @param mu A real number -  the first parameter of the attritional Claim Severity's LogNormal distribution.
@@ -95,6 +116,10 @@ ExposureCurveSlicedLNormPareto<-function(x, mu, sigma, SlicePoint, shape){
 
 #' Increased Limit Factor Curve from a Sliced LogNormal Pareto severity distribution
 #'
+#' @description Gives the ratio of the sliced LogNormal-Pareto capped mean at \code{xHigh} to that at \code{xLow}, the factor that takes the expected cost of a policy limit of \code{xLow} to that of a limit of \code{xHigh}.
+#'
+#' @details \code{shape} is the Pareto shape parameter, usually written alpha; the sliced Gamma-Pareto functions call the same parameter \code{PShape}.
+#'
 #' @param xLow A non-negative real number -  the claim amount where the Limit Factor Curve will be evaluated from.
 #' @param xHigh A non-negative real number -  the claim amount where the Limit Factor Curve will be evaluated to.
 #' @param mu A real number -  the first parameter of the attritional Claim Severity's LogNormal distribution.
@@ -119,14 +144,18 @@ ILFSlicedLNormPareto<-function(xLow,xHigh, mu, sigma, SlicePoint, shape){
 
 
 
-#' The cumulative density function (cdf) of a Sliced LogNormal Pareto severity distribution
+#' The cumulative distribution function (cdf) of a Sliced LogNormal Pareto severity distribution
 #'
-#' @param x A real number -  the claim amount where the cumulative density function (cdf) will be evaluated. The cdf is 0 for negative \code{x}.
+#' @description Gives the probability that a claim from a sliced severity distribution, with LogNormal attritional claims below the slice point and a Pareto tail above it, is at most \code{x}.
+#'
+#' @details \code{shape} is the Pareto shape parameter, usually written alpha; the sliced Gamma-Pareto functions call the same parameter \code{PShape}.
+#'
+#' @param x A real number -  the claim amount where the cumulative distribution function (cdf) will be evaluated. The cdf is 0 for negative \code{x}.
 #' @param mu A real number -  the first parameter of the attritional Claim Severity's LogNormal distribution.
 #' @param sigma A positive real number -  the second parameter of the attritional Claim Severity's LogNormal distribution.
 #' @param SlicePoint A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution. An infinite slice point gives the LogNormal distribution.
 #' @param shape A positive real number - the shape parameter of the tail Claim Severity's Pareto distribution.
-#' @return The value of the cumulative density function (cdf) at \code{x} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}. A non-numeric argument or a non-positive \code{sigma}, \code{SlicePoint} or \code{shape} is an error; \code{NA} values give \code{NA}.
+#' @return The value of the cumulative distribution function (cdf) at \code{x} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}. A non-numeric argument or a non-positive \code{sigma}, \code{SlicePoint} or \code{shape} is an error; \code{NA} values give \code{NA}.
 #' @family sliced distribution functions
 #' @export
 #' @examples
@@ -146,14 +175,18 @@ pSlicedLNormPareto<-function(x, mu, sigma, SlicePoint, shape){
 
 
 
-#' The inverse cumulative density function of a Sliced LogNormal Pareto severity distribution
+#' The inverse cumulative distribution function of a Sliced LogNormal Pareto severity distribution
 #'
-#' @param q A real number between 0 and 1 -  the probability where the inverse cumulative density function will be evaluated. Values outside [0, 1] give \code{NaN}, as in \code{qlnorm()}.
+#' @description Gives the claim amount that a claim from a sliced severity distribution, with LogNormal attritional claims below the slice point and a Pareto tail above it, stays at or below with probability \code{q}; the inverse of \code{\link{pSlicedLNormPareto}}.
+#'
+#' @details \code{shape} is the Pareto shape parameter, usually written alpha; the sliced Gamma-Pareto functions call the same parameter \code{PShape}.
+#'
+#' @param q A real number between 0 and 1 -  the probability where the inverse cumulative distribution function will be evaluated. Values outside [0, 1] give \code{NaN} with a warning, as in \code{qlnorm()}.
 #' @param mu A real number -  the first parameter of the attritional Claim Severity's LogNormal distribution.
 #' @param sigma A positive real number -  the second parameter of the attritional Claim Severity's LogNormal distribution.
 #' @param SlicePoint A positive real number - the slice point and the scale parameter of the tail Claim Severity's Pareto distribution. An infinite slice point gives the LogNormal distribution.
 #' @param shape A positive real number - the shape parameter of the tail Claim Severity's Pareto distribution.
-#' @return The value of the inverse cumulative density function at \code{q} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}. A non-numeric argument or a non-positive \code{sigma}, \code{SlicePoint} or \code{shape} is an error; \code{NA} values give \code{NA}.
+#' @return The value of the inverse cumulative distribution function at \code{q} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}. A non-numeric argument or a non-positive \code{sigma}, \code{SlicePoint} or \code{shape} is an error; \code{NA} values give \code{NA}.
 #' @family sliced distribution functions
 #' @export
 #' @examples
@@ -168,8 +201,10 @@ qSlicedLNormPareto<-function(q, mu, sigma, SlicePoint, shape){
   lp<-plnorm(SlicePoint, mu, sigma)
   up<-plnorm(SlicePoint, mu, sigma, lower.tail = FALSE)
   # above the slice point 1 - q = up * (SlicePoint / x)^shape; using 1 - q directly
-  # (rather than 1 - (q - lp) / up) keeps the precision as q -> 1
-  restore_shape(ifelse(q>lp
+  # (rather than 1 - (q - lp) / up) keeps the precision as q -> 1. Probabilities above 1
+  # are left to qlnorm(), which gives NaN with a warning; the Pareto branch would give a
+  # real number for a negative (1 - q) when 1 / shape is a whole number
+  restore_shape(ifelse(q>lp & q<=1
                        ,SlicePoint/(((1-q)/up)^(1/shape))
                        ,qlnorm(q,mu, sigma)
   ), args)
@@ -178,6 +213,10 @@ qSlicedLNormPareto<-function(q, mu, sigma, SlicePoint, shape){
 
 
 #' The probability density function (pdf) of a Sliced LogNormal Pareto severity distribution
+#'
+#' @description Gives the probability density at the claim amount \code{x} of a sliced severity distribution, with LogNormal attritional claims below the slice point and a Pareto tail above it.
+#'
+#' @details \code{shape} is the Pareto shape parameter, usually written alpha; the sliced Gamma-Pareto functions call the same parameter \code{PShape}.
 #'
 #' @param x A real number -  the claim amount where the probability density function (pdf) will be evaluated. The pdf is 0 for negative \code{x}.
 #' @param mu A real number -  the first parameter of the attritional Claim Severity's LogNormal distribution.

@@ -1,19 +1,23 @@
 #save and load of the simulator settings, with built-in examples
 
-#' Format tag written into every saved simulator settings file
+#' Tool name written into every saved simulator settings file
 #'
+#' Settings files are plain text, written and read by write_settings_file() and
+#' read_settings_file() (R/settings_file.R). A file of another tool, or an .rds settings
+#' file of NetSimR 0.3.0 and before, is refused with a message.
 #' @noRd
-sim_settings_format <- "NetSimR simulator settings"
+sim_settings_tool <- "claims simulator"
 
 #' Version of the saved settings format
 #'
+#' Versions 1 and 2 were .rds files, which are no longer read; version 3 is the text file.
 #' @noRd
-sim_settings_version <- 2
+sim_settings_version <- 3
 
 #' Name of the file offered by the save button
 #'
 #' @noRd
-sim_settings_file_name <- "netsimr_simulator_settings.rds"
+sim_settings_file_name <- "claims_simulator_settings.txt"
 
 #' Ids of every simulator input that a settings file can hold
 #'
@@ -37,38 +41,56 @@ sim_settings_input_ids <- function() {
   ))
 }
 
-#' Build the list that a settings file contains
+#' Collect the input values that a settings file holds
 #'
 #' @param input_values A named list (or the shiny input object) with the current
-#' values of the simulator inputs. Ids that are not simulator inputs are ignored and
-#' NULL values are skipped.
-#' @return A list with the fields \code{format}, \code{version}, \code{saved} and
-#' \code{inputs}, the last one a named list of the input values.
+#' values of the simulator inputs. Ids that are not simulator inputs are ignored, and so
+#' are NULL and empty values.
+#' @return A named list with one vector of numbers, strings or logicals per input id, as
+#' write_settings_file() writes them (one "id: value" line each).
 #' @noRd
 sim_settings_collect <- function(input_values) {
   values <- list()
   for (id in sim_settings_input_ids()) {
     value <- input_values[[id]]
-    if (!is.null(value)) values[[id]] <- value
+    if (is.null(value) || length(value) == 0 || !is.atomic(value)) next
+    values[[id]] <- value
   }
-  list(
-    format = sim_settings_format
-    ,version = sim_settings_version
-    ,saved = Sys.time()
-    ,inputs = values
-  )
+  values
 }
 
-#' Check that an object is a readable simulator settings list
+#' Write the settings file that the save button offers
 #'
-#' @param x The object read from a settings file.
+#' @param input_values The current input values, as for sim_settings_collect().
+#' @param file Path of the text file to write.
+#' @noRd
+sim_settings_write <- function(input_values, file) {
+  write_settings_file(sim_settings_collect(input_values), file, tool = sim_settings_tool, version = sim_settings_version)
+}
+
+#' Read a saved settings file
+#'
+#' Reading never evaluates code (see read_settings_file()).
+#' @param file Path of the file.
+#' @return A list with \code{version} and \code{inputs}, the named list of saved input
+#' values; or a character error message for a file that is not a settings file of the
+#' simulator (an .rds file, say, or one saved by another tool) or holds a value that
+#' cannot be read.
+#' @noRd
+sim_settings_read <- function(file) {
+  tryCatch({
+    settings <- read_settings_file(file, tool = sim_settings_tool)
+    list(version = settings$version, inputs = settings$values)
+  }, error = function(cond) conditionMessage(cond))
+}
+
+#' Check that saved inputs can be loaded
+#'
+#' @param inputs The named list of saved input values.
+#' @param version The settings version of the file.
 #' @return TRUE when the settings can be loaded, otherwise a character error message.
 #' @noRd
-sim_settings_validate <- function(x) {
-  not_settings <- "This is not a NetSimR simulator settings file."
-  if (!is.list(x) || is.data.frame(x) || is.null(names(x))) return(not_settings)
-  if (!identical(x$format, sim_settings_format)) return(not_settings)
-  version <- x$version
+sim_settings_validate <- function(inputs, version = sim_settings_version) {
   if (!is.numeric(version) || length(version) != 1 || is.na(version)) {
     return("The settings file has no valid version number.")
   }
@@ -78,10 +100,21 @@ sim_settings_validate <- function(x) {
       ,version, ") and cannot be loaded by this version."
     ))
   }
-  inputs <- x$inputs
+  if (version < sim_settings_version) {
+    return(paste0("The settings file has settings version ", version, ", which this version of NetSimR no longer loads."))
+  }
   if (!is.list(inputs) || is.data.frame(inputs)) return("The settings file holds no inputs.")
   if (length(inputs) > 0 && (is.null(names(inputs)) || any(is.na(names(inputs)) | names(inputs) == ""))) {
     return("The settings file holds inputs without names.")
+  }
+  if (!all(vapply(inputs, function(x) is.null(x) || is.atomic(x), logical(1)))) {
+    return("The settings file holds inputs that are not numbers, text or TRUE/FALSE values.")
+  }
+  #every input holds one value; a vector (an edited file, or one built to be huge) would be
+  #pushed to the browser as it is
+  several <- names(inputs)[lengths(inputs) > 1]
+  if (length(several) > 0) {
+    return(paste0("The settings file holds inputs with more than one value: '", paste(several, collapse = "', '"), "'."))
   }
   #the choice inputs must hold values the app offers
   check_choice <- function(id, choices, label) {
@@ -103,29 +136,13 @@ sim_settings_validate <- function(x) {
   TRUE
 }
 
-#' Bring the inputs of an older settings file up to date
+#' Show a message about saving or loading settings
 #'
-#' Settings version 1 stored the Normal severity's mean and standard deviation under the
-#' Log-Normal's ids (mu, sigma); from version 2 the Normal has its own ids.
-#'
-#' @param inputs The named list of saved input values.
-#' @param version The settings version of the file.
-#' @return The inputs, with old ids renamed.
+#' @param message The text to show.
+#' @param type "message" or "error"; errors stay on screen for longer.
 #' @noRd
-sim_settings_migrate <- function(inputs, version) {
-  #older files have a switch that turned the Pareto slices on; now the number of slices does
-  if ("paretoSlice" %in% names(inputs)) {
-    if (!isTRUE(inputs$paretoSlice)) inputs$pareto_slice_times <- 0
-    inputs$paretoSlice <- NULL
-  }
-  if (is.numeric(version) && length(version) == 1 && !is.na(version) && version < 2 &&
-      identical(inputs$sevDistr, "Normal")) {
-    if (is.null(inputs$normal_mean)) inputs$normal_mean <- inputs$mu
-    if (is.null(inputs$normal_sd)) inputs$normal_sd <- inputs$sigma
-    inputs$mu <- NULL
-    inputs$sigma <- NULL
-  }
-  inputs
+sim_settings_notify <- function(message, type = "message") {
+  showNotification(message, type = type, duration = if (identical(type, "error")) 8 else 5)
 }
 
 #' Compare an input value with the value a settings file asks for
@@ -176,18 +193,25 @@ sim_settings_apply_update <- function(session, id, kind, value) {
 #' @param inputs The named list of saved input values.
 #' @return A list of entries with \code{id}, \code{kind}, \code{value} and, for the
 #' fields applied later, a \code{gate} function of the input object that returns TRUE
-#' once the field can be set. Saved values that the chosen options do not use are left out.
+#' once the field can be set. Saved values that the chosen options do not use are left out,
+#' except two that stay in the page and would otherwise keep the values of earlier settings:
+#' the truncation switch is set to the file's value (FALSE when the file has none, e.g. for
+#' another severity), and the slice fields beyond the loaded number of slices are cleared.
 #' @noRd
 sim_settings_plan <- function(inputs) {
   layers_with_deductible <- c("Unlimited Layer", "Limited Layer", "Exclude Layer")
   layers_with_limit <- c("Limited Layer", "Exclude Layer")
   same <- sim_settings_values_match
   entries <- list()
-  add <- function(id, kind, gate = NULL) {
-    value <- inputs[[id]]
+  add <- function(id, kind, gate = NULL, value = inputs[[id]]) {
     if (is.null(value) || length(value) == 0) return(invisible(NULL))
     if (length(value) == 1 && is.na(value)) return(invisible(NULL))
     entries[[length(entries) + 1]] <<- list(id = id, kind = kind, value = value, gate = gate)
+    invisible(NULL)
+  }
+  #empties a numeric field that is always in the page
+  clear <- function(id) {
+    entries[[length(entries) + 1]] <<- list(id = id, kind = "numeric", value = NA_real_, gate = NULL)
     invisible(NULL)
   }
 
@@ -196,10 +220,13 @@ sim_settings_plan <- function(inputs) {
   add("sevDistr", "radio")
   add("reinsuranceStructureEEL", "radio")
   add("reinsuranceStructureAL", "radio")
-  #the truncation switch waits for the Normal severity, in stage two
   for (id in c("seedSetBinary", "multiprocessingBinary", "sevCapBinary")) {
     add(id, "switch")
   }
+  #the truncation switch is always in the page (shown for the Normal only), so it is set at
+  #once; a file without it, or saved with another severity, switches it off, so that an
+  #earlier Normal's truncation does not reappear when the Normal is picked later
+  add("sevTruncateAtZero", "switch", value = isTRUE(as.logical(inputs$sevTruncateAtZero)))
   add("numberOfSimulations", "numeric")
 
   #stage two: the fields rendered for the chosen options
@@ -214,10 +241,6 @@ sim_settings_plan <- function(inputs) {
     for (id in sev_dist_options[[sev]]@paramIDs) {
       add(id, "numeric", gate = function(input) same(input$sevDistr, sev))
     }
-    #the truncation switch is only shown for the Normal severity
-    if (sev == "Normal") {
-      add("sevTruncateAtZero", "switch", gate = function(input) same(input$sevDistr, sev))
-    }
   }
   if (isTRUE(inputs$seedSetBinary)) {
     add("seedValue", "numeric", gate = function(input) isTRUE(input$seedSetBinary))
@@ -226,8 +249,10 @@ sim_settings_plan <- function(inputs) {
   slices <- suppressWarnings(as.numeric(inputs$pareto_slice_times))
   if (length(slices) == 1 && !is.na(slices)) {
     slices <- min(max(round(slices), 0), max_number_of_pareto_slices)
-    add("pareto_slice_times", "numeric")
+    add("pareto_slice_times", "numeric", value = slices)
     for (i in seq_len(2 * slices)) add(paste0("slice_pareto_param_", i), "numeric")
+    #the later slice fields are emptied, so 'Add slice' does not bring back earlier values
+    for (i in setdiff(seq_len(2 * max_number_of_pareto_slices), seq_len(2 * slices))) clear(paste0("slice_pareto_param_", i))
   }
   if (isTRUE(inputs$sevCapBinary)) {
     add("sev_cap_amount", "numeric", gate = function(input) isTRUE(input$sevCapBinary))
@@ -258,8 +283,8 @@ sim_settings_plan <- function(inputs) {
 
 #' Built-in example settings for the simulator
 #'
-#' Each example is a named list of input values, in the same form as the
-#' \code{inputs} field of a saved settings file.
+#' Each example is a named list of input values, in the same form as the inputs read
+#' from a saved settings file.
 #'
 #' @noRd
 sim_settings_examples <- list(
@@ -279,7 +304,8 @@ sim_settings_examples <- list(
     ,reinsuranceStructureReinstatementLimit = 2
     ,reinsuranceStructureAL = "No Reinsurance Structure"
   )
-  ,"Property: Pareto tail and aggregate cover" = list(
+  #names are kept short enough to show in full in the select at every width
+  ,"Property: aggregate cover" = list(
     freqDistr = "Negative_Binomial", r = 4, beta = 2.5
     ,sevDistr = "Gamma", shape = 1.5, scale = 20000
     ,numberOfSimulations = 50000
@@ -294,7 +320,7 @@ sim_settings_examples <- list(
     ,reinsurance_structure_al_dedctible_amount = 1000000
     ,reinsurance_structure_al_limit_amount = 2000000
   )
-  ,"Simple: Normal claims truncated at zero" = list(
+  ,"Simple: truncated Normal" = list(
     freqDistr = "Poisson", lamda = 3
     ,sevDistr = "Normal", normal_mean = 1000, normal_sd = 600
     ,sevTruncateAtZero = TRUE
@@ -353,11 +379,12 @@ sim_settings_io_css <- "
   font-size: 0;
 }
 
+/* the select has the full width of the card, so example names are not cut off, and the
+   button sits under it */
 .sim-settings-example {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.5rem;
-  align-items: end;
 }
 
 .sim-settings-example .shiny-input-container {
@@ -367,10 +394,12 @@ sim_settings_io_css <- "
 .sim-settings-example .form-select {
   font-size: 0.86rem;
   padding: 0.42rem 2rem 0.42rem 0.75rem;
+  text-overflow: ellipsis;
 }
 
 .sim-settings-example .btn {
   white-space: nowrap;
+  width: 100%;
 }
 "
 
@@ -391,7 +420,7 @@ sim_settings_io_ui <- function() {
     ),
     fileInput(
       "settingsIO_load", "Load settings"
-      ,accept = ".rds", width = "100%"
+      ,accept = c(".txt", "text/plain"), width = "100%"
       ,buttonLabel = tagList(icon("folder-open"), "Browse")
       ,placeholder = "No file selected"
     ),
@@ -406,7 +435,7 @@ sim_settings_io_ui <- function() {
         ,icon = icon("wand-magic-sparkles"), class = "btn-outline-primary btn-sm"
       )
     ),
-    helpText("Settings are saved as an .rds file that can be loaded back later.")
+    helpText("Settings are saved as a plain text (.txt) file that can be loaded back later.")
   )
 }
 
@@ -418,23 +447,34 @@ sim_settings_io_ui <- function() {
 #' Loading happens in two stages. The controls that are always on the page are updated
 #' at once. The fields that the server renders only for some choices are kept pending
 #' and set once the choices they depend on have reached the browser and the fields
-#' exist. A value is treated as done once the input has held it for a moment, so a
-#' field that the browser re-renders after the update is set again. Pending values for
-#' fields that never appear are dropped quietly after the timeout in
+#' exist. Their values are also handed to \code{remember} at once, so a field that the
+#' server builds (or rebuilds) after the load starts from the loaded value, however slow
+#' the browser is. A pending value is done as soon as the input holds it; from then on
+#' the field is the user's, and a value typed after the load is never set back. An update
+#' that the browser lost (the field still has the value it had when the update was sent)
+#' is sent again; any other value is taken as typed by the user and kept. Pending values
+#' for fields that never appear are dropped quietly after the timeout in
 #' \code{getOption("netsimr.settings_io_timeout", 6)} seconds.
 #'
 #' @param input Input of the simulator server function.
 #' @param output Output of the simulator server function.
 #' @param session Session of the simulator server function.
+#' @param remember NULL, or a function of an input id and a value that stores the value
+#' the server builds that field from (the simulator's remembered typed values).
+#' @param apply NULL, or a function of an input id, kind and value that sends the update
+#' to the browser in place of \code{sim_settings_apply_update}, for the inputs whose sent
+#' values the server keeps track of itself (the number of slices).
 #' @return Called for its side effects.
 #' @noRd
-sim_settings_io_server <- function(input, output, session) {
-  #how long to wait for dynamic fields, and how to retry a value the browser reset
+sim_settings_io_server <- function(input, output, session, remember = NULL, apply = NULL) {
+  #how long to wait for dynamic fields, and how to retry an update the browser lost
   timeout_seconds <- getOption("netsimr.settings_io_timeout", 6)
   retry_seconds <- 0.5
   max_attempts <- 3
-  settle_seconds <- 0.5
   poll_millis <- 250
+  apply_update <- function(id, kind, value) {
+    if (is.function(apply)) apply(id, kind, value) else sim_settings_apply_update(session, id, kind, value)
+  }
 
   #save the current settings
   output$settingsIO_save <- downloadHandler(
@@ -442,7 +482,7 @@ sim_settings_io_server <- function(input, output, session) {
     content = function(file) {
       ids <- sim_settings_input_ids()
       values <- isolate(stats::setNames(lapply(ids, function(id) input[[id]]), ids))
-      saveRDS(sim_settings_collect(values), file)
+      sim_settings_write(values, file)
     }
   )
 
@@ -450,31 +490,44 @@ sim_settings_io_server <- function(input, output, session) {
   pending <- reactiveVal(list())
   deadline <- NULL
 
-  load_settings <- function(settings, loaded_message, error_prefix) {
-    problem <- sim_settings_validate(settings)
+  load_settings <- function(inputs, version, loaded_message, error_prefix) {
+    problem <- sim_settings_validate(inputs, version)
     if (!isTRUE(problem)) {
-      showNotification(paste(error_prefix, problem), type = "error", duration = 8)
+      sim_settings_notify(paste(error_prefix, problem), type = "error")
       return(invisible(FALSE))
     }
-    entries <- sim_settings_plan(sim_settings_migrate(settings$inputs, settings$version))
+    entries <- sim_settings_plan(inputs)
     is_pending <- vapply(entries, function(entry) !is.null(entry$gate), logical(1))
 
     #stage one: the controls that decide which fields exist
     for (entry in entries[!is_pending]) {
-      sim_settings_apply_update(session, entry$id, entry$kind, entry$value)
+      apply_update(entry$id, entry$kind, entry$value)
     }
 
     #stage two: the fields that appear once the browser has applied stage one
     later <- lapply(entries[is_pending], function(entry) {
       entry$attempts <- 0L
       entry$sent_at <- NULL
-      entry$matched_at <- NULL
+      entry$before <- NULL
       entry
     })
+    #a field built after this point (its choice reaches the server later, or the browser
+    #is slow and the pending value times out) starts from the loaded value
+    if (is.function(remember)) {
+      for (entry in later) {
+        value <- switch(
+          entry$kind
+          ,numeric = suppressWarnings(as.numeric(entry$value))
+          ,checkbox = isTRUE(as.logical(entry$value))
+          ,entry$value
+        )
+        remember(entry$id, value)
+      }
+    }
     deadline <<- Sys.time() + timeout_seconds
     pending(later)
 
-    showNotification(loaded_message, type = "message", duration = 5)
+    sim_settings_notify(loaded_message)
     invisible(TRUE)
   }
 
@@ -503,23 +556,24 @@ sim_settings_io_server <- function(input, output, session) {
         next
       }
       if (sim_settings_values_match(current, entry$value)) {
-        #done once the value has held for a moment, in case the browser re-renders the field
-        if (is.null(entry$matched_at)) {
-          entry$matched_at <- now
-          changed <- TRUE
-        } else if (as.numeric(now - entry$matched_at, units = "secs") >= settle_seconds) {
-          changed <- TRUE
-          next
-        }
-        keep[[length(keep) + 1]] <- entry
+        #done: a field rebuilt later starts from the remembered value, and a value the
+        #user types from now on must not be set back (it was, on slow machines, when a
+        #value that had just arrived had to hold for a moment before it counted)
+        changed <- TRUE
         next
       }
-      entry$matched_at <- NULL
+      if (!is.null(entry$sent_at) && !sim_settings_values_match(current, entry$before)) {
+        #the field changed since the update was sent, to another value: the user typed it
+        changed <- TRUE
+        next
+      }
       waited <- if (is.null(entry$sent_at)) Inf else as.numeric(now - entry$sent_at, units = "secs")
       if (entry$attempts < max_attempts && waited >= retry_seconds) {
-        sim_settings_apply_update(session, entry$id, entry$kind, entry$value)
+        #the first update, or again when the browser lost it (the field kept its old value)
+        apply_update(entry$id, entry$kind, entry$value)
         entry$attempts <- entry$attempts + 1L
         entry$sent_at <- now
+        entry$before <- current
         changed <- TRUE
       }
       keep[[length(keep) + 1]] <- entry
@@ -532,21 +586,18 @@ sim_settings_io_server <- function(input, output, session) {
     file_info <- input$settingsIO_load
     req(file_info$datapath)
     file_label <- paste0("'", file_info$name, "'")
-    read_failed <- FALSE
-    settings <- tryCatch(
-      readRDS(file_info$datapath)
-      ,error = function(cond) { read_failed <<- TRUE; NULL }
-      ,warning = function(cond) { read_failed <<- TRUE; NULL }
-    )
-    if (read_failed) {
-      showNotification(
-        paste0(file_label, " could not be read. Please choose an .rds file saved with 'Save settings'.")
-        ,type = "error", duration = 8
+    #an .rds file or one of another tool gets the reader's message, e.g. "This is not a
+    #NetSimR settings file."
+    settings <- sim_settings_read(file_info$datapath)
+    if (is.character(settings)) {
+      sim_settings_notify(
+        paste0(file_label, ": ", settings, " Please choose a .txt file saved with 'Save settings' in this app.")
+        ,type = "error"
       )
       return(invisible(NULL))
     }
     load_settings(
-      settings
+      settings$inputs, settings$version
       ,loaded_message = paste0("Settings loaded from ", file_label, ".")
       ,error_prefix = paste0(file_label, ":")
     )
@@ -557,11 +608,11 @@ sim_settings_io_server <- function(input, output, session) {
     label <- input$settingsIO_example
     example <- if (is.character(label) && length(label) == 1) sim_settings_examples[[label]] else NULL
     if (is.null(example)) {
-      showNotification("Please choose an example to load.", type = "error", duration = 8)
+      sim_settings_notify("Please choose an example to load.", type = "error")
       return(invisible(NULL))
     }
     load_settings(
-      sim_settings_collect(example)
+      sim_settings_collect(example), sim_settings_version
       ,loaded_message = paste0("Loaded example '", label, "'.")
       ,error_prefix = paste0("Example '", label, "':")
     )

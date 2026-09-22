@@ -29,6 +29,21 @@ run_failing <- function(session, run) {
 #the environment of a function defined in the server
 current_settings <- function(server_function) get("simulation_settings", envir = environment(server_function))
 
+#the socket connections open in this session (the workers' ones), by number and description
+open_sockets <- function() {
+  connections <- showConnections(all = TRUE)
+  is_socket <- connections[, "class"] == "sockconn"
+  paste(rownames(connections)[is_socket], connections[is_socket, "description"])
+}
+
+#the process ids of the two workers of the current plan; each future keeps its worker busy
+#long enough for the other future to land on the other worker
+worker_pids <- function() {
+  futures <- lapply(1:2, function(i) future::future({ Sys.sleep(0.3); Sys.getpid() }))
+  future::resolve(futures)
+  sort(unlist(future::value(futures)))
+}
+
 test_that("a failed run keeps the previous results", {
   shiny::testServer(shiny_simulator_server, {
     set_run_inputs(session)
@@ -64,25 +79,77 @@ test_that("the app leaves the user's future plan in place", {
   expect_identical(future::plan(), user_plan)
 })
 
-test_that("workers started by the app are shut down and the user's plan restored", {
+test_that("workers started by the app stay warm through a failed run and are shut down with the session", {
   skip_on_cran()
   old_options <- options(mc.cores = 2)
   on.exit(options(old_options), add = TRUE)
   old_plan <- future::plan(future::sequential, gc = TRUE)
   on.exit(future::plan(old_plan), add = TRUE)
   user_plan <- future::plan()
+  sockets_before <- open_sockets()
   shiny::testServer(shiny_simulator_server, {
     set_run_inputs(session)
     session$setInputs(multiprocessingBinary = TRUE)
     expect_equal(future::nbrOfWorkers(), 2)
-    #a failed run shuts the app's workers down; the next run starts them again
+    pids <- worker_pids()
+    worker_sockets <- open_sockets()
+    #an error raised by the simulation leaves the workers healthy: a failed run used to shut
+    #them down, and the next run paid the start-up cost again
     run_failing(session, run = 1)
-    expect_identical(future::plan(), user_plan)
+    expect_equal(future::nbrOfWorkers(), 2)
+    expect_identical(worker_pids(), pids)
+    expect_identical(open_sockets(), worker_sockets)
+    #the next run reuses the same workers and gives the results of a sequential run
     session$setInputs(lamda = 3, RunSimulations = 2)
     expect_equal(nrow(simulated_data$data), 500)
+    expect_identical(worker_pids(), pids)
+    sequential <- do.call(simulate_function, utils::modifyList(last_run()$settings, list(multiprocessing = FALSE)))
+    expect_identical(simulated_data$data, sequential)
+    expect_identical(open_sockets(), worker_sockets)
+  })
+  #the end of the session shuts the workers down and puts the user's plan back
+  expect_identical(future::plan(), user_plan)
+  expect_identical(open_sockets(), sockets_before)
+})
+
+test_that("a worker that dies during a run is replaced by fresh workers on the next run", {
+  skip_on_cran()
+  old_options <- options(mc.cores = 2)
+  on.exit(options(old_options), add = TRUE)
+  old_plan <- future::plan(future::sequential, gc = TRUE)
+  on.exit(future::plan(old_plan), add = TRUE)
+  user_plan <- future::plan()
+  sockets_before <- open_sockets()
+  #one chunk group whose worker ends its own process while running it, and a second group
+  #still running on the other worker: future signals a FutureError (unlike an error raised
+  #by the chunks themselves) and replaces the dead worker, whose new connection is left open
+  dying_worker_chunks <- function(run_chunk, chunk_seeds) {
+    futures <- list(future::future(tools::pskill(Sys.getpid())), future::future({ Sys.sleep(1); 2 }))
+    future::resolve(futures)
+    future::value(futures)
+  }
+  shiny::testServer(shiny_simulator_server, {
+    set_run_inputs(session, multiprocessingBinary = TRUE)
+    pids <- worker_pids()
+    #the app's workers are shut down, the replacement that future started for the dead one
+    #included (its connection used to be left open, for the garbage collector to close later
+    #with a warning)
+    with_mocked_bindings(
+      expect_message(session$setInputs(RunSimulations = 1), "Simulation failed"),
+      run_chunks_in_futures = dying_worker_chunks
+    )
+    expect_identical(future::plan(), user_plan)
+    expect_identical(open_sockets(), sockets_before)
+    #no connection is left for the garbage collector to close with a warning
+    expect_no_warning(gc(), message = "closing unused connection")
+    #the next run starts fresh workers and succeeds on them
+    session$setInputs(RunSimulations = 2)
+    expect_equal(nrow(simulated_data$data), 500)
     expect_equal(future::nbrOfWorkers(), 2)
+    expect_false(any(worker_pids() %in% pids))
   })
   expect_identical(future::plan(), user_plan)
+  expect_identical(open_sockets(), sockets_before)
 })
 
 test_that("the compare tab draws the return-period chart for two stored runs, in both themes", {

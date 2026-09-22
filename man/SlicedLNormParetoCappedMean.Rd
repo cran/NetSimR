@@ -21,7 +21,10 @@ SlicedLNormParetoCappedMean(cap, mu, sigma, SlicePoint, shape)
 The mean of the claim severity capped at \code{cap} with an attritional claim LogNormal distribution with parameters \code{mu} and \code{sigma} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{shape}. A non-numeric argument, a negative \code{cap} or a non-positive \code{sigma}, \code{SlicePoint} or \code{shape} is an error; \code{NA} values give \code{NA}.
 }
 \description{
-Sliced LogNormal Pareto capped mean
+Gives the expected claim amount when each claim from a sliced severity distribution, with LogNormal attritional claims below the slice point and a Pareto tail above it, is capped at \code{cap}.
+}
+\details{
+\code{shape} is the Pareto shape parameter, usually written alpha; the sliced Gamma-Pareto functions call the same parameter \code{PShape}.
 }
 \examples{
 SlicedLNormParetoCappedMean(1200,6,1.5,1000,1.2)

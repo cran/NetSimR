@@ -2,6 +2,10 @@
 
 #' Parameter to set the maximum number of Pareto slices
 #'
+#' The largest number of Pareto slices that the simulator app and
+#' \code{\link{simulate_claims}} accept, so that the app can build one row of slice inputs
+#' for each.
+#'
 #' @return The maximum number of Pareto Slices.
 #' @keywords internal
 max_number_of_pareto_slices <- 6
@@ -55,11 +59,18 @@ apply_severity_cap <- function(claims, severity_cap_boolean, severity_cap_amount
 
 #' A vector with the reinsurance structure options
 #'
+#' The names of the reinsurance structures that \code{\link{apply_deductible_limit}} and
+#' \code{\link{simulate_function}} accept, used by the simulator app as the choices of its
+#' structure inputs and to validate saved settings.
+#'
 #' @return The reinsurance structure options
 #' @keywords internal
 reinsurance_structures_options <- c('No Reinsurance Structure', 'Unlimited Layer', 'Limited Layer', 'Exclude Layer')
 
 #' Apply a deductible and limit to claims
+#'
+#' Works out what a reinsurance structure cedes (or, for an excluded layer, leaves) of each
+#' claim, for pricing a layer or checking the simulator's figures by hand.
 #'
 #' @param gross_claims_data A vector of Claims.
 #' @param reinsurance_structure The chosen reinsurance structure, a single string. Options are: 'No Reinsurance Structure', 'Unlimited Layer', 'Limited Layer', 'Exclude Layer'; anything else is an error.
@@ -176,6 +187,12 @@ distributionClass <- setClass(
 
 #' A vector with the frequency distribution objects
 #'
+#' A named list of \code{distributionClass} objects, one for each claim count distribution
+#' of the simulator: \code{Poisson}, \code{Negative_Binomial}, \code{Binomial} and
+#' \code{Fixed_number_of_Counts}. The names are the values accepted by the \code{freqDistr} argument of
+#' \code{simulate_function()}, and the objects hold the parameter ids, labels and ranges
+#' of the app's inputs and the functions that draw the claim counts.
+#'
 #' @return The frequency distribution objects.
 #' @keywords internal
 freq_dist_options <- c(
@@ -253,6 +270,10 @@ freq_dist_options <- c(
 
 #' A data frame with the frequency distribution parameter placeholders
 #'
+#' One row per parameter of the frequency distribution with the most parameters, giving
+#' the number and output id of the placeholder in which the simulator app renders that
+#' parameter's input for the chosen distribution.
+#'
 #' @return The frequency distribution parameter placeholders.
 #' @keywords internal
 freq_dist_parameter_placeholders <- data.frame(
@@ -286,8 +307,22 @@ sev_dist_options <- c(
     }
     ,survival_func = function(x, p) stats::pnorm(x, mean = p[1], sd = p[2], lower.tail = FALSE)
     ,tail_quantile_func = function(s, p) stats::qnorm(s, mean = p[1], sd = p[2], lower.tail = FALSE)
-    #the sum of n Normal claims is Normal with mean n * mean and variance n * sd^2
-    ,sum_func = function(counts, p) stats::rnorm(length(counts), mean = counts * p[1], sd = sqrt(counts) * p[2])
+    #the sum of n Normal claims is Normal with mean n * mean and variance n * sd^2; where
+    #n * mean or sqrt(n) * sd overflows, rnorm() would give NaN, so those simulations sum
+    #their claims one by one instead, which gives the infinite totals the claims add up to
+    ,sum_func = function(counts, p) {
+      totals_mean <- counts * p[1]
+      totals_sd <- sqrt(counts) * p[2]
+      in_range <- is.finite(totals_mean) & is.finite(totals_sd)
+      totals <- numeric(length(counts))
+      totals[in_range] <- stats::rnorm(sum(in_range), mean = totals_mean[in_range], sd = totals_sd[in_range])
+      overflow <- which(!in_range & counts > 0)
+      if (length(overflow) > 0) {
+        claims <- stats::rnorm(sum(counts[overflow]), mean = p[1], sd = p[2])
+        totals[overflow] <- rowsum(claims, rep.int(seq_along(overflow), counts[overflow]), reorder = FALSE)[, 1]
+      }
+      totals
+    }
   )
   ,LogNormal=distributionClass(
     distrID='LogNormal'
@@ -377,6 +412,10 @@ sev_dist_options <- c(
 )
 
 #' A data frame with the severity distribution parameter placeholders
+#'
+#' One row per parameter of the severity distribution with the most parameters, giving
+#' the number and output id of the placeholder in which the simulator app renders that
+#' parameter's input for the chosen distribution.
 #'
 #' @return The severity distribution parameter placeholders.
 #' @keywords internal
@@ -741,8 +780,8 @@ find_missing_simulation_settings <- function(settings) {
 #' @param sev_params A vector of the severity distribution parameters.
 #' @param seedSetBinary True if there is a fixed seed (\code{seedValue}), otherwise false. Defaults to TRUE when a \code{seedValue} is given and FALSE otherwise, so a \code{seedValue} on its own makes the run reproducible; an explicit FALSE ignores \code{seedValue}.
 #' @param seedValue The seed value, a whole number between \code{-.Machine$integer.max} and \code{.Machine$integer.max}, or NULL (the default) for no fixed seed.
-#' @param freqDistr The frequency distribution. Options are as per the freq_dist_options.
-#' @param sevDistr The severity distribution. Options are as per the sev_dist_options.
+#' @param freqDistr The frequency distribution: \code{"Poisson"}, \code{"Negative_Binomial"}, \code{"Binomial"} or \code{"Fixed_number_of_Counts"}. The parameters of each are listed in \code{\link{simulate_claims}}.
+#' @param sevDistr The severity distribution: \code{"Normal"}, \code{"LogNormal"}, \code{"Gamma"}, \code{"Exponential"}, \code{"Pareto"} or \code{"Fixed_Severity"}. The parameters of each are listed in \code{\link{simulate_claims}}.
 #' @param paretoSlice True if there is Pareto slicing.
 #' @param pareto_slice_times The number of Pareto slices.
 #' @param slice_pareto_alphas A vector of Pareto slices' alpha parameters.
@@ -767,10 +806,14 @@ find_missing_simulation_settings <- function(settings) {
 #' the claim count; \code{total_claims}, the total claims after the reinsurance structures;
 #' \code{gross_claims}, the gross total claims before them (after Pareto slices and the
 #' severity cap; unless \code{gross = FALSE}); and, when reinstatements are limited,
-#' \code{number_of_reinstatements_used}: the EEL layer's recoveries in the period (after the
-#' aggregate deductible and limit, when there is an aggregate layer) divided by the EEL
-#' limit, capped at the number of reinstatements, so reinstatements are counted pro rata to
-#' the amount recovered.
+#' \code{number_of_reinstatements_used}: the EEL layer's recoveries in the period divided by
+#' the EEL limit, capped at the number of reinstatements, so reinstatements are counted pro
+#' rata to the amount recovered. The recoveries are taken after the aggregate deductible and
+#' limit of an aggregate 'Unlimited Layer' or 'Limited Layer', but before an aggregate
+#' 'Exclude Layer' is taken out: with an exclusion they are the EEL recoveries after the
+#' reinstatement capacity. For example, three claims of 100 through a layer of 60 excess of
+#' 30 with two reinstatements and an aggregate exclusion of 150 excess of 50 give a total of
+#' 50 but 2 reinstatements used (180 / 60, capped at 2).
 #' Stops with an error that names any required setting that is missing or invalid.
 #' @seealso \code{\link{simulate_claims}}, a simpler interface with short argument names,
 #'   and \code{\link{run_shiny_simulator}} for the same model in an app.
@@ -1048,7 +1091,8 @@ simulate_function <- function(
     data$total_claims <- pmin(apply_al(data$total_claims), capacity)
     layer_recoveries <- data$total_claims
   } else {
-    #no aggregate layer, or an aggregate exclusion taken out of the capped recoveries
+    #no aggregate layer, or an aggregate exclusion taken out of the capped recoveries; the
+    #reinstatements used are counted on the recoveries before the exclusion
     data$total_claims <- pmin(data$total_claims, capacity)
     layer_recoveries <- data$total_claims
     data$total_claims <- apply_al(data$total_claims)
@@ -1089,10 +1133,19 @@ run_chunks_in_futures <- function(run_chunk, chunk_seeds) {
       })
     }, seed = seeds[[1]])
   })
+  #wait for every group before collecting the values: value() stops at the first error, and a
+  #group still running would leave its result unread on its worker; future then finds that
+  #worker broken and relaunches it, and the relaunched worker's connection is not closed when
+  #the plan is shut down (the garbage collector closes it later, with a warning)
+  future::resolve(futures)
   unlist(future::value(futures), recursive = FALSE, use.names = FALSE)
 }
 
 #' A function to run the shiny simulator application
+#'
+#' Opens the claims simulator, a Shiny app for running the frequency-severity model of
+#' \code{\link{simulate_function}} from a form, with charts, a report and saved settings,
+#' without writing any code.
 #'
 #' @return A shiny app object (class \code{shiny.appobj}). Printing it, as happens when
 #'   \code{run_shiny_simulator()} is called at the console, opens the app; pass it to

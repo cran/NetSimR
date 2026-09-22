@@ -6,6 +6,8 @@
 
 #' Error function
 #'
+#' @description Evaluates the Gauss error function, \code{2 * pnorm(sqrt(2) * x) - 1}, which appears in the closed form of the LogNormal capped mean.
+#'
 #' @param x A real number.
 #' @return The value of the error function at \code{x}. A non-numeric \code{x} is an error.
 #' @seealso \code{\link{LNormCappedMean}}
@@ -23,6 +25,8 @@ erf<-function(x){
 
 
 #' Lognormal capped mean
+#'
+#' @description Gives the expected claim amount when each claim from a LogNormal severity distribution is capped at \code{cap}, as needed to price a policy limit or a reinsurance layer.
 #'
 #' @param cap A non-negative real number -  the claim severity cap.
 #' @param mu A real number - the first parameter of the Claim Severity's LogNormal distribution.
@@ -55,12 +59,14 @@ LNormCappedMean<- function(cap,mu,sigma){
 
 
 
-#' Exposure Curve from LogNormal a severity distribution
+#' Exposure Curve from a LogNormal severity distribution
+#'
+#' @description Gives the share of the expected claim cost of a LogNormal severity distribution that falls below the amount \code{x} (the capped mean divided by the mean), as used to exposure rate a layer.
 #'
 #' @param x A non-negative real number -  the claim amount where the exposure curve will be evaluated.
 #' @param mu A real number - the first parameter of the Claim Severity's LogNormal distribution.
 #' @param sigma A positive real number - the second parameter of the Claim Severity's LogNormal distribution.
-#' @return The value of the Exposure curve at \code{x} with Claim Severity from a LogNormal distribution with parameters \code{mu} and \code{sigma}.
+#' @return The value of the Exposure curve at \code{x} with Claim Severity from a LogNormal distribution with parameters \code{mu} and \code{sigma}. An infinite \code{x} gives 1. The arguments are recycled to a common length. A non-numeric argument, a negative \code{x} or a non-positive \code{sigma} is an error; \code{NA} values give \code{NA}.
 #' @family exposure curve functions
 #' @export
 #' @examples
@@ -70,12 +76,21 @@ ExposureCurveLNorm<-function(x,mu,sigma){
   check_positive(x = x, allow_zero = TRUE)
   check_numeric(mu = mu)
   check_positive(sigma = sigma)
-  LNormCappedMean(x,mu,sigma)/(exp(mu+0.5*sigma*sigma))
+  # recycle every argument to a common length, so that a recycling error names this function
+  args<-recycle_arguments(x = x, mu = mu, sigma = sigma)
+  x<-args$x; mu<-args$mu; sigma<-args$sigma
+  curve<-LNormCappedMean(x,mu,sigma)/(exp(mu+0.5*sigma*sigma))
+  # the whole cost falls below an infinite amount, also when the mean exp(mu + sigma^2 / 2)
+  # overflows (Inf / Inf would be NaN)
+  curve[which(x==Inf)]<-1
+  restore_shape(curve, args)
 }
 
 
 
 #' Increased Limit Factor Curve from a LogNormal severity distribution
+#'
+#' @description Gives the ratio of the LogNormal capped mean at \code{xHigh} to that at \code{xLow}, the factor that takes the expected cost of a policy limit of \code{xLow} to that of a limit of \code{xHigh}.
 #'
 #' @param xLow A non-negative real number -  the claim amount where the Increased Limit Factor Curve will be evaluated from.
 #' @param xHigh A non-negative real number -  the claim amount where the Increased Limit Factor Curve will be evaluated to.
@@ -101,14 +116,16 @@ ILFLNorm<-function(xLow,xHigh,mu,sigma){
 
 #' Pure IBNR exposure from a LogNormal reporting delay distribution
 #'
-#' Durations are counted in days on each date's own calendar and clock: a \code{POSIXct} time of day counts as a fraction of a day, and daylight saving changes do not add fractions of a day, so \code{Date} and \code{POSIXct} dates (or a mix of them) give the same results.
+#' @description Gives the unearned and pure IBNR exposure of each policy period at a valuation date, from a LogNormal reporting delay, as needed to reserve for claims that have occurred but have not yet been reported.
+#'
+#' @details Durations are counted in days on each date's own calendar and clock: a \code{POSIXct} time of day counts as a fraction of a day, and daylight saving changes do not add fractions of a day, so \code{Date} and \code{POSIXct} dates (or a mix of them) give the same results.
 #'
 #' @param IncDate A \code{Date} or \code{POSIXct} vector -  the inception dates of the periods. Numbers and character strings are not accepted; convert them with \code{as.Date()} first.
 #' @param ExpDate A \code{Date} or \code{POSIXct} vector -  the expiry dates of the periods. Must not be before the inception dates.
 #' @param ValDate A \code{Date} or \code{POSIXct} date -  the valuation date.
 #' @param mu A real number - the first parameter of the reporting delay's LogNormal distribution, with the delay measured in days.
 #' @param sigma A positive real number - the second parameter of the reporting delay's LogNormal distribution.
-#' @return A data frame with the unearned and pure IBNR exposure of each period in days (\code{UnearnedDuration}, and \code{PureIBNRDuration} rounded to 2 decimals) and as proportions between 0 and 1 of the period's duration (\code{UnearnedDurationRatio} and \code{PureIBNRDurationRatio}, rounded to 5 decimals), where the reporting delay has a LogNormal distribution with parameters \code{mu} and \code{sigma}. The dates and parameters are recycled to a common length, one row each; lengths that do not recycle are an error.
+#' @return A data frame with the unearned and pure IBNR exposure of each period in days (\code{UnearnedDuration}, and \code{PureIBNRDuration} rounded to 2 decimals) and as proportions between 0 and 1 of the period's duration (\code{UnearnedDurationRatio} and \code{PureIBNRDurationRatio}, rounded to 5 decimals), where the reporting delay has a LogNormal distribution with parameters \code{mu} and \code{sigma}. The ratios are computed before the durations are rounded. A period of zero length (\code{ExpDate} equal to \code{IncDate}) gives ratios of 0. The dates and parameters are recycled to a common length, one row each; lengths that do not recycle are an error.
 #' @family pure IBNR functions
 #' @export
 #' @examples

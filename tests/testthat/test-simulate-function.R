@@ -72,6 +72,17 @@ test_that("optional arguments may be omitted", {
   expect_equal(res$total_claims, res$gross_claims)
 })
 
+test_that("simulate_claims refuses a progress option that is not a function", {
+  run <- function(...) simulate_claims(300, "Poisson", 3, "Gamma", c(2, 100), seed = 1, chunk_size = 100, ...)
+  #the engine skipped a progress value that was not a function, so a typo ran silently
+  expect_error(run(progress = "no"), "progress must be a function or NULL.", fixed = TRUE)
+  expect_error(run(progress = 5), "progress must be a function or NULL.", fixed = TRUE)
+  fractions <- numeric()
+  res <- run(progress = function(value, detail) fractions <<- c(fractions, value))
+  expect_equal(fractions, c(1, 2, 3) / 3)
+  expect_identical(res, run())
+})
+
 test_that("limited reinstatements cap the ceded total and report the reinstatements used", {
   res <- run_simulation(
     numOfSimulations = 50,

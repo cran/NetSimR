@@ -21,7 +21,10 @@ SlicedGammaParetoCappedMean(cap, GShape, GRate, SlicePoint, PShape)
 The mean of the claim severity capped at \code{cap} with an attritional claim Gamma distribution with parameters \code{GShape} and \code{GRate} and a large claim Pareto distribution with parameters \code{SlicePoint} and \code{PShape}. A non-numeric argument, a negative \code{cap} or a non-positive parameter is an error; \code{NA} values give \code{NA}.
 }
 \description{
-Sliced Gamma Pareto capped mean
+Gives the expected claim amount when each claim from a sliced severity distribution, with Gamma attritional claims below the slice point and a Pareto tail above it, is capped at \code{cap}.
+}
+\details{
+\code{PShape} is the Pareto shape parameter, usually written alpha; the sliced LogNormal-Pareto functions call the same parameter \code{shape}.
 }
 \examples{
 SlicedGammaParetoCappedMean(3000,1,0.0005,1000,1.2)

@@ -17,7 +17,7 @@ ExposureCurvePareto(x, scale, shape)
 The value of the Exposure curve at \code{x} with Claim Severity from a Pareto distribution with parameters \code{scale} and \code{shape}. The exposure curve divides by the mean, which is infinite when \code{shape <= 1}; the function returns 0 in that case.
 }
 \description{
-Exposure Curve from a Pareto severity distribution
+Gives the share of the expected claim cost of a Pareto severity distribution that falls below the amount \code{x} (the capped mean divided by the mean), as used to exposure rate a layer.
 }
 \examples{
 ExposureCurvePareto(700,500,1.2)

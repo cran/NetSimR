@@ -14,10 +14,10 @@ ExposureCurveGamma(x, shape, rate)
 \item{rate}{A positive real number - the rate parameter of the Claim Severity's Gamma distribution.}
 }
 \value{
-The value of the Exposure curve at \code{x} with Claim Severity from a Gamma distribution with parameters \code{shape} and \code{rate}.
+The value of the Exposure curve at \code{x} with Claim Severity from a Gamma distribution with parameters \code{shape} and \code{rate}. The arguments are recycled to a common length. A non-numeric argument, a negative \code{x} or a non-positive \code{shape} or \code{rate} is an error; \code{NA} values give \code{NA}.
 }
 \description{
-Exposure Curve from a Gamma severity distribution
+Gives the share of the expected claim cost of a Gamma severity distribution that falls below the amount \code{x} (the capped mean divided by the mean), as used to exposure rate a layer.
 }
 \examples{
 ExposureCurveGamma(700,1,0.0005)

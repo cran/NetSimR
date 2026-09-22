@@ -2,7 +2,7 @@
 % Please edit documentation in R/LogNormal.R
 \name{ExposureCurveLNorm}
 \alias{ExposureCurveLNorm}
-\title{Exposure Curve from LogNormal a severity distribution}
+\title{Exposure Curve from a LogNormal severity distribution}
 \usage{
 ExposureCurveLNorm(x, mu, sigma)
 }
@@ -14,10 +14,10 @@ ExposureCurveLNorm(x, mu, sigma)
 \item{sigma}{A positive real number - the second parameter of the Claim Severity's LogNormal distribution.}
 }
 \value{
-The value of the Exposure curve at \code{x} with Claim Severity from a LogNormal distribution with parameters \code{mu} and \code{sigma}.
+The value of the Exposure curve at \code{x} with Claim Severity from a LogNormal distribution with parameters \code{mu} and \code{sigma}. An infinite \code{x} gives 1. The arguments are recycled to a common length. A non-numeric argument, a negative \code{x} or a non-positive \code{sigma} is an error; \code{NA} values give \code{NA}.
 }
 \description{
-Exposure Curve from LogNormal a severity distribution
+Gives the share of the expected claim cost of a LogNormal severity distribution that falls below the amount \code{x} (the capped mean divided by the mean), as used to exposure rate a layer.
 }
 \examples{
 ExposureCurveLNorm(2000,6,1.5)

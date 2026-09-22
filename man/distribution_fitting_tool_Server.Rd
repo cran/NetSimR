@@ -18,6 +18,9 @@ Called by shiny for its side effects, the outputs and observers of a
   session; the value is not used.
 }
 \description{
-Server function for the Distribution Fitting tool application
+Reads the uploaded file, fits the frequency, severity, sliced
+  and piecewise Pareto models the user asks for and renders their tables and
+  charts; paired with \code{distribution_fitting_tool_UI} by
+  \code{\link{run_shiny_distribution_fitting_tool}}.
 }
 \keyword{internal}

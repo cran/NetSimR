@@ -1,12 +1,11 @@
 ---
 title: "Capped means, exposure curves and increased limit factors"
 author: "Yiannis Parizas"
-date: '`r format(Sys.Date(), "%d-%m-%Y")`'
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Capped means, exposure curves and increased limit factors}
   %\VignetteEngine{knitr::rmarkdown}
-  \usepackage[utf8]{inputenc}
+  %\VignetteEncoding{UTF-8}
 ---
 
 
@@ -18,11 +17,10 @@ knitr::opts_chunk$set(echo = TRUE)
 ## 1.Introduction
 
 
-This vignette will cover capped mean functions, exposure and increased limit factor curves of the NetSimR package. It will overview the theory behind these functions, propose possible uses and illustrate examples. The distributions covered for claim severities are LogNormal, Gamma, Pareto, Sliced LogNormal-Pareto, Sliced Gamma-Pareto. An application of the capped mean is suggested in the article "Taken to Excess" accessible [here](https://www.theactuary.com/features/2019/03/2019/03/06/taken-excess).
+This vignette will cover capped mean functions, exposure and increased limit factor curves of the NetSimR package. It will overview the theory behind these functions, propose possible uses and illustrate examples. The distributions covered for claim severities are LogNormal, Gamma, Pareto, Sliced LogNormal-Pareto, Sliced Gamma-Pareto. An application of the capped mean is suggested in the article "Taken to excess" accessible [here](https://www.theactuary.com/features/2019/03/2019/03/06/taken-excess).
 
 
 
-\pagebreak
 ## 2.Background theory
 
 
@@ -47,7 +45,6 @@ Increased limit factor curve at a claims caps $c_{h}$ and $c_{l}$ is calculated 
 
 
 
-\pagebreak
 ## 3. Functions usage
 
 
@@ -76,7 +73,6 @@ For casualty lines/sections:
 - Loading for large losses.
 
 
-\pagebreak
 ## 4. Examples
 
 

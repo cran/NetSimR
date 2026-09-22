@@ -17,7 +17,7 @@ ParetoCappedMeanCalc(cap, scale, shape)
 An interim calculation for the mean of the claim severity capped at \code{cap} with a Pareto distribution with parameters \code{scale} and \code{shape}. It is the closed form for \code{cap >= scale} and \code{shape != 1}; use \code{\link{ParetoCappedMean}} for the capped mean itself. The arguments are recycled to a common length.
 }
 \description{
-Pareto capped mean intermediary calculation
+Evaluates the closed-form expression \code{(shape * scale - cap * (scale / cap)^shape) / (shape - 1)} that the Pareto capped mean is built on, for checking or reusing the intermediate step.
 }
 \examples{
 ParetoCappedMeanCalc(800,100,1.1)
