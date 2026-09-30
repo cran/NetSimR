@@ -49,7 +49,9 @@ settings_literal <- function(expr) {
 # The text of one setting. deparse() writes doubles with 15 significant digits, which keeps a
 # typed 0.3 as 0.3 but loses the last bit of a value such as a third; a value whose 15 digits
 # do not read back as exactly the same double is written with 17 instead, so that a seeded
-# run loaded from its own settings file gives the same results.
+# run loaded from its own settings file gives the same results. 17 digits name a double
+# exactly, though a platform built without long double reads such text back up to a bit out,
+# which no decimal text can mend.
 settings_text <- function(x) {
   control <- c("keepNA", "keepInteger", "niceNames")
   text <- paste(deparse(x, width.cutoff = 500L, control = control), collapse = " ")

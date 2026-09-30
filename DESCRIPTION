@@ -1,7 +1,7 @@
 Package: NetSimR
 Type: Package
 Title: Actuarial Functions for Non-Life Insurance Modelling
-Version: 0.3.1
+Version: 0.3.2
 Authors@R: person("Yiannis", "Parizas", email = "yiannis.parizas@gmail.com", role = c("aut", "cre"),
                   comment = c(ORCID = "0009-0000-0523-0751"))
 Description: Assists actuaries and other insurance modellers in pricing,
@@ -38,9 +38,9 @@ VignetteBuilder: knitr
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.1.0
 NeedsCompilation: no
-Packaged: 2026-09-22 06:32:39 UTC; yiann
+Packaged: 2026-09-30 07:15:23 UTC; yiann
 Author: Yiannis Parizas [aut, cre] (ORCID:
     <https://orcid.org/0009-0000-0523-0751>)
 Maintainer: Yiannis Parizas <yiannis.parizas@gmail.com>
 Repository: CRAN
-Date/Publication: 2026-09-22 06:50:02 UTC
+Date/Publication: 2026-09-30 15:20:08 UTC

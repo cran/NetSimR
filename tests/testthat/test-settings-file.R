@@ -32,7 +32,19 @@ test_that("doubles round-trip exactly, and typed values keep their short form", 
   on.exit(unlink(file), add = TRUE)
   write_settings_file(values, file, tool = "test tool", version = 3)
   back <- read_settings_file(file, tool = "test tool")$values
-  for (id in names(values)) expect_identical(back[[id]], values[[id]], info = id)
+  #17 significant digits name a double exactly, but a platform built without long double reads
+  #the text back up to a bit out (R's noLD check: a third came back 0.333333333333333259 rather
+  #than 0.333333333333333315), which no decimal text can mend. There the value is only checked
+  #loosely, since the error of the 15 digits this test guards against is itself a few bits; the
+  #exactness is asked for on every platform that can deliver it
+  exactly <- isTRUE(capabilities("long.double"))
+  for (id in names(values)) {
+    if (exactly) {
+      expect_identical(back[[id]], values[[id]], info = id)
+    } else {
+      expect_equal(back[[id]], values[[id]], tolerance = 1e-12, info = id)
+    }
+  }
   lines <- readLines(file)
   #only the values that need them are written with 17 digits
   expect_true("typed: 0.3" %in% lines)
@@ -46,7 +58,11 @@ test_that("doubles round-trip exactly, and typed values keep their short form", 
     simulate_function(numOfSimulations = 2000, freq_params = 3, sev_params = c(6, sigma), seedValue = 1,
                       freqDistr = "Poisson", sevDistr = "LogNormal")$total_claims
   }
-  expect_identical(run(back$third), run(1/3))
+  if (exactly) {
+    expect_identical(run(back$third), run(1/3))
+  } else {
+    expect_equal(run(back$third), run(1/3), tolerance = 1e-10)
+  }
 })
 
 test_that("hand-edited files with a repeated setting, a blank line or no version are refused with a message", {

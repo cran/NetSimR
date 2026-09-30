@@ -1,3 +1,12 @@
+Changes in Version 0.3.2
+
+  o The test of the settings files asked for a double to come back from its
+    text form bit for bit. A platform built without long double reads such
+    text up to a bit out, whatever the number of digits written, so the test
+    failed on CRAN's noLD check; it now allows that difference where the
+    platform cannot do better and still asks for an exact value everywhere
+    else. Settings files themselves are unchanged.
+
 Changes in Version 0.3.1
 
   o Results change in four cases, each described below: an each-and-every-loss

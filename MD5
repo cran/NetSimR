@@ -1,6 +1,6 @@
-7daa85ad86bf6701c7860fb950bd4ae4 *DESCRIPTION
+c11a93ee2746fa1d3c26d7942703069a *DESCRIPTION
 9e79f7b7f9574116281fb52348759a29 *NAMESPACE
-87fe59a2c7e6fe5b8d68a27497ccb782 *NEWS
+5e42d0b17560bc2c3883907abc64d5bb *NEWS
 0e3f5999b9d954aba265c5b2083385de *R/GLMFittingToolGlobal.R
 8588b724628ac756cd9eb8ec72419045 *R/GLMFittingToolServer.R
 917dc6aaa44ed670ad2da9dce0b35ef9 *R/GLMFittingToolUI.R
@@ -22,11 +22,11 @@ e772505f15324cf086aa7420cd9d11b4 *R/csv_safe.R
 118a214f644adbe657571ca6e63572a7 *R/distribution_fitting_tool_UI.R
 066af5e09e0e11743a62305254f8a2a9 *R/distribution_fitting_tool_global.R
 96ff7c8854af1e73599e3c1c54d07f9c *R/plot_device.R
-8d0ccfbaae8935837a20b7caa775bc8c *R/settings_file.R
+2551c248a5752c639e924026331d0a3c *R/settings_file.R
 d7b21ace58dccc7e2b4d47d6535fce21 *R/simulate_claims.R
 a93dcabff97b4a1e7596021a65870871 *README.md
 a3e19a00a54a418c24c4bdf6951c1601 *build/vignette.rds
-525d25ca4b3435b9995abf97ecca4769 *inst/WORDLIST
+44cab461b0a6fba9da01b0cd7f9944b6 *inst/WORDLIST
 c2ac97ad642a2af6f8655ab65e35dd34 *inst/doc/CappedMean.R
 2c5a52d3759fc5907063b64631f537d8 *inst/doc/CappedMean.Rmd
 e600f13a4596ffa2c9fa366b7e5a93ba *inst/doc/CappedMean.html
@@ -115,7 +115,7 @@ ad0bd355998e35dbcad7d5da40b71d62 *tests/testthat/test-pkg-sliced-distributions.R
 a41ee43bdcbcf95939bc9e684b2414f3 *tests/testthat/test-plot-device.R
 fec5c7932880f595167378ea606534c8 *tests/testthat/test-report-review-fixes.R
 f3d1298a044b811ad6a4e995e7d08d9d *tests/testthat/test-report.R
-2ec89852ead1ae324a506a5845c97d44 *tests/testthat/test-settings-file.R
+86a279ae9704b695185bd10c270ddc75 *tests/testthat/test-settings-file.R
 8f3229cdd01e4dfbe9e10e1373d9f155 *tests/testthat/test-settings-io.R
 cea2a1c34d13b4af78f3dab221de360b *tests/testthat/test-sim-aggregate-order.R
 940cde79683ab328fd63e580cd4d73e3 *tests/testthat/test-sim-app-fixes.R
